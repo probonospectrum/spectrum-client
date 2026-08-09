@@ -6,47 +6,49 @@
 .field {
   display: grid;
   gap: 8px;
-  color: #1f1f1f;
+  color: #172638;
   font-family: Arial, sans-serif;
 }
 
 .field__label {
-  font-size: 14px;
-  line-height: 1;
+  color: #31465b;
+  font: 800 13px/1 Arial, sans-serif;
 }
 
 .field__control {
   width: 100%;
-  min-height: 36px;
-  border: 1px solid #d7d7d7;
+  min-height: 43px;
+  border: 1px solid #cfdbe8;
   border-radius: 6px;
-  background: #ffffff;
-  color: #1f1f1f;
+  background: #f8fbfd;
+  color: #172638;
   padding: 0 38px 0 14px;
   font: 400 14px/1 Arial, sans-serif;
   outline: none;
   transition:
+    background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease;
 }
 
 .field__control:focus {
-  border-color: #0b75a5;
-  box-shadow: 0 0 0 3px rgba(11, 117, 165, 0.14);
+  border-color: #00488d;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 72, 141, 0.12);
 }
 
 .field__control:disabled {
-  color: #858585;
+  color: #7d8b99;
   cursor: not-allowed;
-  background: #f4f4f4;
+  background: #eef3f8;
 }
 
 .field__control--invalid {
   border-color: #c62828;
+  background: #fffafa;
 }
 
 .field__error {
   color: #c62828;
-  font-size: 12px;
-  line-height: 1.2;
+  font: 700 12px/1.2 Arial, sans-serif;
 }

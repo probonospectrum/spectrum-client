@@ -11,21 +11,23 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(0, 22, 54, 0.42);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 22, 54, 0.48);
+  backdrop-filter: blur(7px);
 }
 
 .alert-popup {
-  width: min(420px, 100%);
+  width: min(430px, 100%);
   display: grid;
   gap: 18px;
   position: relative;
-  padding: 34px 28px 26px;
-  border: 1px solid rgba(0, 72, 141, 0.16);
-  border-radius: 14px;
+  padding: 36px 30px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 8px;
   background: #fcfcfc;
-  color: #1f1f1f;
-  box-shadow: 0 22px 60px rgba(0, 22, 54, 0.28);
+  color: #172638;
+  box-shadow:
+    0 28px 80px rgba(0, 22, 54, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
   font-family: Arial, sans-serif;
   text-align: center;
 }
@@ -37,7 +39,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  border-radius: 14px 14px 0 0;
+  border-radius: 8px 8px 0 0;
   background: #00488d;
 }
 
@@ -57,12 +59,12 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  border: 0;
+  border: 1px solid rgba(0, 72, 141, 0.1);
   border-radius: 50%;
   background: #eef3f8;
   color: #00488d;
   cursor: pointer;
-  font: 700 16px/1 Arial, sans-serif;
+  font: 800 16px/1 Arial, sans-serif;
 }
 
 .alert-popup__close:hover {
@@ -70,14 +72,16 @@
 }
 
 .alert-popup__icon {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   display: grid;
   place-items: center;
   justify-self: center;
+  border: 5px solid #ffffff;
   border-radius: 50%;
   background: #e6f0fa;
   color: #00488d;
+  box-shadow: 0 14px 34px rgba(0, 32, 72, 0.16);
   font: 800 18px/1 Arial, sans-serif;
 }
 
@@ -93,7 +97,7 @@
 
 .alert-popup__content {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .alert-popup__content h2,
@@ -103,22 +107,23 @@
 
 .alert-popup__content h2 {
   color: #002d72;
-  font: 800 22px/1.15 Arial, sans-serif;
+  font: 800 23px/1.15 Arial, sans-serif;
 }
 
 .alert-popup__content p {
   color: #425466;
-  font: 400 15px/1.45 Arial, sans-serif;
+  font: 400 15px/1.5 Arial, sans-serif;
 }
 
 .alert-popup__action {
-  min-height: 44px;
+  min-height: 46px;
   border: 0;
   border-radius: 6px;
   background: #00488d;
   color: #ffffff;
   cursor: pointer;
-  font: 700 14px/1.2 Arial, sans-serif;
+  font: 800 14px/1.2 Arial, sans-serif;
+  box-shadow: 0 12px 24px rgba(0, 72, 141, 0.22);
 }
 
 .alert-popup__action:hover {
@@ -132,6 +137,6 @@
   }
 
   .alert-popup {
-    padding: 32px 22px 22px;
+    padding: 34px 22px 22px;
   }
 }

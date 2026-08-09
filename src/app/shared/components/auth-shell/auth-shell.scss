@@ -4,43 +4,62 @@
 
 .auth-page {
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   display: grid;
   place-items: center;
-  padding: 32px 18px;
+  padding: 34px 18px;
   background:
-    url('/Background.png') center bottom / min(1600px, 156vw) 637px no-repeat,
+    linear-gradient(180deg, rgba(63, 104, 151, 0.94) 0%, rgba(31, 75, 118, 0.9) 42%, rgba(236, 243, 250, 0.96) 100%),
+    url('/Background.png') center bottom / min(1680px, 154vw) auto no-repeat,
     #3f6897;
 }
 
 .auth-card {
   width: min(571px, 100%);
   min-height: 579px;
-  padding: 66px 42px 47px;
-  border-radius: 14px;
-  background: #fcfcfc;
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  padding: 58px 44px 42px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 8px;
+  background: rgba(252, 252, 252, 0.95);
+  box-shadow:
+    0 26px 70px rgba(0, 22, 54, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .auth-card--compact {
   min-height: 625px;
-  padding-top: 43px;
+  padding-top: 38px;
 }
 
 .auth-logo {
-  margin: 0 0 43px;
+  margin: 0 0 40px;
   color: #002d72;
-  font: 800 clamp(2.3rem, 8vw, 3.25rem) / 1 Arial, sans-serif;
+  font: 800 clamp(2.35rem, 8vw, 3.35rem) / 1 Arial, sans-serif;
   letter-spacing: 0;
   text-align: center;
 }
 
+.auth-logo::after {
+  content: '';
+  width: 64px;
+  height: 4px;
+  display: block;
+  margin: 16px auto 0;
+  border-radius: 999px;
+  background: #0f7a4f;
+}
+
 .auth-card--compact .auth-logo {
-  margin-bottom: 28px;
+  margin-bottom: 25px;
 }
 
 @media (max-width: 620px) {
+  .auth-page {
+    align-items: start;
+    padding-top: 24px;
+  }
+
   .auth-card {
-    padding: 40px 28px;
+    padding: 38px 24px;
   }
 }

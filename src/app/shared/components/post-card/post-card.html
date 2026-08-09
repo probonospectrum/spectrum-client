@@ -1,0 +1,69 @@
+<article class="post-card">
+  <header class="post-card__header">
+    <span class="post-card__avatar">{{ post.authorInitial }}</span>
+    <div class="post-card__author">
+      <strong>{{ post.authorName }}</strong>
+      <span>@{{ post.authorNickname }}</span>
+    </div>
+    <button class="post-card__more" type="button" aria-label="Reportar publicacao" (click)="report.emit(post)">
+      ...
+    </button>
+  </header>
+
+  <h2>{{ post.title }}</h2>
+  <p class="post-card__copy">{{ post.content }}</p>
+
+  <div class="post-card__location">
+    <span aria-hidden="true"></span>
+    {{ post.authorCity }}
+  </div>
+
+  <div
+    class="post-card__media"
+    [class.post-card__media--text]="post.mediaType === 'text'"
+    [class.post-card__media--image]="post.mediaType === 'image'"
+  >
+    @if (post.mediaType === 'video') {
+      <span class="post-card__play" aria-hidden="true"></span>
+    } @else if (post.mediaType === 'image') {
+      <span>Registro da comunidade</span>
+    } @else {
+      <span>Publicacao em texto</span>
+    }
+  </div>
+
+  @if (post.tags.length) {
+    <div class="post-card__tags" aria-label="Tags">
+      @for (tag of post.tags; track tag) {
+        <span>#{{ tag }}</span>
+      }
+    </div>
+  }
+
+  <footer class="post-card__footer">
+    <span>{{ post.publishedAtLabel }}</span>
+    <div class="post-card__actions" aria-label="Interacoes">
+      <button
+        type="button"
+        [class.post-card__action--active]="liked"
+        aria-label="Curtir publicacao"
+        (click)="toggleLike()"
+      >
+        <span class="post-card__icon post-card__icon--heart" aria-hidden="true"></span>
+        {{ likes }}
+      </button>
+      <button type="button" aria-label="Comentar publicacao">
+        <span class="post-card__icon post-card__icon--comment" aria-hidden="true"></span>
+        {{ post.comments }}
+      </button>
+      <button type="button" aria-label="Compartilhar publicacao">
+        <span class="post-card__icon post-card__icon--share" aria-hidden="true"></span>
+        {{ post.shares }}
+      </button>
+      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()">
+        <span class="post-card__icon post-card__icon--save" aria-hidden="true"></span>
+        {{ isSaved ? 'Salvo' : 'Salvar' }}
+      </button>
+    </div>
+  </footer>
+</article>

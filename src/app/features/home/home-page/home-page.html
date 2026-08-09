@@ -1,23 +1,61 @@
 <main class="home-page">
-  <section class="home-card">
-    <h1 class="home-logo">SPECTRUM</h1>
+  <header class="home-header">
+    <a class="home-brand" routerLink="/home" aria-label="Spectrum">
+      <span class="home-brand__mark">S</span>
+      <span>SPECTRUM</span>
+    </a>
 
-    <div class="home-user">
-      <div class="home-avatar" aria-hidden="true">
-        {{ user?.name?.charAt(0) || user?.nickname?.charAt(0) || 'S' }}
-      </div>
+    <div class="home-header__profile">
+      <span>@{{ nickname }}</span>
+      <button class="home-logout" type="button" (click)="logout()">Sair</button>
+    </div>
+  </header>
 
-      <div class="home-user__text">
-        <p>Bem-vindo de volta</p>
-        <strong>{{ user?.name || 'Usuario Spectrum' }}</strong>
-        <span>@{{ user?.nickname || 'spectrum' }}</span>
+  <section class="home-hero" aria-labelledby="home-title">
+    <div class="home-hero__content">
+      <p class="home-eyebrow">{{ currentDate }}</p>
+      <h1 id="home-title">Bem-vindo de volta, {{ displayName }}</h1>
+      <p class="home-copy">
+        Sua area esta pronta para acompanhar comunidades, conexoes e novas publicacoes.
+      </p>
+
+      <div class="home-actions">
+        <button class="home-action home-action--primary" type="button">Explorar comunidades</button>
+        <a class="home-action" routerLink="/publicacoes">Ver publicacoes</a>
+        <a class="home-action" routerLink="/publicacoes/nova">Nova publicacao</a>
       </div>
     </div>
 
-    <div class="home-actions">
-      <app-button type="button">Explorar comunidades</app-button>
-      <app-button type="button">Ver publicacoes</app-button>
-      <button class="home-link" type="button" (click)="logout()">Sair</button>
-    </div>
+    <aside class="home-profile" aria-label="Resumo do usuario">
+      <div class="home-avatar" aria-hidden="true">{{ userInitial }}</div>
+      <div class="home-profile__text">
+        <strong>{{ displayName }}</strong>
+        <span>@{{ nickname }}</span>
+      </div>
+      <div class="home-profile__status">
+        <span [class.home-profile__dot--verified]="user?.isVerified" class="home-profile__dot"></span>
+        {{ user?.isVerified ? 'Email verificado' : 'Verificacao pendente' }}
+      </div>
+    </aside>
+  </section>
+
+  <section class="home-grid" aria-label="Resumo da conta">
+    <article class="home-panel home-panel--metric">
+      <span class="home-panel__label">Seguindo</span>
+      <strong>{{ followingCount }}</strong>
+      <p>Perfis acompanhados no Spectrum.</p>
+    </article>
+
+    <article class="home-panel">
+      <span class="home-panel__label">Comunidades</span>
+      <h2>Descubra novas conversas</h2>
+      <p>Encontre espacos alinhados aos seus interesses e participe das discussoes certas.</p>
+    </article>
+
+    <article class="home-panel">
+      <span class="home-panel__label">Publicacoes</span>
+      <h2>Acompanhe atualizacoes</h2>
+      <p>Veja conteudos recentes de usuarios e comunidades que fazem sentido para voce.</p>
+    </article>
   </section>
 </main>

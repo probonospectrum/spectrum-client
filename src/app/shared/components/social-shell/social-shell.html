@@ -1,0 +1,92 @@
+<main class="social-page">
+  <header class="social-header">
+    <a class="social-logo" routerLink="/home" aria-label="Spectrum">
+      <span class="social-logo__seal">S</span>
+      <span>SPECTRUM</span>
+    </a>
+
+    <label class="social-search">
+      <span class="sr-only">Pesquisar</span>
+      <input type="search" placeholder="Pesquise cidades, comunidades, usuarios" />
+      <span aria-hidden="true">Q</span>
+    </label>
+
+    <a class="social-create" routerLink="/publicacoes/nova" aria-label="Criar publicacao">
+      <span aria-hidden="true">+</span>
+    </a>
+  </header>
+
+  <div class="social-layout">
+    <aside class="social-sidebar" aria-label="Navegacao principal">
+      <nav class="social-nav">
+        <a
+          class="social-nav__item"
+          routerLink="/publicacoes"
+          routerLinkActive="social-nav__item--active"
+        >
+          <span class="social-nav__glyph" aria-hidden="true">I</span>
+          Inicio
+        </a>
+        <a
+          class="social-nav__item"
+          routerLink="/notificacoes"
+          routerLinkActive="social-nav__item--active"
+        >
+          <span class="social-nav__glyph" aria-hidden="true">N</span>
+          Notificacao
+        </a>
+        <a class="social-nav__item" routerLink="/perfil" routerLinkActive="social-nav__item--active">
+          <span class="social-nav__glyph" aria-hidden="true">P</span>
+          Perfil
+        </a>
+        <a
+          class="social-nav__item"
+          routerLink="/configuracoes"
+          routerLinkActive="social-nav__item--active"
+        >
+          <span class="social-nav__glyph" aria-hidden="true">C</span>
+          Configuracoes
+        </a>
+      </nav>
+
+      <a class="social-user" routerLink="/perfil">
+        <span class="social-avatar">{{ userInitial }}</span>
+        <span class="social-user__text">
+          <strong>{{ displayName }}</strong>
+          <small>@{{ nickname }}</small>
+        </span>
+        <span class="social-user__more" aria-hidden="true">...</span>
+      </a>
+      <button class="social-nav__item" type="button" (click)="logout.emit()">Sair</button>
+    </aside>
+
+    <section class="social-content" aria-labelledby="social-title">
+      <div class="social-content__header">
+        <div>
+          <p>{{ title }}</p>
+          <h1 id="social-title">{{ subtitle }}</h1>
+        </div>
+        <ng-content select="[social-actions]"></ng-content>
+      </div>
+
+      <ng-content></ng-content>
+    </section>
+
+    <aside class="social-suggestions" aria-label="Sugestoes para voce">
+      <h2>Sugestoes para voce</h2>
+
+      @for (profile of suggestions; track profile.nickname) {
+        <article class="social-suggestion">
+          <span class="social-avatar social-avatar--small">{{ profile.initial }}</span>
+          <div>
+            <strong>{{ profile.name }}</strong>
+            <span>@{{ profile.nickname }}</span>
+          </div>
+          @if (profile.verified) {
+            <span class="social-suggestion__verified" aria-label="Perfil verificado">OK</span>
+          }
+        </article>
+      }
+    </aside>
+  </div>
+</main>

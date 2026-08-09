@@ -1,8 +1,5 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { HomePage } from './features/home/home-page/home-page';
-import { LoginPage } from './features/user/login-page/login-page';
-import { VerifyEmailPage } from './features/user/verify-email-page/verify-email-page';
 
 export const routes: Routes = [
   {
@@ -12,21 +9,52 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    component: LoginPage,
+    loadComponent: () => import('./features/user/login-page/login-page').then((m) => m.LoginPage),
     data: { mode: 'login' },
   },
   {
     path: 'cadastro',
-    component: LoginPage,
+    loadComponent: () => import('./features/user/login-page/login-page').then((m) => m.LoginPage),
     data: { mode: 'register' },
   },
   {
     path: 'verify-email',
-    component: VerifyEmailPage,
+    loadComponent: () =>
+      import('./features/user/verify-email-page/verify-email-page').then((m) => m.VerifyEmailPage),
   },
   {
     path: 'home',
-    component: HomePage,
+    loadComponent: () => import('./features/home/home-page/home-page').then((m) => m.HomePage),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'publicacoes',
+    loadComponent: () => import('./features/posts/posts-page/posts-page').then((m) => m.PostsPage),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'publicacoes/nova',
+    loadComponent: () =>
+      import('./features/posts/create-post-page/create-post-page').then((m) => m.CreatePostPage),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'notificacoes',
+    loadComponent: () =>
+      import('./features/notifications/notifications-page/notifications-page').then(
+        (m) => m.NotificationsPage,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'perfil',
+    loadComponent: () => import('./features/profile/profile-page/profile-page').then((m) => m.ProfilePage),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'configuracoes',
+    loadComponent: () =>
+      import('./features/settings/settings-page/settings-page').then((m) => m.SettingsPage),
     canActivate: [authGuard],
   },
 ];

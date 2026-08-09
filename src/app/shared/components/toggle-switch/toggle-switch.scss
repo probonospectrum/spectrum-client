@@ -1,0 +1,45 @@
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  color: #303030;
+  font: 700 14px/1.2 Arial, sans-serif;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+}
+
+.toggle i {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #cfd8e1;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.toggle i::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 160ms ease;
+}
+
+.toggle input:checked + i {
+  background: #00488d;
+}
+
+.toggle input:checked + i::after {
+  transform: translateX(20px);
+}
