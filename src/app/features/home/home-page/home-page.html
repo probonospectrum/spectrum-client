@@ -1,0 +1,23 @@
+<main class="home-page">
+  <section class="home-card">
+    <h1 class="home-logo">SPECTRUM</h1>
+
+    <div class="home-user">
+      <div class="home-avatar" aria-hidden="true">
+        {{ user?.name?.charAt(0) || user?.nickname?.charAt(0) || 'S' }}
+      </div>
+
+      <div class="home-user__text">
+        <p>Bem-vindo de volta</p>
+        <strong>{{ user?.name || 'Usuario Spectrum' }}</strong>
+        <span>@{{ user?.nickname || 'spectrum' }}</span>
+      </div>
+    </div>
+
+    <div class="home-actions">
+      <app-button type="button">Explorar comunidades</app-button>
+      <app-button type="button">Ver publicacoes</app-button>
+      <button class="home-link" type="button" (click)="logout()">Sair</button>
+    </div>
+  </section>
+</main>

@@ -2,11 +2,11 @@
   @if (!isRegisterMode) {
     <form class="auth-form auth-form--login" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
       <app-input
-        label="Nome de usuário ou email"
-        placeholder="Seu nome de usuário"
-        autocomplete="email"
-        formControlName="email"
-        [error]="fieldError('login', 'email')"
+        label="Nome de usuario ou email"
+        placeholder="Seu nome de usuario ou email"
+        autocomplete="username"
+        formControlName="identifier"
+        [error]="fieldError('login', 'identifier')"
       />
 
       <app-input
@@ -18,9 +18,9 @@
         [error]="fieldError('login', 'password')"
       />
 
-      <button class="auth-link" type="button">Esqueceu sua senha? Clique aqui para redefiní-la</button>
+      <button class="auth-link" type="button">Esqueceu sua senha? Clique aqui para redefini-la</button>
       <button class="auth-link" type="button" (click)="goToRegister()">
-        Ainda não possui cadastro? Cadastre-se aqui
+        Ainda nao possui cadastro? Cadastre-se aqui
       </button>
 
       <app-button type="submit" [disabled]="isSubmitting">Entrar</app-button>
@@ -31,8 +31,8 @@
     <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
       @if (registerStep === 1) {
         <app-input
-          label="Nome de usuário"
-          placeholder="Seu nome de usuário"
+          label="Nome de usuario"
+          placeholder="Seu nome de usuario"
           autocomplete="username"
           formControlName="nickname"
           [error]="fieldError('register', 'nickname')"
@@ -64,34 +64,37 @@
           [error]="fieldError('register', 'password')"
         />
 
-        <app-button type="button" (click)="goToNextRegisterStep()">Próximo</app-button>
+        <app-button type="button" (click)="goToNextRegisterStep()">Proximo</app-button>
       } @else {
         <div class="auth-avatar" aria-hidden="true">
           <span></span>
         </div>
 
         <app-input
-          label="Nome próprio"
+          label="Nome proprio"
           placeholder="Seu nome"
           autocomplete="name"
           formControlName="name"
           [error]="fieldError('register', 'name')"
         />
 
-        <app-input
+        <app-select
           label="Estado"
-          placeholder="Seu estado"
-          autocomplete="address-level1"
-          formControlName="state"
-          [error]="fieldError('register', 'state')"
+          placeholder="Selecione seu estado"
+          formControlName="stateId"
+          [loading]="isLoadingStates"
+          [options]="stateOptions"
+          [error]="fieldError('register', 'stateId')"
         />
 
-        <app-input
-          label="Município"
-          placeholder="Seu município"
-          autocomplete="address-level2"
-          formControlName="cityId"
-          [error]="fieldError('register', 'cityId')"
+        <app-select
+          label="Municipio"
+          placeholder="Selecione seu municipio"
+          formControlName="cityUser"
+          [loading]="isLoadingCities"
+          [isDisabled]="isCitySelectDisabled"
+          [options]="cityOptions"
+          [error]="fieldError('register', 'cityUser')"
         />
 
         <div class="auth-actions">
@@ -102,11 +105,18 @@
     </form>
 
     <button class="auth-link auth-link--footer" type="button" (click)="goToLogin()">
-      Já possui cadastro? Entrar
+      Ja possui cadastro? Entrar
     </button>
   }
 
-  @if (feedback) {
-    <p class="auth-feedback">{{ feedback }}</p>
-  }
 </app-auth-shell>
+
+@if (alert) {
+  <app-alert-popup
+    [type]="alert.type"
+    [title]="alert.title"
+    [message]="alert.message"
+    [actionLabel]="alert.actionLabel"
+    (dismissed)="dismissAlert()"
+  />
+}
