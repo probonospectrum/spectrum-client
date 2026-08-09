@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+.auth-page {
+  min-height: 100vh;
+  width: 100vw;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px;
+  background:
+    url('/Background.png') center bottom / min(1600px, 156vw) 637px no-repeat,
+    #3f6897;
+}
+
+.auth-card {
+  width: min(571px, 100%);
+  min-height: 579px;
+  padding: 66px 42px 47px;
+  border-radius: 14px;
+  background: #fcfcfc;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.auth-card--compact {
+  min-height: 625px;
+  padding-top: 43px;
+}
+
+.auth-logo {
+  margin: 0 0 43px;
+  color: #002d72;
+  font: 800 clamp(2.3rem, 8vw, 3.25rem) / 1 Arial, sans-serif;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.auth-card--compact .auth-logo {
+  margin-bottom: 28px;
+}
+
+@media (max-width: 620px) {
+  .auth-card {
+    padding: 40px 28px;
+  }
+}

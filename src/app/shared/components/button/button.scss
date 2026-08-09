@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.spectrum-button {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 6px;
+  background: #00488d;
+  color: #ffffff;
+  cursor: pointer;
+  font: 700 14px/1.2 Arial, sans-serif;
+  transition:
+    background-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.spectrum-button:hover:not(:disabled) {
+  background: #003a73;
+}
+
+.spectrum-button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
