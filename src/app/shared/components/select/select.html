@@ -1,0 +1,19 @@
+<label class="field">
+  <span class="field__label">{{ label }}</span>
+  <select
+    class="field__control"
+    [value]="value"
+    [disabled]="disabled || loading || isDisabled"
+    [class.field__control--invalid]="error"
+    (change)="updateValue($any($event.target).value)"
+    (blur)="markAsTouched()"
+  >
+    <option value="">{{ loading ? 'Carregando...' : placeholder }}</option>
+    @for (option of options; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </select>
+  @if (error) {
+    <span class="field__error">{{ error }}</span>
+  }
+</label>

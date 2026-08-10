@@ -1,0 +1,29 @@
+.settings-section {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 8px;
+  background: #fcfcfc;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+}
+
+.settings-section h2,
+.settings-section p {
+  margin: 0;
+}
+
+.settings-section h2 {
+  color: #072e5b;
+  font: 800 20px/1.2 Arial, sans-serif;
+}
+
+.settings-section p {
+  margin-top: 6px;
+  color: #767676;
+  font: 400 14px/1.4 Arial, sans-serif;
+}
+
+.settings-section__body {
+  display: grid;
+  gap: 12px;
+}

@@ -1,0 +1,28 @@
+<div class="alert-backdrop" role="presentation" (click)="dismiss()">
+  <section
+    class="alert-popup"
+    [class.alert-popup--success]="type === 'success'"
+    [class.alert-popup--error]="type === 'error'"
+    role="alertdialog"
+    aria-modal="true"
+    [attr.aria-label]="title"
+    (click)="$event.stopPropagation()"
+  >
+    <button class="alert-popup__close" type="button" aria-label="Fechar alerta" (click)="dismiss()">
+      x
+    </button>
+
+    <div class="alert-popup__icon" aria-hidden="true">
+      {{ type === 'success' ? 'OK' : '!' }}
+    </div>
+
+    <div class="alert-popup__content">
+      <h2>{{ title }}</h2>
+      <p>{{ message }}</p>
+    </div>
+
+    <button class="alert-popup__action" type="button" (click)="dismiss()">
+      {{ actionLabel }}
+    </button>
+  </section>
+</div>

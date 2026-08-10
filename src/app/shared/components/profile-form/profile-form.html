@@ -1,0 +1,71 @@
+<div class="profile-form">
+  <label>
+    Nome
+    <input
+      type="text"
+      [disabled]="!editing"
+      [ngModel]="profile.name"
+      (ngModelChange)="update('name', $event)"
+    />
+  </label>
+
+  <label>
+    Usuario
+    <input
+      type="text"
+      [disabled]="!editing"
+      [ngModel]="profile.nickname"
+      (ngModelChange)="update('nickname', $event)"
+    />
+  </label>
+
+  <label>
+    E-mail
+    <input
+      type="email"
+      [disabled]="!editing"
+      [ngModel]="profile.email"
+      (ngModelChange)="update('email', $event)"
+    />
+  </label>
+
+  <label>
+    Telefone
+    <input
+      type="tel"
+      [disabled]="!editing"
+      [ngModel]="profile.phone"
+      (ngModelChange)="update('phone', $event)"
+    />
+  </label>
+
+  <label>
+    Funcao
+    <input
+      type="text"
+      [disabled]="!editing"
+      [ngModel]="profile.role"
+      (ngModelChange)="update('role', $event)"
+    />
+  </label>
+
+  <label>
+    Cidade
+    <input
+      type="text"
+      [disabled]="!editing"
+      [ngModel]="profile.cityUser"
+      (ngModelChange)="update('cityUser', $event)"
+    />
+  </label>
+
+  <label class="profile-form__wide">
+    Bio
+    <textarea
+      rows="4"
+      [disabled]="!editing"
+      [ngModel]="profile.bio"
+      (ngModelChange)="update('bio', $event)"
+    ></textarea>
+  </label>
+</div>

@@ -1,0 +1,11 @@
+<section class="settings-section">
+  <header>
+    <h2>{{ title }}</h2>
+    @if (description) {
+      <p>{{ description }}</p>
+    }
+  </header>
+  <div class="settings-section__body">
+    <ng-content></ng-content>
+  </div>
+</section>

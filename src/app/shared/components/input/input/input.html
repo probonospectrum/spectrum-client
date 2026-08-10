@@ -1,0 +1,17 @@
+<label class="field">
+  <span class="field__label">{{ label }}</span>
+  <input
+    class="field__control"
+    [type]="type"
+    [value]="value"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    [attr.autocomplete]="autocomplete || null"
+    [class.field__control--invalid]="error"
+    (input)="updateValue($any($event.target).value)"
+    (blur)="markAsTouched()"
+  />
+  @if (error) {
+    <span class="field__error">{{ error }}</span>
+  }
+</label>

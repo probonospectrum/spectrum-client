@@ -1,0 +1,47 @@
+<app-social-shell
+  [user]="user"
+  [suggestions]="suggestions"
+  title="Notificacoes"
+  subtitle="Central de alertas"
+  (logout)="logout()"
+>
+  <button
+    class="notifications-action"
+    type="button"
+    social-actions
+    [disabled]="unreadCount === 0"
+    (click)="markAllRead()"
+  >
+    Marcar todas como lidas
+  </button>
+
+  <section class="notifications-summary" aria-label="Resumo de notificacoes">
+    <article>
+      <span>Nao lidas</span>
+      <strong>{{ unreadCount }}</strong>
+    </article>
+    <article>
+      <span>Total</span>
+      <strong>{{ notifications.length }}</strong>
+    </article>
+  </section>
+
+  @if (loading) {
+    <div class="notifications-loading" aria-label="Carregando notificacoes"></div>
+  } @else if (notifications.length) {
+    <section class="notifications-list" aria-label="Lista de notificacoes">
+      @for (notification of notifications; track trackNotification($index, notification)) {
+        <app-notification-item
+          [notification]="notification"
+          (markRead)="markRead($event)"
+          (remove)="remove($event)"
+        />
+      }
+    </section>
+  } @else {
+    <section class="notifications-empty">
+      <h2>Tudo em dia</h2>
+      <p>Nao existem notificacoes pendentes no momento.</p>
+    </section>
+  }
+</app-social-shell>
