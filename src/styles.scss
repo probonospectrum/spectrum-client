@@ -1,1 +1,46 @@
-/* You can add global styles to this file, and also import other style files */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --spectrum-blue-900: #072e5b;
+  --spectrum-blue-700: #00488d;
+  --spectrum-blue-500: #0b63b6;
+  --spectrum-surface: #fcfcfc;
+  --spectrum-background: #f8f8f8;
+  --spectrum-text: #303030;
+  --spectrum-muted: #767676;
+  --spectrum-border: #d9dde2;
+  --spectrum-radius: 8px;
+  --spectrum-shadow-card: 0 10px 24px rgba(0, 0, 0, 0.13);
+  --spectrum-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.24);
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #ecf3fa;
+  color: #172638;
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+app-root {
+  display: block;
+  min-height: 100vh;
+}

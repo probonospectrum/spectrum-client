@@ -1,0 +1,33 @@
+<app-auth-shell>
+  <section class="verify-email">
+    <div
+      class="verify-email__status"
+      [class.verify-email__status--success]="status === 'success'"
+      [class.verify-email__status--error]="status === 'error'"
+      aria-hidden="true"
+    >
+      @if (status === 'loading') {
+        <span class="verify-email__spinner"></span>
+      } @else {
+        {{ status === 'success' ? 'OK' : '!' }}
+      }
+    </div>
+
+    <div class="verify-email__content">
+      <h2>{{ title }}</h2>
+      <p>{{ message }}</p>
+    </div>
+
+    <app-button type="button" (click)="goToLogin()">Ir para login</app-button>
+  </section>
+</app-auth-shell>
+
+@if (alert) {
+  <app-alert-popup
+    [type]="alert.type"
+    [title]="alert.title"
+    [message]="alert.message"
+    [actionLabel]="alert.actionLabel"
+    (dismissed)="status === 'success' ? goToLogin() : dismissAlert()"
+  />
+}

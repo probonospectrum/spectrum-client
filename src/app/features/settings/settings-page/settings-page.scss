@@ -1,0 +1,73 @@
+.settings-save {
+  min-height: 42px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 16px;
+  background: #00488d;
+  color: #ffffff;
+  cursor: pointer;
+  font: 800 13px/1 Arial, sans-serif;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  color: #303030;
+  font: 800 14px/1 Arial, sans-serif;
+}
+
+input,
+select {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #cfd8e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #303030;
+  outline: 0;
+}
+
+input:disabled {
+  background: #f5f7f9;
+  color: #536273;
+}
+
+.settings-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #eef3f7;
+}
+
+.settings-session span {
+  color: #536273;
+  font-size: 14px;
+}
+
+.settings-session strong {
+  color: #072e5b;
+  font-size: 14px;
+}
+
+@media (max-width: 980px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .settings-save {
+    width: 100%;
+  }
+}
