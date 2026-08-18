@@ -44,17 +44,21 @@ export interface CreateUserResponse extends MessageResponse {
   user: LoggedUser;
 }
 
+declare const API_URL: string;
+
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private readonly sessionStorageKey = 'spectrum-auth-session';
 
+  private readonly apiUrl = API_URL + "/user";
+
   constructor(private readonly http: HttpClient) {}
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(USER_ROUTES.login, payload)
+      .post<LoginResponse>(this.apiUrl, payload)
       .pipe(timeout(15000), tap((response) => this.saveSession(response)));
   }
 

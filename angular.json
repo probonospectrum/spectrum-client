@@ -33,26 +33,21 @@
               "src/styles.scss"
             ]
           },
-          "configurations": {
+          "configurations":{
             "production": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
-                }
-              ],
-              "outputHashing": "all"
+              "define": {
+                "API_URL": "\"http://3.134.113.163:3000\""
+              }
+            },
+            "stg": {
+              "define": {
+                "API_URL": "\"http://3.134.113.163:3001\""
+              }
             },
             "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
+              "define": {
+                "API_URL": "\"http://localhost:3000\""
+              }
             }
           },
           "defaultConfiguration": "production"
