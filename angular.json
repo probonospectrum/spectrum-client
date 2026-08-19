@@ -36,12 +36,12 @@
           "configurations": {
             "production": {
               "define": {
-                "API_URL": "\"https://recall-agencies-assessed-andrea.trycloudflare.com\""
+                "API_URL": "\"spectrum-server-2qne.onrender.com\""
               }
             },
             "stg": {
               "define": {
-                "API_URL": "\"https://rebates-lens-completion-wrote.trycloudflare.com\""
+                "API_URL": "\"spectrum-server-2qne.onrender.com\""
               }
             },
             "development": {
