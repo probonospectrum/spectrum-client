@@ -1,0 +1,37 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.spectrum-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 6px;
+  background: #00488d;
+  color: #ffffff;
+  cursor: pointer;
+  font: 800 14px/1.2 Arial, sans-serif;
+  box-shadow: 0 12px 24px rgba(0, 72, 141, 0.22);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.spectrum-button:hover:not(:disabled) {
+  background: #003a73;
+  box-shadow: 0 16px 30px rgba(0, 72, 141, 0.28);
+  transform: translateY(-1px);
+}
+
+.spectrum-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.spectrum-button:disabled {
+  cursor: default;
+  opacity: 0.65;
+  box-shadow: none;
+}

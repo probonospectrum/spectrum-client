@@ -1,0 +1,43 @@
+<app-social-shell
+  [user]="user"
+  [suggestions]="suggestions"
+  title="Perfil"
+  subtitle="Informacoes da conta"
+  (logout)="logout()"
+>
+  @if (!editing) {
+    <button class="profile-action" type="button" social-actions (click)="editing = true">Editar perfil</button>
+  } @else {
+    <div class="profile-actions" social-actions>
+      <button type="button" (click)="cancel()">Cancelar</button>
+      <button type="button" [disabled]="saving" (click)="save()">
+        {{ saving ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  }
+
+  <section class="profile-card">
+    <aside class="profile-card__hero">
+      <span class="profile-avatar">{{ profile.avatarInitial }}</span>
+      <h2>{{ profile.name }}</h2>
+      <p>@{{ profile.nickname }}</p>
+      <small>{{ profile.role }}</small>
+    </aside>
+
+    <app-profile-form
+      [profile]="profile"
+      [editing]="editing"
+      (profileChange)="profile = $event"
+    />
+  </section>
+
+  @if (showSuccess) {
+    <app-alert-popup
+      type="success"
+      title="Perfil salvo"
+      message="As informacoes foram atualizadas localmente para demonstracao."
+      actionLabel="Ok"
+      (dismissed)="showSuccess = false"
+    />
+  }
+</app-social-shell>

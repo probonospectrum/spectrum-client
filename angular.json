@@ -35,24 +35,19 @@
           },
           "configurations": {
             "production": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
-                }
-              ],
-              "outputHashing": "all"
+              "define": {
+                "API_URL": "\"spectrum-server-2qne.onrender.com\""
+              }
+            },
+            "stg": {
+              "define": {
+                "API_URL": "\"spectrum-server-2qne.onrender.com\""
+              }
             },
             "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
+              "define": {
+                "API_URL": "\"http://localhost:3000\""
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -62,6 +57,9 @@
           "configurations": {
             "production": {
               "buildTarget": "spectrum-client:build:production"
+            },
+            "stg": {
+              "buildTarget": "spectrum-client:build:stg"
             },
             "development": {
               "buildTarget": "spectrum-client:build:development"

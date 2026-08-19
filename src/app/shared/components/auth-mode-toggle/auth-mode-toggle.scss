@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.auth-progress {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.auth-progress__bar {
+  height: 7px;
+  border-radius: 999px;
+  background: #d9e3ee;
+  overflow: hidden;
+}
+
+.auth-progress__bar--active {
+  background: linear-gradient(90deg, #00488d 0%, #0f7a4f 100%);
+  box-shadow: 0 6px 16px rgba(0, 72, 141, 0.18);
+}
