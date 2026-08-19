@@ -33,17 +33,9 @@
               "src/styles.scss"
             ]
           },
-          "configurations":{
-            "production": {
-              "define": {
-                "API_URL": "\"https://recall-agencies-assessed-andrea.trycloudflare.com\""
-              }
-            },
-          "stg": {
-            "define": {
-              "API_URL": "\"https://rebates-lens-completion-wrote.trycloudflare.com\""
-            }
-          },
+          "configurations": {
+            "production": {},
+            "stg": {},
             "development": {
               "define": {
                 "API_URL": "\"http://localhost:3000\""

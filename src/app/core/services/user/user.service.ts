@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap, timeout } from 'rxjs/operators';
-import { USER_ROUTES } from '../../constants/api-routes';
+import { API_BASE_URL } from '../../constants/api-routes';
 
 export interface LoginRequest {
   identifier: string;
@@ -44,15 +44,13 @@ export interface CreateUserResponse extends MessageResponse {
   user: LoggedUser;
 }
 
-declare const API_URL: string;
-
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private readonly sessionStorageKey = 'spectrum-auth-session';
 
-  private readonly apiUrl = API_URL + "/user";
+  private readonly apiUrl = `${API_BASE_URL}/user`;
 
   constructor(private readonly http: HttpClient) {}
 
