@@ -36,14 +36,14 @@
           "configurations":{
             "production": {
               "define": {
-                "API_URL": "\"http://3.134.113.163:3000\""
+                "API_URL": "\"https://recall-agencies-assessed-andrea.trycloudflare.com\""
               }
             },
-            "stg": {
-              "define": {
-                "API_URL": "\"http://3.134.113.163:3001\""
-              }
-            },
+          "stg": {
+            "define": {
+              "API_URL": "\"https://rebates-lens-completion-wrote.trycloudflare.com\""
+            }
+          },
             "development": {
               "define": {
                 "API_URL": "\"http://localhost:3000\""
