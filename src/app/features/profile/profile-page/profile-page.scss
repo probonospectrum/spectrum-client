@@ -1,82 +1,190 @@
-.profile-action,
-.profile-actions button {
-  min-height: 42px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 16px;
-  background: #00488d;
-  color: #ffffff;
-  cursor: pointer;
-  font: 800 13px/1 Arial, sans-serif;
+// Profile Header
+.profile-header {
+  border-radius: 0;
+  overflow: hidden;
+  background: #ffffff;
+  border-bottom: 1px solid #e8ecf0;
 }
 
-.profile-actions {
-  display: flex;
-  gap: 10px;
+.profile-header__cover {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
 }
 
-.profile-actions button:first-child {
-  background: #eef5fb;
-  color: #00488d;
+.profile-header__cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.profile-card {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 18px;
-  padding: 22px;
-  border-radius: 8px;
-  background: #fcfcfc;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+.profile-header__info {
+  position: relative;
+  padding: 0 28px 28px;
 }
 
-.profile-card__hero {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: 9px;
-  padding: 18px;
-  border-radius: 8px;
-  background: #eef3f7;
-  text-align: center;
-}
-
-.profile-avatar {
-  width: 96px;
-  height: 96px;
+.profile-header__avatar {
+  position: absolute;
+  top: -54px;
+  left: 28px;
+  width: 108px;
+  height: 108px;
   display: grid;
   place-items: center;
   border-radius: 50%;
+  border: 4px solid #ffffff;
   background: #dbe8f2;
   color: #072e5b;
-  font: 800 36px/1 Arial, sans-serif;
+  font: 800 40px/1 Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.profile-card h2,
-.profile-card p {
+.profile-header__details {
+  padding-top: 64px;
+}
+
+.profile-header__name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-header__name {
   margin: 0;
+  color: #1a2b3c;
+  font: 800 20px/1.2 Arial, sans-serif;
 }
 
-.profile-card h2 {
-  color: #072e5b;
-  font: 800 22px/1.15 Arial, sans-serif;
+.profile-header__username {
+  margin: 2px 0 0;
+  color: #8c9baa;
+  font-size: 14px;
 }
 
-.profile-card p,
-.profile-card small {
-  color: #536273;
-}
+.profile-header__config-btn {
+  min-height: 36px;
+  border: 1.5px solid #c8d3de;
+  border-radius: 18px;
+  padding: 0 20px;
+  background: transparent;
+  color: #303030;
+  cursor: pointer;
+  font: 600 13px/1 Arial, sans-serif;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
 
-@media (max-width: 860px) {
-  .profile-card {
-    grid-template-columns: 1fr;
+  &:hover {
+    background: #f4f7fa;
+    border-color: #a0b4c8;
   }
 }
 
-@media (max-width: 540px) {
-  .profile-action,
-  .profile-actions,
-  .profile-actions button {
-    width: 100%;
+.profile-header__meta {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #8c9baa;
+  font-size: 14px;
+}
+
+.profile-header__joined {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-header__icon {
+  flex-shrink: 0;
+}
+
+.profile-header__stats {
+  margin-top: 12px;
+  display: flex;
+  gap: 24px;
+  color: #4c4c4c;
+  font-size: 14px;
+
+  strong {
+    color: #1a2b3c;
+    font-weight: 800;
+    margin-left: 4px;
+  }
+}
+
+// Profile Tabs
+.profile-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  border-bottom: 1px solid #e8ecf0;
+  background: #ffffff;
+}
+
+.profile-tabs__tab {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #8c9baa;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: #4c4c4c;
+  }
+
+  &--active {
+    color: #1a2b3c;
+    border-bottom-color: #1a2b3c;
+  }
+}
+
+.profile-tabs__icon {
+  display: block;
+}
+
+// Profile Feed
+.profile-feed {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-feed__empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: #8c9baa;
+  font-size: 15px;
+  background: #ffffff;
+}
+
+// Responsive
+@media (max-width: 600px) {
+  .profile-header__cover {
+    height: 140px;
+  }
+
+  .profile-header__avatar {
+    width: 80px;
+    height: 80px;
+    top: -40px;
+    font-size: 30px;
+  }
+
+  .profile-header__details {
+    padding-top: 48px;
+  }
+
+  .profile-header__name-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .profile-header__config-btn {
+    align-self: flex-start;
   }
 }

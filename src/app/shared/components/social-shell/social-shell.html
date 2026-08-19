@@ -49,25 +49,29 @@
         </a>
       </nav>
 
-      <a class="social-user" routerLink="/perfil">
-        <span class="social-avatar">{{ userInitial }}</span>
-        <span class="social-user__text">
-          <strong>{{ displayName }}</strong>
-          <small>@{{ nickname }}</small>
-        </span>
-        <span class="social-user__more" aria-hidden="true">...</span>
-      </a>
-      <button class="social-nav__item" type="button" (click)="logout.emit()">Sair</button>
+      <div class="social-sidebar__bottom">
+        <a class="social-user" routerLink="/perfil">
+          <span class="social-avatar">{{ userInitial }}</span>
+          <span class="social-user__text">
+            <strong>{{ displayName }}</strong>
+            <small>@{{ nickname }}</small>
+          </span>
+          <span class="social-user__more" aria-hidden="true">...</span>
+        </a>
+        <button class="social-nav__item" type="button" (click)="logout.emit()">Sair</button>
+      </div>
     </aside>
 
     <section class="social-content" aria-labelledby="social-title">
-      <div class="social-content__header">
-        <div>
-          <p>{{ title }}</p>
-          <h1 id="social-title">{{ subtitle }}</h1>
+      @if (showContentHeader) {
+        <div class="social-content__header">
+          <div>
+            <p>{{ title }}</p>
+            <h1 id="social-title">{{ subtitle }}</h1>
+          </div>
+          <ng-content select="[social-actions]"></ng-content>
         </div>
-        <ng-content select="[social-actions]"></ng-content>
-      </div>
+      }
 
       <ng-content></ng-content>
     </section>

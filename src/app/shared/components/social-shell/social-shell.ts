@@ -15,6 +15,7 @@ export class SocialShell {
   @Input() suggestions: SuggestedProfile[] = [];
   @Input() title = 'Publicacoes';
   @Input() subtitle = 'Atualizacoes da comunidade';
+  @Input() showContentHeader = true;
   @Output() logout = new EventEmitter<void>();
 
   get displayName(): string {
