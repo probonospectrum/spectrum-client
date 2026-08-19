@@ -5,8 +5,8 @@ const configuration = branchName === 'stg' ? 'stg' : 'production';
 
 const apiUrl =
   configuration === 'stg'
-    ? 'https://rebates-lens-completion-wrote.trycloudflare.com'
-    : 'https://recall-agencies-assessed-andrea.trycloudflare.com';
+    ? 'spectrum-server-2qne.onrender.com'
+    : 'spectrum-server-2qne.onrender.com';
 
 const command = process.execPath;
 
