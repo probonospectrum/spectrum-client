@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -33,6 +33,7 @@ export class LoginPage implements OnInit {
   private readonly cityService = inject(CityService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   mode: AuthMode = 'login';
   registerStep = 1;
@@ -143,12 +144,12 @@ export class LoginPage implements OnInit {
         this.showAlert('success', 'Login realizado', response.message, 'Ir para home', '/home');
       },
       error: (error: unknown) => {
+        this.isSubmitting = false;
         this.showAlert(
           'error',
           'Nao foi possivel entrar',
           this.getErrorMessage(error, 'Verifique seu usuario, email e senha.'),
         );
-        this.isSubmitting = false;
       },
     });
   }
@@ -175,16 +176,16 @@ export class LoginPage implements OnInit {
       })
       .subscribe({
         next: (response) => {
-          this.showAlert('success', 'Cadastro criado', response.message, 'Entendi');
           this.isSubmitting = false;
+          this.showAlert('success', 'Cadastro criado', response.message, 'Entendi');
         },
         error: (error: unknown) => {
+          this.isSubmitting = false;
           this.showAlert(
             'error',
             'Cadastro nao realizado',
             this.getErrorMessage(error, 'Verifique os dados informados e tente novamente.'),
           );
-          this.isSubmitting = false;
         },
       });
   }
@@ -237,10 +238,11 @@ export class LoginPage implements OnInit {
       next: (states) => {
         this.states = states;
         this.isLoadingStates = false;
+        this.changeDetector.detectChanges();
       },
       error: () => {
-        this.showAlert('error', 'Estados indisponiveis', 'Nao foi possivel carregar os estados.');
         this.isLoadingStates = false;
+        this.showAlert('error', 'Estados indisponiveis', 'Nao foi possivel carregar os estados.');
       },
     });
   }
@@ -258,10 +260,11 @@ export class LoginPage implements OnInit {
       next: (cities) => {
         this.cities = cities;
         this.isLoadingCities = false;
+        this.changeDetector.detectChanges();
       },
       error: () => {
-        this.showAlert('error', 'Municipios indisponiveis', 'Nao foi possivel carregar os municipios.');
         this.isLoadingCities = false;
+        this.showAlert('error', 'Municipios indisponiveis', 'Nao foi possivel carregar os municipios.');
       },
     });
   }
@@ -280,6 +283,7 @@ export class LoginPage implements OnInit {
       actionLabel,
     };
     this.alertRedirectUrl = redirectUrl;
+    this.changeDetector.detectChanges();
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

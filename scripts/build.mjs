@@ -1,0 +1,32 @@
+import { spawnSync } from 'node:child_process';
+
+const branchName = process.env.VERCEL_GIT_COMMIT_REF;
+const configuration = branchName === 'stg' ? 'stg' : 'production';
+
+const apiUrl =
+  configuration === 'stg'
+    ? 'https://rebates-lens-completion-wrote.trycloudflare.com'
+    : 'https://recall-agencies-assessed-andrea.trycloudflare.com';
+
+const command = process.execPath;
+
+const args = [
+  'node_modules/@angular/cli/bin/ng.js',
+  'build',
+  `--configuration=${configuration}`,
+  `--define=API_URL=${JSON.stringify(apiUrl.replace(/\/+$/, ''))}`,
+];
+
+console.log(`Branch: ${branchName}`);
+console.log(`Configuration: ${configuration}`);
+console.log(`API_URL: ${apiUrl}`);
+
+const result = spawnSync(command, args, {
+  stdio: 'inherit',
+});
+
+if (result.error) {
+  console.error(result.error.message);
+}
+
+process.exit(result.status ?? 1);

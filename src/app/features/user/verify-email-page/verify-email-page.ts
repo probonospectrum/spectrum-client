@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
@@ -17,6 +17,7 @@ export class VerifyEmailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly userWebsocketService = inject(UserWebsocketService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   status: VerificationStatus = 'loading';
   title = 'Verificando email';
@@ -73,5 +74,6 @@ export class VerifyEmailPage implements OnInit {
       message,
       actionLabel: type === 'success' ? 'Entrar na conta' : 'Entendi',
     };
+    this.changeDetector.detectChanges();
   }
 }
