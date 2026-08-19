@@ -5,8 +5,8 @@ const configuration = branchName === 'stg' ? 'stg' : 'production';
 
 const apiUrl =
   configuration === 'stg'
-    ? 'spectrum-server-2qne.onrender.com'
-    : 'spectrum-server-2qne.onrender.com';
+    ? 'https://spectrum-server-2qne.onrender.com'
+    : 'https://spectrum-server-2qne.onrender.com/';
 
 const command = process.execPath;
 
