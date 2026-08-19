@@ -58,12 +58,12 @@ export class UserService {
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(this.apiUrl, payload)
+      .post<LoginResponse>(`${this.apiUrl}/login`, payload)
       .pipe(timeout(15000), tap((response) => this.saveSession(response)));
   }
 
   create(payload: CreateUserRequest): Observable<CreateUserResponse> {
-    return this.http.post<CreateUserResponse>(USER_ROUTES.create, payload).pipe(timeout(15000));
+    return this.http.post<CreateUserResponse>(`${this.apiUrl}`, payload).pipe(timeout(15000));
   }
 
   getCurrentUser(): LoggedUser | null {
