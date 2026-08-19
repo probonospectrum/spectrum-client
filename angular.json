@@ -34,8 +34,16 @@
             ]
           },
           "configurations": {
-            "production": {},
-            "stg": {},
+            "production": {
+              "define": {
+                "API_URL": "\"https://recall-agencies-assessed-andrea.trycloudflare.com\""
+              }
+            },
+            "stg": {
+              "define": {
+                "API_URL": "\"https://rebates-lens-completion-wrote.trycloudflare.com\""
+              }
+            },
             "development": {
               "define": {
                 "API_URL": "\"http://localhost:3000\""
@@ -49,6 +57,9 @@
           "configurations": {
             "production": {
               "buildTarget": "spectrum-client:build:production"
+            },
+            "stg": {
+              "buildTarget": "spectrum-client:build:stg"
             },
             "development": {
               "buildTarget": "spectrum-client:build:development"
