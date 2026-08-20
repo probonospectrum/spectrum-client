@@ -36,12 +36,12 @@
           "configurations": {
             "production": {
               "define": {
-                "API_URL": "\"spectrum-server-2qne.onrender.com\""
+                "API_URL": "\"https://spectrum-server-2qne.onrender.com\""
               }
             },
             "stg": {
               "define": {
-                "API_URL": "\"spectrum-server-2qne.onrender.com\""
+                "API_URL": "\"https://spectrum-server-2qne.onrender.com\""
               }
             },
             "development": {
