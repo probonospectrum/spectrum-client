@@ -1,0 +1,36 @@
+name: Validate Spectrum Server
+
+on:
+  pull_request:
+    branches:
+      - stg
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Spectrum PR Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v7
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Validar build da aplicação
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          cache-from: type=gha,scope=validation
+          cache-to: type=gha,mode=max,scope=validation
