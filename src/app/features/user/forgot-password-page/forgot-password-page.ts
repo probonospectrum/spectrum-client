@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
@@ -13,6 +13,7 @@ import { SpectrumInput } from '../../../shared/components/input/input/input';
     AuthShell,
     Button,
     SpectrumInput,
+    RouterLink
   ],
   templateUrl: './forgot-password-page.html',
   styleUrl: './forgot-password-page.scss',

@@ -11,9 +11,13 @@
       <span aria-hidden="true">Q</span>
     </label>
 
-    <a class="social-create" routerLink="/publicacoes/nova" aria-label="Criar publicacao">
+    <button 
+      class="social-create" 
+      type="button" 
+      aria-label="Criar publicacao"
+      (click)="createPost.emit()" >
       <span aria-hidden="true">+</span>
-    </a>
+    </button>
   </header>
 
   <div class="social-layout">

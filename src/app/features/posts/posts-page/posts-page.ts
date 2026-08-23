@@ -5,10 +5,11 @@ import { PostService, SpectrumPost } from '../../../core/services/posts/post.ser
 import { UserService } from '../../../core/services/user/user.service';
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-posts-page',
-  imports: [CommonModule, RouterLink, SocialShell, PostCard],
+  imports: [CommonModule, FormsModule, RouterLink, SocialShell, PostCard],
   templateUrl: './posts-page.html',
   styleUrl: './posts-page.scss',
 })
@@ -20,6 +21,8 @@ export class PostsPage {
   readonly user = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
   posts = this.postService.getPosts();
+  showCreatePost = false;
+  newPostContent = '';
   reportPost: SpectrumPost | null = null;
   selectedReason = 'Discurso de odio';
 
@@ -33,6 +36,7 @@ export class PostsPage {
   @HostListener('document:keydown.escape')
   closeOnEscape(): void {
     this.reportPost = null;
+    this.closeCreatePost();
   }
 
   logout(): void {
@@ -48,4 +52,41 @@ export class PostsPage {
   confirmReport(): void {
     this.reportPost = null;
   }
+
+  // Adicionando os dados do usuário
+  get displayName(): string {
+    return this.user?.name || 'Usuario Spectrum';
+  }
+
+  get nickname(): string {
+    return this.user?.nickname || 'spectrum';
+  }
+
+  get userInitial(): string {
+    return this.displayName.charAt(0).toUpperCase();
+  }
+  
+  // Funções para a abrir e fechar o modal de criação do post
+  openCreatePost(): void {
+    this.showCreatePost = true;
+  }
+
+  closeCreatePost(): void {
+    this.showCreatePost = false;
+    this.newPostContent = '';
+  }
+
+// Processo simples de publicação/criação do post (sem API)
+  publishPost(): void {
+    const content = this.newPostContent.trim();
+
+    if (!content) {
+      return;
+    }
+
+    console.log('Publicação criada:', content);
+
+    this.closeCreatePost();
+  }
+
 }
