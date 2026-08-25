@@ -41,7 +41,7 @@ export class PostService {
   private readonly storageKey = 'spectrum-mock-posts';
 
   readonly suggestions: SuggestedProfile[] = [
-    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'J', verified: true },
+    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'https://i.pinimg.com/236x/d1/e3/d2/d1e3d2a12bc3d0221898c4391dffcfff.jpg', verified: true },
     { name: 'Carlao da ZN', nickname: 'carlao.zn', initial: 'C', verified: true },
     { name: 'Luana Prado', nickname: 'luanapradoofc', initial: 'L', verified: true },
     { name: 'Gustavo Lima', nickname: 'gustavolimaevc', initial: 'G', verified: true },
