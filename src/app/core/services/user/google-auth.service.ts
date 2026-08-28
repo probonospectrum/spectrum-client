@@ -4,7 +4,7 @@ import { googleAuthConfig } from '../../config/auth-config';
 
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
-  private readonly oauthService = inject(OAuthService);
+  private readonly oauthService : OAuthService = inject(OAuthService);
 
   constructor() {
     this.oauthService.configure(googleAuthConfig);
