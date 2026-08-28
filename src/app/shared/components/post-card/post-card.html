@@ -1,81 +1,74 @@
-<article class="post-card">
-  <header class="post-card__header">
-    <span class="post-card__avatar">{{ post.authorInitial }}</span>
-    <div class="post-card__author">
-      <strong>{{ post.authorName }}</strong>
-      <span>@{{ post.authorNickname }}</span>
-    </div>
-    <button class="post-card__more" type="button" aria-label="Reportar publicacao" (click)="report.emit(post)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
-      </svg>
-    </button>
-  </header>
+<article class="post-card"> 
+  <header class="post-card__header"> 
+    <span class="post-card__avatar">{{ post.authorInitial }}</span> 
+    <div class="post-card__author"> 
+      <strong>{{ post.authorName }}</strong> 
+      <span>@{{ post.authorNickname }}</span> 
+    </div> 
+    <button class="post-card__more" type="button" aria-label="Reportar publicacao" (click)="report.emit(post)"> 
+      <span class="material-symbols-outlined">more_horiz</span>
+    </button> 
+  </header> 
+ 
+  <h2>{{ post.title }}</h2> 
+  <p class="post-card__copy">{{ post.content }}</p> 
+ 
+  <div class="post-card__location"> 
+    <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+    {{ post.authorCity }} 
+  </div> 
+ 
+  <div 
+    class="post-card__media" 
+    [class.post-card__media--text]="post.mediaType === 'text'" 
+    [class.post-card__media--image]="post.mediaType === 'image'" 
+  > 
+    @if (post.mediaType === 'video') { 
+      <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>
+    } @else if (post.mediaType === 'image') { 
+      <span>Registro da comunidade</span> 
+    } @else { 
+      <span>Publicacao em texto</span> 
+    } 
+  </div> 
+ 
+  @if (post.tags.length) { 
+    <div class="post-card__tags" aria-label="Tags"> 
+      @for (tag of post.tags; track tag) { 
+        <span>#{{ tag }}</span> 
+      } 
+    </div> 
+  } 
+ 
+  <footer class="post-card__footer"> 
+    <span>{{ post.publishedAtLabel }}</span> 
+    <div class="post-card__actions" aria-label="Interacoes"> 
+      <button 
+        type="button" 
+        [class.post-card__action--active]="liked" 
+        aria-label="Curtir publicacao" 
+        (click)="toggleLike()" 
+      > 
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+        {{ likes }} 
+      </button> 
 
-  <h2>{{ post.title }}</h2>
-  <p class="post-card__copy">{{ post.content }}</p>
+      <button type="button" aria-label="Comentar publicacao"> 
+        <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+        {{ post.comments }} 
+      </button> 
 
-  <div class="post-card__location">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-      <circle cx="12" cy="10" r="3"/>
-    </svg>
-    {{ post.authorCity }}
-  </div>
+      <button type="button" aria-label="Compartilhar publicacao"> 
+        <span class="material-symbols-outlined" aria-hidden="true">share</span>
+        {{ post.shares }} 
+      </button> 
 
-  <div
-    class="post-card__media"
-    [class.post-card__media--text]="post.mediaType === 'text'"
-    [class.post-card__media--image]="post.mediaType === 'image'"
-  >
-    @if (post.mediaType === 'video') {
-      <span class="post-card__play" aria-hidden="true"></span>
-    } @else if (post.mediaType === 'image') {
-      <span>Registro da comunidade</span>
-    } @else {
-      <span>Publicacao em texto</span>
-    }
-  </div>
-
-  <footer class="post-card__footer">
-    <span class="post-card__date">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-      </svg>
-      {{ post.publishedAtLabel }}
-    </span>
-    <div class="post-card__actions" aria-label="Interacoes">
-      <button
-        type="button"
-        [class.post-card__action--active]="liked"
-        aria-label="Curtir publicacao"
-        (click)="toggleLike()"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        {{ likes }}
-      </button>
-      <button type="button" aria-label="Comentar publicacao">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        {{ post.comments }}
-      </button>
-      <button type="button" aria-label="Compartilhar publicacao">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="22" y1="2" x2="11" y2="13"/>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-        {{ post.shares }}
-      </button>
-      <button type="button" [class.post-card__action--saved]="isSaved" aria-label="Salvar publicacao" (click)="toggleSaved()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-        </svg>
-        {{ isSaved ? 'Salvo' : 'Salvar' }}
-      </button>
-    </div>
-  </footer>
+      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()"> 
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ isSaved ? 'bookmark' : 'bookmark_border' }}
+        </span>
+        {{ isSaved ? 'Salvo' : 'Salvar' }} 
+      </button> 
+    </div> 
+  </footer> 
 </article>

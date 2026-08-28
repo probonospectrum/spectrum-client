@@ -31,13 +31,11 @@
   text-decoration: none;
 }
 
-.social-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  width: max-content;
-  color: #ffffff;
-  font: 800 14px/1 Arial, sans-serif;
+.logo {
+  width: 120px;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .social-search {
@@ -155,6 +153,7 @@
   color: #4c4c4c;
   cursor: pointer;
   text-align: left;
+  transform: translateY(150px);
 }
 
 .social-avatar {
@@ -289,9 +288,5 @@
     height: auto;
     border-right: 0;
     border-bottom: 1px solid #d9dde2;
-  }
-
-  .social-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

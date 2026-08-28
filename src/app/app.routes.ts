@@ -57,4 +57,10 @@ export const routes: Routes = [
       import('./features/settings/settings-page/settings-page').then((m) => m.SettingsPage),
     canActivate: [authGuard],
   },
+{
+  path: 'interesses',
+  loadComponent: () =>
+    import('./features/interests/interests-page/interests-page')
+      .then((m) => m.InterestsPage),
+},
 ];

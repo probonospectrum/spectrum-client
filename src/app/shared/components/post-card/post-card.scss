@@ -89,9 +89,14 @@
   color: #8c9baa;
   font: 500 13px/1 Arial, sans-serif;
 
-  svg {
-    flex-shrink: 0;
-  }
+.post-card__location .material-symbols-outlined {
+  position: static;
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  font-size: 20px;
 }
 
 .post-card__media {
@@ -122,25 +127,10 @@
   background: #f4f7fa;
 }
 
-.post-card__play {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border: 2px solid rgba(7, 46, 91, 0.35);
-  border-radius: 50%;
-  transition: border-color 0.15s;
-}
 
-.post-card__play::before {
-  content: '';
-  display: block;
-  width: 0;
-  height: 0;
-  margin-left: 3px;
-  border-top: 9px solid transparent;
-  border-bottom: 9px solid transparent;
-  border-left: 14px solid #536273;
+.post-card__play {
+  color: #536273;
+  font-size: 70px;
 }
 
 .post-card__footer {

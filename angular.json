@@ -3,7 +3,7 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "d8d317fc-9fe3-476a-8ce8-4af2ffa976da"
+    "analytics": false
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -36,24 +36,19 @@
           },
           "configurations": {
             "production": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
-                }
-              ],
-              "outputHashing": "all"
+              "define": {
+                "API_URL": "\"https://spectrum-server-2qne.onrender.com\""
+              }
+            },
+            "stg": {
+              "define": {
+                "API_URL": "\"https://spectrum-server-2qne.onrender.com\""
+              }
             },
             "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
+              "define": {
+                "API_URL": "\"http://localhost:3000\""
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -63,6 +58,9 @@
           "configurations": {
             "production": {
               "buildTarget": "spectrum-client:build:production"
+            },
+            "stg": {
+              "buildTarget": "spectrum-client:build:stg"
             },
             "development": {
               "buildTarget": "spectrum-client:build:development"
