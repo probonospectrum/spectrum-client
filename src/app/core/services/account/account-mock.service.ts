@@ -11,6 +11,9 @@ export interface SpectrumNotification {
   dateLabel: string;
   read: boolean;
   actionLabel?: string;
+  actorName?: string;
+  actorHandle?: string;
+  actorAvatarUrl?: string;
 }
 
 export interface ProfileData {
@@ -42,50 +45,58 @@ export interface SettingsData {
 })
 export class AccountMockService {
   private notifications: SpectrumNotification[] = [
-    {
-      id: 'nt-1',
-      type: 'alert',
-      title: 'Nova movimentacao na sua cidade',
-      description: 'Uma publicacao em Xique-Xique recebeu muitas interacoes nos ultimos minutos.',
-      dateLabel: 'Hoje, 09:42',
-      read: false,
-      actionLabel: 'Ver publicacao',
-    },
-    {
-      id: 'nt-2',
-      type: 'message',
-      title: 'Luana Prado respondeu voce',
-      description: 'Elu comentou na conversa sobre achados e perdidos da comunidade.',
-      dateLabel: 'Hoje, 08:16',
-      read: false,
-      actionLabel: 'Abrir conversa',
-    },
-    {
-      id: 'nt-3',
-      type: 'confirmation',
-      title: 'Perfil atualizado',
-      description: 'Suas informacoes foram salvas com sucesso no Spectrum.',
-      dateLabel: 'Ontem, 18:30',
-      read: true,
-    },
-    {
-      id: 'nt-4',
-      type: 'system',
-      title: 'Melhoria nas notificacoes',
-      description: 'Agora voce pode filtrar alertas importantes e novidades separadamente.',
-      dateLabel: '07/08/2026, 12:05',
-      read: true,
-    },
-    {
-      id: 'nt-5',
-      type: 'movement',
-      title: 'Seu post esta em destaque',
-      description: 'A publicacao sobre seguranca no bairro teve 184 curtidas e 14 comentarios.',
-      dateLabel: '06/08/2026, 21:11',
-      read: true,
-      actionLabel: 'Revisar metricas',
-    },
-  ];
+  {
+    id: 'nt-1',
+    type: 'alert',
+    title: 'Nova movimentacao na sua cidade',
+    description: 'Uma publicacao em Xique-Xique recebeu muitas interacoes nos ultimos minutos.',
+    dateLabel: 'Hoje, 09:42',
+    read: false,
+    actionLabel: 'Ver publicacao',
+    actorName: 'Xique-Xique - BA',
+    actorHandle: 'Xique_xique_oficial',
+  },
+  {
+    id: 'nt-2',
+    type: 'message',
+    title: 'Luana Prado respondeu voce',
+    description: 'Elu comentou na conversa sobre achados e perdidos da comunidade.',
+    dateLabel: 'Hoje, 08:16',
+    read: false,
+    actionLabel: 'Abrir conversa',
+    actorName: 'Luana Prado',
+    actorHandle: 'luanapradoofc',
+  },
+  {
+    id: 'nt-3',
+    type: 'confirmation',
+    title: 'Perfil atualizado',
+    description: 'Suas informacoes foram salvas com sucesso no Spectrum.',
+    dateLabel: 'Ontem, 18:30',
+    read: true,
+    actorName: 'Spectrum',
+  },
+  {
+    id: 'nt-4',
+    type: 'system',
+    title: 'Melhoria nas notificacoes',
+    description: 'Agora voce pode filtrar alertas importantes e novidades separadamente.',
+    dateLabel: '07/08/2026, 12:05',
+    read: true,
+    actorName: 'Spectrum',
+  },
+  {
+    id: 'nt-5',
+    type: 'movement',
+    title: 'Seu post esta em destaque',
+    description: 'A publicacao sobre seguranca no bairro teve 184 curtidas e 14 comentarios.',
+    dateLabel: '06/08/2026, 21:11',
+    read: true,
+    actionLabel: 'Revisar metricas',
+    actorName: 'Luara-Romeiro',
+    actorHandle: 'luara_romeiro',
+  },
+];
 
   private settings: SettingsData = {
     language: 'pt-BR',

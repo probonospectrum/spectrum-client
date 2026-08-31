@@ -1,191 +1,140 @@
 :host {
   display: block;
-  width: 100%;
-  min-height: 100vh;
 }
 
-.interests-page {
-  width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
+.interests-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
   box-sizing: border-box;
-  background: #fcfcfc;
-  background-attachment: fixed;
-  overflow-x: hidden;
+  background: rgba(4, 18, 38, 0.35);
+  animation: interests-overlay-in 0.15s ease;
 }
 
-.social-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: 210px minmax(260px, 638px) 72px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 76px;
-  padding: 10px clamp(18px, 4vw, 42px);
-  background: #072e5b;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.22);
-}
-
-.social-logo {
-  text-decoration: none;
-}
-
-.logo {
-  width: 120px;
-  height: auto;
-  max-width: 100%;
-  object-fit: contain;
-}
-
-.social-search {
-  display: grid;
-  grid-template-columns: 1fr 28px;
-  align-items: center;
-  height: 36px;
-  padding: 0 10px 0 18px;
-  border-radius: 999px;
+.interests-modal {
+  position: relative;
+  width: min(620px, 100%);
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
+  padding: 20px 24px 20px;
+  box-sizing: border-box;
   background: #ffffff;
-  color: #5c6269;
-
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 32, 72, 0.28), 0 2px 8px rgba(0, 32, 72, 0.10);
+  animation: interests-modal-in 0.2s ease;
 }
 
-input{
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: #5c6269;
-  font: 400 16px Arial, sans-serif;
-}
-
-.sr-only {
+.interests-modal__close {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-}
-
-.social-create {
-  justify-self: end;
-  width: 32px;
-  height: 32px;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
+  border: 0;
   border-radius: 8px;
-  background: #d9dde2;
-  color: #072e5b;
-  font: 800 28px/1 Arial, sans-serif;
+  background: #eef5fb;
+  color: #00488d;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.15s ease;
 }
 
-.interests {
-  width: 100%;
-  min-height: calc(100vh - 90px);
-  margin: 0;
-  padding: 48px clamp(24px, 6vw, 96px) 64px;
-  box-sizing: border-box;
+.interests-modal__close:hover {
+  background: #dce8f3;
 }
 
 .interests__header {
-  width: min(1100px, 100%);
-  margin: 0 auto 42px;
+  width: 100%;
+  margin: 0 0 14px;
   display: grid;
-  gap: 12px;
+  gap: 7px;
+  padding-right: 34px;
 }
 
 .interests__eyebrow {
   margin: 0;
   color: #002d72;
-  font: 800 12px/1 Arial, sans-serif;
+  font: 800 10px/1 Arial, sans-serif;
   letter-spacing: 0.08em;
 }
 
 .interests__header h1 {
   margin: 0;
   color: #002d72;
-  font: 800 clamp(2.2rem, 5vw, 4rem) / 1.05 Arial, sans-serif;
+  font: 700 clamp(1.2rem, 2.4vw, 1.6rem)/1.15 Arial, sans-serif;
 }
 
 .interests__header p {
-  max-width: 720px;
+  max-width: 520px;
   margin: 0;
-  color:#002d72;
-  font: 400 17px/1.55 Arial, sans-serif;
+  color: #002d72;
+  font: 400 13px/1.45 Arial, sans-serif;
 }
 
 .interests__content {
-  width: min(1100px, 100%);
+  width: 100%;
   margin: 0 auto;
 }
 
 .interests__section-header {
   display: grid;
-  gap: 8px;
-  margin-bottom: 22px;
+  gap: 4px;
+  margin-bottom: 14px;
 }
 
 .interests__section-header > span {
   color: #002d72;
-  font: 800 12px/1 Arial, sans-serif;
+  font: 800 10px/1 Arial, sans-serif;
   letter-spacing: 0.08em;
 }
 
 .interests__section-header h2 {
   margin: 0;
   color: #002d72;
-  font: 800 28px/1.15 Arial, sans-serif;
+  font: 700 17px/1.2 Arial, sans-serif;
 }
 
 .interests__section-header p {
   margin: 0;
-  color:#002d72;
-  font: 400 15px/1.45 Arial, sans-serif;
+  color: #002d72;
+  font: 400 12px/1.4 Arial, sans-serif;
 }
 
 .interests-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .interest-card {
   position: relative;
   width: 100%;
-  min-height: 112px;
+  min-height: 62px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 10px;
+  padding: 9px;
   box-sizing: border-box;
   border: 2px solid transparent;
-  border-radius: 10px;
+  border-radius: 9px;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 28px rgba(0, 32, 72, 0.12);
+  box-shadow: 0 5px 14px rgba(0, 32, 72, 0.10);
   color: #002d72;
   cursor: pointer;
   text-align: left;
   font-family: Arial, sans-serif;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .interest-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(0, 32, 72, 0.16);
-}
-
-.interest-card:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.9);
-  outline-offset: 3px;
+  transform: translateY(-1px);
+  box-shadow: 0 9px 18px rgba(0, 32, 72, 0.14);
 }
 
 .interest-card--selected {
@@ -194,14 +143,14 @@ input{
 }
 
 .interest-card__icon {
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #dce8f3;
-  font-size: 25px;
+  font-size: 17px;
 }
 
 .interest-card--selected .interest-card__icon {
@@ -211,30 +160,30 @@ input{
 .interest-card__content {
   min-width: 0;
   display: grid;
-  gap: 5px;
+  gap: 2px;
 }
 
 .interest-card__content strong {
   color: #002d72;
-  font: 800 16px/1.15 Arial, sans-serif;
+  font: 800 13px/1.15 Arial, sans-serif;
 }
 
 .interest-card__content span {
   color: #536273;
-  font: 400 13px/1.4 Arial, sans-serif;
+  font: 400 11px/1.3 Arial, sans-serif;
 }
 
 .interest-card__check {
-  width: 25px;
-  height: 25px;
-  flex: 0 0 25px;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
   display: grid;
   place-items: center;
   margin-left: auto;
   border-radius: 50%;
   background: #00488d;
   color: #ffffff;
-  font: 800 13px/1 Arial, sans-serif;
+  font: 800 11px/1 Arial, sans-serif;
 }
 
 .interest-card:not(.interest-card--selected) .interest-card__check {
@@ -245,32 +194,37 @@ input{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  margin-top: 22px;
-  padding: 18px 20px;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 10px 14px;
   box-sizing: border-box;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 28px rgba(0, 32, 72, 0.12);
+  border-radius: 9px;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
 }
 
 .interests-selected {
   color: #536273;
-  font: 700 14px/1.4 Arial, sans-serif;
+  font: 700 12px/1.4 Arial, sans-serif;
+}
+
+.interests-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .interests-action {
-  min-height: 46px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 0 16px;
   border: 0;
   border-radius: 7px;
   background: #eef5fb;
   color: #00488d;
   cursor: pointer;
-  font: 800 14px/1 Arial, sans-serif;
+  font: 800 12px/1 Arial, sans-serif;
 }
 
 .interests-action--primary {
@@ -283,15 +237,31 @@ input{
   cursor: not-allowed;
 }
 
-@media (max-width: 1000px) {
-  .interests-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@keyframes interests-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes interests-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 @media (max-width: 680px) {
-  .interests {
-    padding: 36px 20px 48px;
+  .interests-modal-overlay {
+    padding: 16px;
+  }
+
+  .interests-modal {
+    padding: 22px 18px 22px;
+    border-radius: 12px;
+    max-height: 85vh;
   }
 
   .interests-grid {
@@ -303,33 +273,33 @@ input{
     flex-direction: column;
   }
 
+  .interests-buttons {
+    flex-direction: column;
+  }
+
   .interests-action {
     width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .interests {
-    padding: 28px 16px 40px;
+  .interests-modal {
+    padding: 18px 14px 18px;
   }
 
   .interests__header h1 {
-    font-size: 2.2rem;
-  }
-
-  .interests__header p {
-    font-size: 15px;
+    font-size: 1.3rem;
   }
 
   .interest-card {
-    min-height: 96px;
-    padding: 16px;
+    min-height: 66px;
+    padding: 10px;
   }
 
   .interest-card__icon {
-    width: 46px;
-    height: 46px;
-    flex-basis: 46px;
-    font-size: 22px;
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    font-size: 16px;
   }
 }

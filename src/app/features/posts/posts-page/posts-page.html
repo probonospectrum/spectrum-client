@@ -5,7 +5,7 @@
   subtitle="Atualizacoes da comunidade"
   (logout)="logout()"
 >
-  <a class="posts-primary-action" routerLink="/publicacoes/nova" social-actions>Nova publicacao</a>
+
 
   @for (post of posts; track post.id) {
     <app-post-card [post]="post" (report)="openReport($event)" />

@@ -1,66 +1,106 @@
 import { Routes } from '@angular/router';
+
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+
   {
     path: '',
     redirectTo: 'home',
     pathMatch: 'full',
   },
+
   {
     path: 'login',
-    loadComponent: () => import('./features/user/login-page/login-page').then((m) => m.LoginPage),
-    data: { mode: 'login' },
+    loadComponent: () =>
+      import('./features/user/login-page/login-page')
+        .then((m) => m.LoginPage),
+
+    data: {
+      mode: 'login',
+    },
   },
+
   {
     path: 'cadastro',
-    loadComponent: () => import('./features/user/login-page/login-page').then((m) => m.LoginPage),
-    data: { mode: 'register' },
+    loadComponent: () =>
+      import('./features/user/login-page/login-page')
+        .then((m) => m.LoginPage),
+
+    data: {
+      mode: 'register',
+    },
   },
+
   {
     path: 'verify-email',
     loadComponent: () =>
-      import('./features/user/verify-email-page/verify-email-page').then((m) => m.VerifyEmailPage),
+      import('./features/user/verify-email-page/verify-email-page')
+        .then((m) => m.VerifyEmailPage),
   },
+
+  {
+    path: 'interesses',
+    outlet: 'modal',
+    loadComponent: () =>
+      import('./features/interests/interests-page/interests-page')
+        .then((m) => m.InterestsPage),
+
+    canActivate: [authGuard],
+  },
+
   {
     path: 'home',
-    loadComponent: () => import('./features/home/home-page/home-page').then((m) => m.HomePage),
+    loadComponent: () =>
+      import('./features/home/home-page/home-page')
+        .then((m) => m.HomePage),
+
     canActivate: [authGuard],
   },
+
   {
     path: 'publicacoes',
-    loadComponent: () => import('./features/posts/posts-page/posts-page').then((m) => m.PostsPage),
+    loadComponent: () =>
+      import('./features/posts/posts-page/posts-page')
+        .then((m) => m.PostsPage),
+
     canActivate: [authGuard],
   },
+
   {
     path: 'publicacoes/nova',
     loadComponent: () =>
-      import('./features/posts/create-post-page/create-post-page').then((m) => m.CreatePostPage),
+      import('./features/posts/create-post-page/create-post-page')
+        .then((m) => m.CreatePostPage),
+
     canActivate: [authGuard],
   },
+
   {
     path: 'notificacoes',
     loadComponent: () =>
-      import('./features/notifications/notifications-page/notifications-page').then(
-        (m) => m.NotificationsPage,
-      ),
+      import('./features/notifications/notifications-page/notifications-page')
+        .then((m) => m.NotificationsPage),
+
     canActivate: [authGuard],
   },
+
   {
     path: 'perfil',
-    loadComponent: () => import('./features/profile/profile-page/profile-page').then((m) => m.ProfilePage),
+    loadComponent: () =>
+      import('./features/profile/profile-page/profile-page')
+        .then((m) => m.ProfilePage),
+
     canActivate: [authGuard],
   },
+
   {
     path: 'configuracoes',
     loadComponent: () =>
-      import('./features/settings/settings-page/settings-page').then((m) => m.SettingsPage),
+      import('./features/settings/settings-page/settings-page')
+        .then((m) => m.SettingsPage),
+
     canActivate: [authGuard],
   },
-{
-  path: 'interesses',
-  loadComponent: () =>
-    import('./features/interests/interests-page/interests-page')
-      .then((m) => m.InterestsPage),
-},
+
 ];

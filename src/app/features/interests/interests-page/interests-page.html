@@ -1,27 +1,27 @@
-<main class="interests-page">
+<div
+  class="interests-modal-overlay"
+  (click)="onOverlayClick($event)"
+>
 
-<header class="social-header">
+  <div
+    class="interests-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="interests-title"
+    (click)="$event.stopPropagation()"
+  >
 
-    <a class="social-logo" routerLink="/home" aria-label="Spectrum">
-      <img src="/logo.png" alt="Spectrum" class="logo"/></a>
-
-    <label class="social-search">
-
-      <span class="sr-only">Pesquisar</span>
-
-      <input type="search" placeholder="Pesquise cidades, comunidades, usuarios"/>
-
-      <span class="material-symbols-outlined" aria-hidden="true">search</span>
-    </label>
-
-    <a class="social-create" routerLink="/publicacoes/nova" aria-label="Criar publicacao">
-      <span class="material-symbols-outlined" aria-hidden="true">add </span>
-    </a>
-  </header>
-
-  <section class="interests" aria-labelledby="interests-title">
+    <button
+      type="button"
+      class="interests-modal__close"
+      aria-label="Fechar"
+      (click)="skip()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
 
     <div class="interests__header">
+
       <span class="interests__eyebrow">
         PERSONALIZE SUA EXPERIÊNCIA
       </span>
@@ -30,23 +30,11 @@
         Quais são seus interesses?
       </h1>
 
-      <p>
-        Selecione os assuntos que você gosta para encontrar comunidades,
-        pessoas e publicações que combinam com você.
-      </p>
     </div>
 
     <div class="interests__content">
 
-      <div class="interests__section-header">
-        <span>SEUS INTERESSES</span>
-
-        <h2>Escolha seus temas favoritos</h2>
-
-        <p>
-          Você pode selecionar mais de um interesse.
-        </p>
-      </div>
+      
 
       <div class="interests-grid">
 
@@ -63,6 +51,7 @@
           </span>
 
           <span class="interest-card__content">
+
             <strong>
               {{ interest.name }}
             </strong>
@@ -70,6 +59,7 @@
             <span>
               {{ interest.description }}
             </span>
+
           </span>
 
           <span
@@ -86,22 +76,35 @@
       <div class="interests-actions">
 
         <span class="interests-selected">
-          {{ selectedInterests.length }} interesses selecionados
+          {{ selectedInterests.length }}
+          interesses selecionados
         </span>
 
-        <button
-          type="button"
-          class="interests-action interests-action--primary"
-          [disabled]="selectedInterests.length === 0"
-          (click)="continue()"
-        >
-          Continuar
-        </button>
+        <div class="interests-buttons">
+
+          <button
+            type="button"
+            class="interests-action interests-action--secondary"
+            (click)="skip()"
+          >
+            Pular por enquanto
+          </button>
+
+          <button
+            type="button"
+            class="interests-action interests-action--primary"
+            [disabled]="selectedInterests.length === 0"
+            (click)="continue()"
+          >
+            Continuar
+          </button>
+
+        </div>
 
       </div>
 
     </div>
 
-  </section>
+  </div>
 
-</main>
+</div>

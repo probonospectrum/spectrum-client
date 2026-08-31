@@ -11,15 +11,22 @@ export class NotificationItem {
   @Output() markRead = new EventEmitter<string>();
   @Output() remove = new EventEmitter<string>();
 
-  get typeLabel(): string {
-    const labels: Record<SpectrumNotification['type'], string> = {
-      system: 'Sistema',
-      movement: 'Movimento',
-      alert: 'Alerta',
-      message: 'Mensagem',
-      confirmation: 'Confirmado',
-    };
+  get displayName(): string {
+    return this.notification.actorName || this.notification.title;
+  }
 
-    return labels[this.notification.type];
+  get initials(): string {
+    return this.displayName.charAt(0).toUpperCase();
+  }
+
+  onOpen(): void {
+    if (!this.notification.read) {
+      this.markRead.emit(this.notification.id);
+    }
+  }
+
+  onRemove(event: Event): void {
+    event.stopPropagation();
+    this.remove.emit(this.notification.id);
   }
 }

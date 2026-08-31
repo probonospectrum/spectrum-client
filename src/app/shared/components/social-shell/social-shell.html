@@ -146,23 +146,9 @@
 
     <section class="social-content" aria-labelledby="social-title">
 
-      <div class="social-content__header">
-
-        <div>
-
-          <p>{{ title }}</p>
-
-          <h1 id="social-title">
-
-            {{ subtitle }}
-
-          </h1>
-
-        </div>
+      
 
         <ng-content select="[social-actions]"></ng-content>
-
-      </div>
 
       <ng-content></ng-content>
 
@@ -195,13 +181,7 @@
         </div>
 
         @if (profile.verified) {
-
-        <span class="material-symbols-outlined social-suggestion__verified" aria-label="Perfil verificado">
-
-          verified
-
-        </span>
-
+        <span class="material-symbols-outlined social-suggestion__verified" aria-label="Perfil verificado">verified</span>
         }
 
       </article>

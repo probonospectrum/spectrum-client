@@ -1,27 +1,28 @@
-<article class="notification" [class.notification--unread]="!notification.read">
-  <div class="notification__badge" [attr.data-type]="notification.type" aria-hidden="true">
-    {{ typeLabel.charAt(0) }}
-  </div>
+<article class="notification" [class.notification--unread]="!notification.read" (click)="onOpen()">
+  @if (notification.actorAvatarUrl) {
+    <img class="notification__avatar" [src]="notification.actorAvatarUrl" [alt]="displayName" />
+  } @else {
+    <div class="notification__avatar notification__avatar--fallback" aria-hidden="true">
+      {{ initials }}
+    </div>
+  }
 
   <div class="notification__body">
-    <div class="notification__meta">
-      <span>{{ typeLabel }}</span>
-      <time>{{ notification.dateLabel }}</time>
-    </div>
-    <h2>{{ notification.title }}</h2>
-    <p>{{ notification.description }}</p>
-
-    @if (notification.actionLabel) {
-      <button class="notification__action" type="button">{{ notification.actionLabel }}</button>
-    }
+    <p class="notification__headline">
+      <strong>{{ displayName }}</strong>
+      @if (notification.actorHandle) {
+        <span class="notification__handle">&#64;{{ notification.actorHandle }}</span>
+      }
+    </p>
+    <p class="notification__description">{{ notification.description }}</p>
   </div>
 
-  <div class="notification__controls">
-    @if (!notification.read) {
-      <button type="button" (click)="markRead.emit(notification.id)">Marcar lida</button>
-    }
-    <button type="button" aria-label="Remover notificacao" (click)="remove.emit(notification.id)">
-      Remover
-    </button>
-  </div>
+  <button
+    class="notification__remove"
+    type="button"
+    aria-label="Remover notificacao"
+    (click)="onRemove($event)"
+  >
+    &times;
+  </button>
 </article>
