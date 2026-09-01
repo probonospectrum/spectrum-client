@@ -3,11 +3,12 @@ import { Router } from '@angular/router';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { PostCard } from '../../../shared/components/post-card/post-card';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [SocialShell, PostCard],
+  imports: [SocialShell, PostCard, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
@@ -20,6 +21,7 @@ export class ProfilePage {
   readonly suggestions = this.postService.suggestions;
 
   activeTab: 'posts' | 'shares' = 'posts';
+  reportingProfile = false;
 
   get displayName(): string {
     return this.user?.name || 'Usuário Spectrum';
@@ -56,6 +58,14 @@ export class ProfilePage {
 
   goToSettings(): void {
     void this.router.navigateByUrl('/configuracoes');
+  }
+
+  openReport(): void {
+    this.reportingProfile = true;
+  }
+
+  confirmReport(): void {
+    this.reportingProfile = false;
   }
 
   logout(): void {

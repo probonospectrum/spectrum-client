@@ -62,6 +62,12 @@
   font-size: 14px;
 }
 
+.profile-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .profile-header__config-btn {
   min-height: 36px;
   border: 1.5px solid #c8d3de;
@@ -77,6 +83,29 @@
   &:hover {
     background: #f4f7fa;
     border-color: #a0b4c8;
+  }
+}
+
+.profile-header__report-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #c8d3de;
+  border-radius: 50%;
+  background: transparent;
+  color: #8c9baa;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  .material-symbols-outlined {
+    font-size: 22px;
+  }
+
+  &:hover {
+    background: #f4f7fa;
+    border-color: #a0b4c8;
+    color: #4c4c4c;
   }
 }
 

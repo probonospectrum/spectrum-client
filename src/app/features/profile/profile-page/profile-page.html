@@ -22,9 +22,19 @@
             <h2 class="profile-header__name">{{ displayName }}</h2>
             <p class="profile-header__username">@{{ nickname }}</p>
           </div>
-          <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
-            Configurações de perfil
-          </button>
+          <div class="profile-header__actions">
+            <button
+              class="profile-header__report-btn"
+              type="button"
+              aria-label="Denunciar perfil"
+              (click)="openReport()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+            </button>
+            <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
+              Configurações de perfil
+            </button>
+          </div>
         </div>
 
         <div class="profile-header__meta">
@@ -90,3 +100,11 @@
     }
   </div>
 </app-social-shell>
+
+@if (reportingProfile) {
+  <app-report-modal
+    title="O que está sendo reportado?"
+    (close)="reportingProfile = false"
+    (confirm)="confirmReport()"
+  />
+}

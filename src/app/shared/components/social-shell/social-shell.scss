@@ -203,6 +203,15 @@
   padding: 18px 22px;
 }
 
+.social-content__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.social-content__actions:empty {
+  display: none;
+}
+
 .social-content__header p,
 .social-content__header h1 {
   margin: 0;
