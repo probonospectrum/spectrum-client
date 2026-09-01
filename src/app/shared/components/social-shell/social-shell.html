@@ -146,6 +146,8 @@
 
     <section class="social-content" aria-labelledby="social-title">
 
+      @if (showContentHeader) {
+
       <div class="social-content__header">
 
         <div>
@@ -163,6 +165,16 @@
         <ng-content select="[social-actions]"></ng-content>
 
       </div>
+
+      } @else {
+
+      <div class="social-content__actions">
+
+        <ng-content select="[social-actions]"></ng-content>
+
+      </div>
+
+      }
 
       <ng-content></ng-content>
 
