@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, HostListener } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
