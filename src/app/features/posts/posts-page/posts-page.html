@@ -2,7 +2,7 @@
   [user]="user"
   [suggestions]="suggestions"
   title="Publicacoes"
-  subtitle="Atualizacoes da comunidade"
+  [showContentHeader]="false"
   (logout)="logout()"
   (createPost)="openCreatePost()"
 >
@@ -121,39 +121,9 @@
 </app-social-shell>
 
 @if (reportPost) {
-  <div class="report-backdrop" role="presentation" (click)="reportPost = null">
-    <section
-      class="report-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="report-title"
-      (click)="$event.stopPropagation()"
-    >
-      <button class="report-modal__close" type="button" aria-label="Fechar" (click)="reportPost = null">
-        x
-      </button>
-
-      <p>Postagem</p>
-      <h2 id="report-title">Reportar publicacao</h2>
-      <span class="report-modal__subtitle">{{ reportPost.title }}</span>
-
-      <div class="report-options" role="radiogroup" aria-label="Motivo da denuncia">
-        @for (reason of reportReasons; track reason) {
-          <button
-            type="button"
-            role="radio"
-            [attr.aria-checked]="selectedReason === reason"
-            [class.report-options__item--active]="selectedReason === reason"
-            class="report-options__item"
-            (click)="selectedReason = reason"
-          >
-            {{ reason }}
-            <span aria-hidden="true"></span>
-          </button>
-        }
-      </div>
-
-      <button class="report-modal__submit" type="button" (click)="confirmReport()">Enviar denuncia</button>
-    </section>
-  </div>
+  <app-report-modal
+    title="O que está sendo reportado?"
+    (close)="reportPost = null"
+    (confirm)="confirmReport()"
+  />
 }

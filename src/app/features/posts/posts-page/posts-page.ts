@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
@@ -47,7 +47,6 @@ export class PostsPage {
 
   openReport(post: SpectrumPost): void {
     this.reportPost = post;
-    this.selectedReason = this.reportReasons[0];
   }
 
   confirmReport(): void {

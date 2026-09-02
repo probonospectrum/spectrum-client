@@ -31,13 +31,11 @@
   text-decoration: none;
 }
 
-.social-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  width: max-content;
-  color: #ffffff;
-  font: 800 14px/1 Arial, sans-serif;
+.logo {
+  width: 120px;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .social-search {
@@ -85,10 +83,16 @@
   position: sticky;
   top: 92px;
   height: calc(100vh - 108px);
-  display: grid;
-  align-content: space-between;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   padding: 18px 10px;
   border-right: 1px solid #d9dde2;
+}
+
+.social-sidebar__bottom {
+  display: grid;
+  gap: 8px;
 }
 
 .social-nav {
@@ -149,6 +153,7 @@
   color: #4c4c4c;
   cursor: pointer;
   text-align: left;
+  transform: translateY(150px);
 }
 
 .social-avatar {
@@ -196,6 +201,15 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 22px;
+}
+
+.social-content__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.social-content__actions:empty {
+  display: none;
 }
 
 .social-content__header p,
@@ -283,9 +297,5 @@
     height: auto;
     border-right: 0;
     border-bottom: 1px solid #d9dde2;
-  }
-
-  .social-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

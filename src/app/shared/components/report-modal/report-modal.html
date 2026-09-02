@@ -1,0 +1,47 @@
+@if (!submitted) {
+  <div class="report-backdrop" role="presentation" (click)="close.emit()">
+    <section
+      class="report-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="report-modal__header">
+        <div class="report-modal__heading">
+          <h2 id="report-title">{{ title }}</h2>
+          <p class="report-modal__hint">Selecione o motivo da denúncia.</p>
+        </div>
+        <button class="report-modal__close" type="button" aria-label="Fechar" (click)="close.emit()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+
+      <div class="report-options" role="radiogroup" aria-label="Motivo da denuncia">
+        @for (reason of reasons; track reason) {
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="selectedReason === reason"
+            [class.report-options__item--active]="selectedReason === reason"
+            class="report-options__item"
+            (click)="select(reason)"
+          >
+            <span class="report-options__label">{{ reason }}</span>
+            <span class="report-options__radio" aria-hidden="true"></span>
+          </button>
+        }
+      </div>
+
+      <button class="report-modal__submit" type="button" (click)="onConfirm()">Denunciar</button>
+    </section>
+  </div>
+} @else {
+  <app-alert-popup
+    type="success"
+    title="Enviado"
+    message="Sua denúncia foi registrada com sucesso. Nossa equipe irá analisar seu relato e iremos retornar o mais breve possível. Agradecemos sua confiança e colaboração para manter nossa comunidade segura."
+    actionLabel="Feito"
+    (dismissed)="onDone()"
+  />
+}

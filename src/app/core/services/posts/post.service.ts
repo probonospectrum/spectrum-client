@@ -41,7 +41,7 @@ export class PostService {
   private readonly storageKey = 'spectrum-mock-posts';
 
   readonly suggestions: SuggestedProfile[] = [
-    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'J', verified: true },
+    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'https://i.pinimg.com/236x/d1/e3/d2/d1e3d2a12bc3d0221898c4391dffcfff.jpg', verified: true },
     { name: 'Carlao da ZN', nickname: 'carlao.zn', initial: 'C', verified: true },
     { name: 'Luana Prado', nickname: 'luanapradoofc', initial: 'L', verified: true },
     { name: 'Gustavo Lima', nickname: 'gustavolimaevc', initial: 'G', verified: true },
@@ -97,6 +97,24 @@ export class PostService {
 
   private getDefaultPosts(): SpectrumPost[] {
     return [
+      {
+        id: 'mock-gabi-1',
+        authorName: 'gabi',
+        authorNickname: 'gabi',
+        authorInitial: 'G',
+        authorCity: 'Lencois Maranhenses, Barreirinhas - MA',
+        title: 'Minha primeira vez nos Lencois Maranhenses',
+        content:
+          'Gente, nao tem como descrever essa experiencia. A agua cristalina entre as dunas e algo surreal. Recomendo demais pra quem quer se reconectar com a natureza!',
+        mediaType: 'image',
+        publishedAt: '2026-04-10T14:30:00.000Z',
+        publishedAtLabel: 'Publicado em 10/04/2026, as 11:30',
+        likes: 47,
+        comments: 12,
+        shares: 3,
+        saved: false,
+        tags: [],
+      },
       {
         id: 'mock-1',
         authorName: 'Elena Matsunaga',

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap, timeout } from 'rxjs/operators';
-import { USER_ROUTES } from '../../constants/api-routes';
+import { API_BASE_URL } from '../../constants/api-routes';
 
 export interface LoginRequest {
   identifier: string;
@@ -50,16 +50,18 @@ export interface CreateUserResponse extends MessageResponse {
 export class UserService {
   private readonly sessionStorageKey = 'spectrum-auth-session';
 
+  private readonly apiUrl = `${API_BASE_URL}/user`;
+
   constructor(private readonly http: HttpClient) {}
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(USER_ROUTES.login, payload)
+      .post<LoginResponse>(`${this.apiUrl}/login`, payload)
       .pipe(timeout(15000), tap((response) => this.saveSession(response)));
   }
 
   create(payload: CreateUserRequest): Observable<CreateUserResponse> {
-    return this.http.post<CreateUserResponse>(USER_ROUTES.create, payload).pipe(timeout(15000));
+    return this.http.post<CreateUserResponse>(`${this.apiUrl}`, payload).pipe(timeout(15000));
   }
 
   getCurrentUser(): LoggedUser | null {
