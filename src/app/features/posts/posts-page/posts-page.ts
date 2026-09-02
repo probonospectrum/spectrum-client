@@ -4,12 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { PostCard } from '../../../shared/components/post-card/post-card';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-posts-page',
-  imports: [CommonModule, FormsModule, RouterLink, SocialShell, PostCard],
+  imports: [CommonModule, FormsModule, RouterLink, SocialShell, PostCard, ReportModal],
   templateUrl: './posts-page.html',
   styleUrl: './posts-page.scss',
 })
