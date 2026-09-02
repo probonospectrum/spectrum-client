@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
 import { AuthModeToggle } from '../../../shared/components/auth-mode-toggle/auth-mode-toggle';
@@ -23,7 +23,8 @@ type AuthMode = 'login' | 'register';
     Button,
     SpectrumInput,
     SpectrumSelect,
-  ],
+    RouterLink
+],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
 })

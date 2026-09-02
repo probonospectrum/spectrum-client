@@ -17,6 +17,7 @@ export class SocialShell {
   @Input() subtitle = 'Atualizacoes da comunidade';
   @Input() showContentHeader = true;
   @Output() logout = new EventEmitter<void>();
+  @Output() createPost = new EventEmitter<void>();
 
   get displayName(): string {
     return this.user?.name || 'Usuario Spectrum';

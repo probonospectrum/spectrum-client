@@ -22,16 +22,14 @@
 
     </label>
 
-    <a class="social-create" routerLink="/publicacoes/nova" aria-label="Criar publicacao">
-
-      <span class="material-symbols-outlined" aria-hidden="true">
-
-        add
-
-      </span>
-
-    </a>
-
+    <button 
+      class="social-create" 
+      type="button" 
+      routerLink="/publicacoes/nova"
+      aria-label="Criar publicacao"
+      (click)="createPost.emit()" >
+      <span class="material-symbols-outlined" aria-hidden="true">+</span>
+    </button>
   </header>
 
   <div class="social-layout">
