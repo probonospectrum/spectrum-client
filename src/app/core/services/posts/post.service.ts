@@ -125,6 +125,24 @@ export class PostService {
   private getDefaultPosts(): SpectrumPost[] {
     return [
       {
+        id: 'mock-gabi-1',
+        authorName: 'gabi',
+        authorNickname: 'gabi',
+        authorInitial: 'G',
+        authorCity: 'Lencois Maranhenses, Barreirinhas - MA',
+        title: 'Minha primeira vez nos Lencois Maranhenses',
+        content:
+          'Gente, nao tem como descrever essa experiencia. A agua cristalina entre as dunas e algo surreal. Recomendo demais pra quem quer se reconectar com a natureza!',
+        mediaType: 'image',
+        publishedAt: '2026-04-10T14:30:00.000Z',
+        publishedAtLabel: 'Publicado em 10/04/2026, as 11:30',
+        likes: 47,
+        comments: 12,
+        shares: 3,
+        saved: false,
+        tags: [],
+      },
+      {
         id: 'mock-1',
         authorName: 'Elena Matsunaga',
         authorNickname: 'ElenMatisu04',

@@ -1,17 +1,8 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
-import {
-  ReactiveFormsModule,
-  FormBuilder,
-  Validators,
-} from '@angular/forms';
-
-import {
-  AlertPopup,
-  AlertPopupType,
-} from '../../../shared/components/alert-popup/alert-popup';
-
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
 import { AuthModeToggle } from '../../../shared/components/auth-mode-toggle/auth-mode-toggle';
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
@@ -32,7 +23,9 @@ import {
 } from '../../../core/services/city/city.service';
 
 import { UserService } from '../../../core/services/user/user.service';
-
+import { GoogleAuthService} from '../../../core/services/user/google-auth.service';
+import { OAuthService } from 'angular-oauth2-oidc';
+import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
 type AuthMode = 'login' | 'register';
 
 @Component({
@@ -46,8 +39,8 @@ type AuthMode = 'login' | 'register';
     Button,
     SpectrumInput,
     SpectrumSelect,
-  ],
-
+    RouterLink
+],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
 })
@@ -59,6 +52,9 @@ export class LoginPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly googleAuth = inject(GoogleAuthService);
+  private readonly oauthService = inject(OAuthService);
+  private readonly authApiService = inject(AuthApiService)
 
   mode: AuthMode = 'login';
 
@@ -111,13 +107,34 @@ export class LoginPage implements OnInit {
       : 'login';
 
     this.loadStates();
+    this.registerForm.controls.stateId.valueChanges.subscribe((stateId) => {
+      this.loadCities(stateId);
+    });
 
-    this.registerForm.controls.stateId.valueChanges.subscribe(
-      (stateId) => {
-        this.loadCities(stateId);
-      },
-    );
+    this.tryGoogleLogin();
   }
+
+  private async tryGoogleLogin(): Promise<void> {
+  await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+
+  if (this.googleAuth.isLoggedIn) {
+    const idToken = this.googleAuth.idToken;
+
+    this.authApiService.loginWithGoogle(idToken).subscribe({ //isso aqui é um arquivo que vai conectar ao back
+      next: () => {
+        this.router.navigate(['/home']);
+      },
+      error: (err) => {
+        this.alert = {
+          type: 'error',
+          title: 'Erro no login',
+          message: 'Não foi possível fazer o login com o Google.',
+          actionLabel: 'Fechar',
+        };
+      }
+    });
+  }
+}
 
   get isRegisterMode(): boolean {
     return this.mode === 'register';
@@ -241,6 +258,11 @@ export class LoginPage implements OnInit {
           );
         },
       });
+  }
+
+  loginWithGoogle():void {
+    //Chamar provedor OAUTH do google
+    this.googleAuth.login();
   }
 
   submitRegister(): void {

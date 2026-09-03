@@ -33,6 +33,20 @@ export const routes: Routes = [
   },
 
   {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/user/forgot-password-page/forgot-password-page').then(
+        (m) => m.ForgotPasswordPage,
+      ),
+  },  
+  {
+  path: 'reset-password',
+  loadComponent: () =>
+    import('./features/user/reset-password-page/reset-password-page').then(
+      (m) => m.ResetPasswordPage,
+    ),
+  },
+  {
     path: 'verify-email',
     loadComponent: () =>
       import('./features/user/verify-email-page/verify-email-page')
@@ -102,5 +116,10 @@ export const routes: Routes = [
 
     canActivate: [authGuard],
   },
-
+{
+  path: 'interesses',
+  loadComponent: () =>
+    import('./features/interests/interests-page/interests-page')
+      .then((m) => m.InterestsPage),
+},
 ];

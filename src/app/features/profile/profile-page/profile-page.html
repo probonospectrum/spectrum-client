@@ -1,43 +1,110 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
-  title="Perfil"
-  subtitle="Informacoes da conta"
+  [showContentHeader]="false"
   (logout)="logout()"
 >
-  @if (!editing) {
-    <button class="profile-action" type="button" social-actions (click)="editing = true">Editar perfil</button>
-  } @else {
-    <div class="profile-actions" social-actions>
-      <button type="button" (click)="cancel()">Cancelar</button>
-      <button type="button" [disabled]="saving" (click)="save()">
-        {{ saving ? 'Salvando...' : 'Salvar' }}
-      </button>
+  <section class="profile-header">
+    <div class="profile-header__cover">
+      <img
+        src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800&q=80"
+        alt="Capa do perfil"
+        class="profile-header__cover-img"
+      />
     </div>
-  }
 
-  <section class="profile-card">
-    <aside class="profile-card__hero">
-      <span class="profile-avatar">{{ profile.avatarInitial }}</span>
-      <h2>{{ profile.name }}</h2>
-      <p>@{{ profile.nickname }}</p>
-      <small>{{ profile.role }}</small>
-    </aside>
+    <div class="profile-header__info">
+      <span class="profile-header__avatar">{{ userInitial }}</span>
 
-    <app-profile-form
-      [profile]="profile"
-      [editing]="editing"
-      (profileChange)="profile = $event"
-    />
+      <div class="profile-header__details">
+        <div class="profile-header__name-row">
+          <div>
+            <h2 class="profile-header__name">{{ displayName }}</h2>
+            <p class="profile-header__username">@{{ nickname }}</p>
+          </div>
+          <div class="profile-header__actions">
+            <button
+              class="profile-header__report-btn"
+              type="button"
+              aria-label="Denunciar perfil"
+              (click)="openReport()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+            </button>
+            <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
+              Configurações de perfil
+            </button>
+          </div>
+        </div>
+
+        <div class="profile-header__meta">
+          <span class="profile-header__joined">
+            <svg class="profile-header__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Entrou em {{ joinedDate }}
+          </span>
+        </div>
+
+        <div class="profile-header__stats">
+          <span>Seguindo <strong>{{ followingCount }}</strong></span>
+          <span>Seguidores <strong>{{ followersCount }}</strong></span>
+        </div>
+      </div>
+    </div>
   </section>
 
-  @if (showSuccess) {
-    <app-alert-popup
-      type="success"
-      title="Perfil salvo"
-      message="As informacoes foram atualizadas localmente para demonstracao."
-      actionLabel="Ok"
-      (dismissed)="showSuccess = false"
-    />
-  }
+  <nav class="profile-tabs" aria-label="Abas do perfil">
+    <button
+      class="profile-tabs__tab"
+      [class.profile-tabs__tab--active]="activeTab === 'posts'"
+      type="button"
+      (click)="activeTab = 'posts'"
+      aria-label="Publicações"
+    >
+      <svg class="profile-tabs__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7"/>
+        <rect x="14" y="3" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/>
+      </svg>
+    </button>
+    <button
+      class="profile-tabs__tab"
+      [class.profile-tabs__tab--active]="activeTab === 'shares'"
+      type="button"
+      (click)="activeTab = 'shares'"
+      aria-label="Compartilhamentos"
+    >
+      <svg class="profile-tabs__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="17 1 21 5 17 9"/>
+        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+        <polyline points="7 23 3 19 7 15"/>
+        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+      </svg>
+    </button>
+  </nav>
+
+  <div class="profile-feed">
+    @for (post of userPosts; track post.id) {
+      <app-post-card [post]="post" />
+    }
+
+    @if (userPosts.length === 0) {
+      <div class="profile-feed__empty">
+        <p>Nenhuma publicação ainda.</p>
+      </div>
+    }
+  </div>
 </app-social-shell>
+
+@if (reportingProfile) {
+  <app-report-modal
+    title="O que está sendo reportado?"
+    (close)="reportingProfile = false"
+    (confirm)="confirmReport()"
+  />
+}

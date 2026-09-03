@@ -25,25 +25,15 @@
         [error]="fieldError('login', 'password')"
       />
 
-      <button class="auth-link" type="button">
-        Esqueceu sua senha? Clique aqui para redefini-la
-      </button>
-
-      <button
-        class="auth-link"
-        type="button"
-        (click)="goToRegister()"
-      >
+      <button class="auth-link" type="button" routerLink="/forgot-password"> Esqueceu sua senha? Clique aqui para redefini-la</button>
+      <button class="auth-link" type="button" (click)="goToRegister()">
         Ainda nao possui cadastro? Cadastre-se aqui
       </button>
 
-      <app-button
-        type="submit"
-        [disabled]="isSubmitting"
-      >
-        Entrar
-      </app-button>
-
+      <app-button type="submit" [disabled]="isSubmitting">Entrar</app-button>
+      <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
+        Entrar com o Google
+      </button>
     </form>
 
   } @else {
