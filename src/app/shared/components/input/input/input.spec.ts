@@ -1,18 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Input } from './input';
+import { SpectrumInput } from './input';
 
 describe('Input', () => {
-  let component: Input;
-  let fixture: ComponentFixture<Input>;
+  let component: SpectrumInput;
+  let fixture: ComponentFixture<SpectrumInput>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Input]
-    })
-    .compileComponents();
+      imports: [SpectrumInput],
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(Input);
+    fixture = TestBed.createComponent(SpectrumInput);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
