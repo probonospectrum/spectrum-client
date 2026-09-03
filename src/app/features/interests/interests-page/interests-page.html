@@ -1,0 +1,110 @@
+<div
+  class="interests-modal-overlay"
+  (click)="onOverlayClick($event)"
+>
+
+  <div
+    class="interests-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="interests-title"
+    (click)="$event.stopPropagation()"
+  >
+
+    <button
+      type="button"
+      class="interests-modal__close"
+      aria-label="Fechar"
+      (click)="skip()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
+
+    <div class="interests__header">
+
+      <span class="interests__eyebrow">
+        PERSONALIZE SUA EXPERIÊNCIA
+      </span>
+
+      <h1 id="interests-title">
+        Quais são seus interesses?
+      </h1>
+
+    </div>
+
+    <div class="interests__content">
+
+      
+
+      <div class="interests-grid">
+
+        <button
+          *ngFor="let interest of interests"
+          type="button"
+          class="interest-card"
+          [class.interest-card--selected]="isSelected(interest)"
+          (click)="toggleInterest(interest)"
+        >
+
+          <span class="interest-card__icon">
+            {{ interest.icon }}
+          </span>
+
+          <span class="interest-card__content">
+
+            <strong>
+              {{ interest.name }}
+            </strong>
+
+            <span>
+              {{ interest.description }}
+            </span>
+
+          </span>
+
+          <span
+            class="interest-card__check"
+            [attr.aria-hidden]="!isSelected(interest)"
+          >
+            ✓
+          </span>
+
+        </button>
+
+      </div>
+
+      <div class="interests-actions">
+
+        <span class="interests-selected">
+          {{ selectedInterests.length }}
+          interesses selecionados
+        </span>
+
+        <div class="interests-buttons">
+
+          <button
+            type="button"
+            class="interests-action interests-action--secondary"
+            (click)="skip()"
+          >
+            Pular por enquanto
+          </button>
+
+          <button
+            type="button"
+            class="interests-action interests-action--primary"
+            [disabled]="selectedInterests.length === 0"
+            (click)="continue()"
+          >
+            Continuar
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

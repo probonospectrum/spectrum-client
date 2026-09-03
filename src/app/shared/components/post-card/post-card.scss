@@ -71,24 +71,14 @@
   font: 700 14px/1.4 Arial, sans-serif;
 }
 
-.post-card__location span {
-  position: relative;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-}
-
-.post-card__location span::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
+.post-card__location .material-symbols-outlined {
+  position: static;
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  font-size: 20px;
 }
 
 .post-card__media {
@@ -118,24 +108,10 @@
   background: #eef3f7;
 }
 
-.post-card__play {
-  width: 54px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  border: 2px solid rgba(7, 46, 91, 0.42);
-  border-radius: 50%;
-}
 
-.post-card__play::before {
-  content: '';
-  display: block;
-  width: 0;
-  height: 0;
-  margin-left: 4px;
-  border-top: 11px solid transparent;
-  border-bottom: 11px solid transparent;
-  border-left: 17px solid #536273;
+.post-card__play {
+  color: #536273;
+  font-size: 70px;
 }
 
 .post-card__tags {

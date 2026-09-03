@@ -19,6 +19,14 @@ export interface SpectrumPost {
   tags: string[];
 }
 
+export interface SpectrumComment {
+  id: string;
+  authorName: string;
+  authorInitial: string;
+  content: string;
+  dateLabel: string;
+}
+
 export interface SuggestedProfile {
   name: string;
   nickname: string;
@@ -41,17 +49,36 @@ export class PostService {
   private readonly storageKey = 'spectrum-mock-posts';
 
   readonly suggestions: SuggestedProfile[] = [
-    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'J', verified: true },
+    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'https://i.pinimg.com/236x/d1/e3/d2/d1e3d2a12bc3d0221898c4391dffcfff.jpg', verified: true },
     { name: 'Carlao da ZN', nickname: 'carlao.zn', initial: 'C', verified: true },
     { name: 'Luana Prado', nickname: 'luanapradoofc', initial: 'L', verified: true },
     { name: 'Gustavo Lima', nickname: 'gustavolimaevc', initial: 'G', verified: true },
   ];
+
+  private readonly commentsByPost: Record<string, SpectrumComment[]> = {
+    'mock-1': [
+      { id: 'c-1-1', authorName: 'Hater da Matisunaga', authorInitial: 'H', content: 'Mentiraaaaa', dateLabel: 'Há 2h' },
+      { id: 'c-1-2', authorName: 'João Pereira', authorInitial: 'J', content: 'Isso já aconteceu comigo também, muito cuidado.', dateLabel: 'Há 3h' },
+      { id: 'c-1-3', authorName: 'Márcia Souza', authorInitial: 'M', content: 'Registrei ocorrência, procurem a delegacia mais próxima.', dateLabel: 'Há 4h' },
+    ],
+    'mock-2': [
+      { id: 'c-2-1', authorName: 'Paulo Henrique', authorInitial: 'P', content: 'Vi também, chamei a guarda municipal.', dateLabel: 'Há 1h' },
+      { id: 'c-2-2', authorName: 'Camila Rocha', authorInitial: 'C', content: 'Confirmado, já está tudo resolvido.', dateLabel: 'Há 5h' },
+    ],
+    'mock-3': [
+      { id: 'c-3-1', authorName: 'Bianca Alves', authorInitial: 'B', content: 'Excelente iniciativa, parabéns!', dateLabel: 'Há 1d' },
+    ],
+  };
 
   getPosts(): SpectrumPost[] {
     return [...this.getUserPosts(), ...this.getDefaultPosts()].sort(
       (first, second) =>
         new Date(second.publishedAt).getTime() - new Date(first.publishedAt).getTime(),
     );
+  }
+
+  getComments(postId: string): SpectrumComment[] {
+    return (this.commentsByPost[postId] ?? []).map((comment) => ({ ...comment }));
   }
 
   createPost(payload: CreatePostPayload, user: LoggedUser | null): SpectrumPost {
@@ -110,7 +137,7 @@ export class PostService {
         publishedAt: '2026-04-09T10:46:00.000Z',
         publishedAtLabel: 'Publicado em 09/04/2026, as 07:46',
         likes: 310,
-        comments: 25,
+        comments: 3,
         shares: 8,
         saved: false,
         tags: ['bairro', 'alerta', 'xique-xique'],
@@ -128,7 +155,7 @@ export class PostService {
         publishedAt: '2026-04-08T19:20:00.000Z',
         publishedAtLabel: 'Publicado em 08/04/2026, as 16:20',
         likes: 184,
-        comments: 14,
+        comments: 2,
         shares: 5,
         saved: true,
         tags: ['seguranca', 'centro'],
@@ -146,7 +173,7 @@ export class PostService {
         publishedAt: '2026-04-07T12:10:00.000Z',
         publishedAtLabel: 'Publicado em 07/04/2026, as 09:10',
         likes: 92,
-        comments: 7,
+        comments: 1,
         shares: 3,
         saved: false,
         tags: ['comunidade', 'servico'],

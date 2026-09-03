@@ -1,0 +1,86 @@
+<section class="comment-section">
+  <div class="comment-section__input">
+    <span class="comment-section__avatar">{{ userInitial }}</span>
+    <input
+      type="text"
+      placeholder="Adicionar comentário..."
+      [(ngModel)]="newComment"
+      (keyup.enter)="addComment()"
+    />
+    <button type="button" aria-label="Enviar comentario" (click)="addComment()">
+      <span class="material-symbols-outlined" aria-hidden="true">send</span>
+    </button>
+  </div>
+
+  @if (comments.length) {
+    <ul class="comment-section__list">
+      @for (comment of visibleComments; track comment.id) {
+        <li class="comment-section__item">
+          <div class="comment-section__item-header">
+            <span class="comment-section__avatar">{{ comment.authorInitial }}</span>
+            <div class="comment-section__author">
+              <strong>{{ comment.authorName }}</strong>
+              <span class="comment-section__date">{{ comment.dateLabel }}</span>
+            </div>
+            <button
+              type="button"
+              class="comment-section__more"
+              aria-label="Mais opcoes do comentario"
+              (click)="reportComment(comment.id)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+            </button>
+          </div>
+
+          <p class="comment-section__content">{{ comment.content }}</p>
+
+          <div class="comment-section__actions">
+            <button
+              type="button"
+              [class.comment-section__action--active]="isLiked(comment.id)"
+              aria-label="Curtir comentario"
+              (click)="toggleLike(comment.id)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+              @if (likeCount(comment.id) > 0) {
+                <span class="comment-section__count">{{ likeCount(comment.id) }}</span>
+              }
+            </button>
+
+            <button
+              type="button"
+              [class.comment-section__action--active]="isDisliked(comment.id)"
+              aria-label="Descurtir comentario"
+              (click)="toggleDislike(comment.id)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
+              @if (dislikeCount(comment.id) > 0) {
+                <span class="comment-section__count">{{ dislikeCount(comment.id) }}</span>
+              }
+            </button>
+
+            <button
+              type="button"
+              class="comment-section__save"
+              [class.comment-section__action--active]="isSaved(comment.id)"
+              aria-label="Salvar comentario"
+              (click)="toggleSaved(comment.id)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">
+                {{ isSaved(comment.id) ? 'bookmark' : 'bookmark_border' }}
+              </span>
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (hasMoreComments) {
+      <button type="button" class="comment-section__toggle" (click)="toggleShowAll()">
+        {{ showAll ? 'Ver menos comentários' : 'Ver mais comentários (' + remainingCount + ')' }}
+      </button>
+    }
+  } @else {
+    <p class="comment-section__empty">Seja o primeiro a comentar.</p>
+  }
+</section>

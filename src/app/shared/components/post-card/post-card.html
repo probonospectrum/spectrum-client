@@ -6,7 +6,7 @@
       <span>@{{ post.authorNickname }}</span>
     </div>
     <button class="post-card__more" type="button" aria-label="Reportar publicacao" (click)="report.emit(post)">
-      ...
+      <span class="material-symbols-outlined">more_horiz</span>
     </button>
   </header>
 
@@ -14,7 +14,7 @@
   <p class="post-card__copy">{{ post.content }}</p>
 
   <div class="post-card__location">
-    <span aria-hidden="true"></span>
+    <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
     {{ post.authorCity }}
   </div>
 
@@ -24,7 +24,7 @@
     [class.post-card__media--image]="post.mediaType === 'image'"
   >
     @if (post.mediaType === 'video') {
-      <span class="post-card__play" aria-hidden="true"></span>
+      <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>
     } @else if (post.mediaType === 'image') {
       <span>Registro da comunidade</span>
     } @else {
@@ -49,21 +49,33 @@
         aria-label="Curtir publicacao"
         (click)="toggleLike()"
       >
-        <span class="post-card__icon post-card__icon--heart" aria-hidden="true"></span>
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
         {{ likes }}
       </button>
-      <button type="button" aria-label="Comentar publicacao">
-        <span class="post-card__icon post-card__icon--comment" aria-hidden="true"></span>
-        {{ post.comments }}
+
+      <button
+        type="button"
+        [class.post-card__action--active]="commentsOpen"
+        aria-label="Comentar publicacao"
+        (click)="toggleComments()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+        {{ commentsCount }}
       </button>
+
       <button type="button" aria-label="Compartilhar publicacao">
-        <span class="post-card__icon post-card__icon--share" aria-hidden="true"></span>
+        <span class="material-symbols-outlined" aria-hidden="true">share</span>
         {{ post.shares }}
       </button>
+
       <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()">
-        <span class="post-card__icon post-card__icon--save" aria-hidden="true"></span>
-        {{ isSaved ? 'Salvo' : 'Salvar' }}
-      </button>
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ isSaved ? 'bookmark' : 'bookmark_border' }}
+        </span> 1 </button>
     </div>
   </footer>
+
+  @if (commentsOpen) {
+    <app-comment-section [postId]="post.id" (commentAdded)="onCommentAdded()" />
+  }
 </article>
