@@ -6,9 +6,22 @@ import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-pop
 import { AuthModeToggle } from '../../../shared/components/auth-mode-toggle/auth-mode-toggle';
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
-import { SpectrumInput } from '../../../shared/components/input/input/input';
-import { SelectOption, SpectrumSelect } from '../../../shared/components/select/select';
-import { BrazilCity, BrazilState, CityService } from '../../../core/services/city/city.service';
+
+import {
+  SpectrumInput,
+} from '../../../shared/components/input/input/input';
+
+import {
+  SelectOption,
+  SpectrumSelect,
+} from '../../../shared/components/select/select';
+
+import {
+  BrazilCity,
+  BrazilState,
+  CityService,
+} from '../../../core/services/city/city.service';
+
 import { UserService } from '../../../core/services/user/user.service';
 import { GoogleAuthService} from '../../../core/services/user/google-auth.service';
 import { OAuthService } from 'angular-oauth2-oidc';
@@ -17,6 +30,7 @@ type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-login-page',
+
   imports: [
     ReactiveFormsModule,
     AlertPopup,
@@ -31,6 +45,7 @@ type AuthMode = 'login' | 'register';
   styleUrl: './login-page.scss',
 })
 export class LoginPage implements OnInit {
+
   private readonly formBuilder = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly cityService = inject(CityService);
@@ -42,12 +57,22 @@ export class LoginPage implements OnInit {
   private readonly authApiService = inject(AuthApiService)
 
   mode: AuthMode = 'login';
+
   registerStep = 1;
+
   isSubmitting = false;
   isLoadingStates = false;
   isLoadingCities = false;
-  alert: { type: AlertPopupType; title: string; message: string; actionLabel: string } | null = null;
+
+  alert: {
+    type: AlertPopupType;
+    title: string;
+    message: string;
+    actionLabel: string;
+  } | null = null;
+
   private alertRedirectUrl: string | null = null;
+
   states: BrazilState[] = [];
   cities: BrazilCity[] = [];
 
@@ -60,15 +85,27 @@ export class LoginPage implements OnInit {
     nickname: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     birthDate: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(30)]],
+    password: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(10),
+        Validators.maxLength(30),
+      ],
+    ],
     name: ['', Validators.required],
     stateId: ['', Validators.required],
     cityUser: ['', Validators.required],
   });
 
   ngOnInit(): void {
+
     const routeMode = this.route.snapshot.data['mode'];
-    this.mode = routeMode === 'register' ? 'register' : 'login';
+
+    this.mode = routeMode === 'register'
+      ? 'register'
+      : 'login';
+
     this.loadStates();
     this.registerForm.controls.stateId.valueChanges.subscribe((stateId) => {
       this.loadCities(stateId);
@@ -111,39 +148,57 @@ export class LoginPage implements OnInit {
   }
 
   get cityOptions(): SelectOption[] {
+
     const selectedState = this.selectedState;
 
     return this.cities.map((city) => ({
-      value: selectedState ? `${city.nome} - ${selectedState.sigla}` : city.nome,
+      value: selectedState
+        ? `${city.nome} - ${selectedState.sigla}`
+        : city.nome,
       label: city.nome,
     }));
   }
 
   get isCitySelectDisabled(): boolean {
-    return !this.registerForm.controls.stateId.value || this.isLoadingCities || !this.cities.length;
+    return (
+      !this.registerForm.controls.stateId.value ||
+      this.isLoadingCities ||
+      !this.cities.length
+    );
   }
 
   goToRegister(): void {
+
     this.mode = 'register';
     this.registerStep = 1;
+
     this.dismissAlert();
   }
 
   goToLogin(): void {
+
     this.mode = 'login';
     this.registerStep = 1;
+
     this.dismissAlert();
   }
 
   goToNextRegisterStep(): void {
-    const firstStepControls = ['nickname', 'email', 'birthDate', 'password'] as const;
+
+    const firstStepControls = [
+      'nickname',
+      'email',
+      'birthDate',
+      'password',
+    ] as const;
 
     firstStepControls.forEach((controlName) => {
       this.registerForm.controls[controlName].markAsTouched();
     });
 
     const hasInvalidField = firstStepControls.some(
-      (controlName) => this.registerForm.controls[controlName].invalid,
+      (controlName) =>
+        this.registerForm.controls[controlName].invalid,
     );
 
     if (!hasInvalidField) {
@@ -156,32 +211,53 @@ export class LoginPage implements OnInit {
   }
 
   submitLogin(): void {
+
     this.loginForm.markAllAsTouched();
 
     if (this.loginForm.invalid) {
+
       this.showAlert(
         'error',
         'Campos obrigatorios',
         'Informe seu nome de usuario ou email e sua senha para entrar.',
       );
+
       return;
     }
 
     this.isSubmitting = true;
-    this.userService.login(this.loginForm.getRawValue()).subscribe({
-      next: (response) => {
-        this.isSubmitting = false;
-        this.showAlert('success', 'Login realizado', response.message, 'Ir para home', '/home');
-      },
-      error: (error: unknown) => {
-        this.isSubmitting = false;
-        this.showAlert(
-          'error',
-          'Nao foi possivel entrar',
-          this.getErrorMessage(error, 'Verifique seu usuario, email e senha.'),
-        );
-      },
-    });
+
+    this.userService
+      .login(this.loginForm.getRawValue())
+      .subscribe({
+
+        next: (response) => {
+
+          this.isSubmitting = false;
+
+          this.showAlert(
+            'success',
+            'Login realizado',
+            response.message,
+            'Escolher interesses',
+            '/publicacoes(modal:interesses)',
+          );
+        },
+
+        error: (error: unknown) => {
+
+          this.isSubmitting = false;
+
+          this.showAlert(
+            'error',
+            'Nao foi possivel entrar',
+            this.getErrorMessage(
+              error,
+              'Verifique seu usuario, email e senha.',
+            ),
+          );
+        },
+      });
   }
 
   loginWithGoogle():void {
@@ -190,43 +266,66 @@ export class LoginPage implements OnInit {
   }
 
   submitRegister(): void {
+
     this.registerForm.markAllAsTouched();
 
     if (this.registerForm.invalid) {
+
       this.showAlert(
         'error',
         'Cadastro incompleto',
         'Preencha todos os campos obrigatorios para criar sua conta.',
       );
+
       return;
     }
 
-    const { stateId: _stateId, ...payload } = this.registerForm.getRawValue();
+    const {
+      stateId: _stateId,
+      ...payload
+    } = this.registerForm.getRawValue();
 
     this.isSubmitting = true;
+
     this.userService
       .create({
         ...payload,
         avatarUrl: 'https://placehold.co/200x200.png',
       })
       .subscribe({
+
         next: (response) => {
+
           this.isSubmitting = false;
-          this.showAlert('success', 'Cadastro criado', response.message, 'Entendi');
+
+          this.showAlert(
+            'success',
+            'Cadastro criado',
+            response.message,
+            'Entendi',
+          );
         },
+
         error: (error: unknown) => {
+
           this.isSubmitting = false;
+
           this.showAlert(
             'error',
             'Cadastro nao realizado',
-            this.getErrorMessage(error, 'Verifique os dados informados e tente novamente.'),
+            this.getErrorMessage(
+              error,
+              'Verifique os dados informados e tente novamente.',
+            ),
           );
         },
       });
   }
 
   dismissAlert(): void {
+
     const redirectUrl = this.alertRedirectUrl;
+
     this.alert = null;
     this.alertRedirectUrl = null;
 
@@ -235,9 +334,15 @@ export class LoginPage implements OnInit {
     }
   }
 
-  fieldError(form: 'login' | 'register', controlName: string): string {
+  fieldError(
+    form: 'login' | 'register',
+    controlName: string,
+  ): string {
+
     const control =
-      form === 'login' ? this.loginForm.get(controlName) : this.registerForm.get(controlName);
+      form === 'login'
+        ? this.loginForm.get(controlName)
+        : this.registerForm.get(controlName);
 
     if (!control || !control.touched || control.valid) {
       return '';
@@ -263,27 +368,46 @@ export class LoginPage implements OnInit {
   }
 
   private get selectedState(): BrazilState | undefined {
-    const selectedStateId = this.registerForm.controls.stateId.value;
-    return this.states.find((state) => String(state.id) === selectedStateId);
+
+    const selectedStateId =
+      this.registerForm.controls.stateId.value;
+
+    return this.states.find(
+      (state) =>
+        String(state.id) === selectedStateId,
+    );
   }
 
   private loadStates(): void {
+
     this.isLoadingStates = true;
+
     this.cityService.findStates().subscribe({
+
       next: (states) => {
+
         this.states = states;
         this.isLoadingStates = false;
         this.changeDetector.detectChanges();
       },
+
       error: () => {
+
         this.isLoadingStates = false;
-        this.showAlert('error', 'Estados indisponiveis', 'Nao foi possivel carregar os estados.');
+
+        this.showAlert(
+          'error',
+          'Estados indisponiveis',
+          'Nao foi possivel carregar os estados.',
+        );
       },
     });
   }
 
   private loadCities(stateId: string): void {
+
     this.cities = [];
+
     this.registerForm.controls.cityUser.setValue('');
 
     if (!stateId) {
@@ -291,17 +415,29 @@ export class LoginPage implements OnInit {
     }
 
     this.isLoadingCities = true;
-    this.cityService.findCitiesByState(stateId).subscribe({
-      next: (cities) => {
-        this.cities = cities;
-        this.isLoadingCities = false;
-        this.changeDetector.detectChanges();
-      },
-      error: () => {
-        this.isLoadingCities = false;
-        this.showAlert('error', 'Municipios indisponiveis', 'Nao foi possivel carregar os municipios.');
-      },
-    });
+
+    this.cityService
+      .findCitiesByState(stateId)
+      .subscribe({
+
+        next: (cities) => {
+
+          this.cities = cities;
+          this.isLoadingCities = false;
+          this.changeDetector.detectChanges();
+        },
+
+        error: () => {
+
+          this.isLoadingCities = false;
+
+          this.showAlert(
+            'error',
+            'Municipios indisponiveis',
+            'Nao foi possivel carregar os municipios.',
+          );
+        },
+      });
   }
 
   private showAlert(
@@ -311,18 +447,27 @@ export class LoginPage implements OnInit {
     actionLabel = 'Ok',
     redirectUrl: string | null = null,
   ): void {
+
     this.alert = {
       type,
       title,
       message,
       actionLabel,
     };
+
     this.alertRedirectUrl = redirectUrl;
     this.changeDetector.detectChanges();
   }
 
-  private getErrorMessage(error: unknown, fallback: string): string {
-    if (error instanceof Error && error.name === 'TimeoutError') {
+  private getErrorMessage(
+    error: unknown,
+    fallback: string,
+  ): string {
+
+    if (
+      error instanceof Error &&
+      error.name === 'TimeoutError'
+    ) {
       return 'O servidor demorou para responder. Tente novamente em alguns instantes.';
     }
 
@@ -336,11 +481,17 @@ export class LoginPage implements OnInit {
       return apiMessage.join(' ');
     }
 
-    if (typeof apiMessage === 'string' && apiMessage.trim()) {
+    if (
+      typeof apiMessage === 'string' &&
+      apiMessage.trim()
+    ) {
       return apiMessage;
     }
 
-    if (typeof error.error?.error === 'string' && error.error.error.trim()) {
+    if (
+      typeof error.error?.error === 'string' &&
+      error.error.error.trim()
+    ) {
       return error.error.error;
     }
 

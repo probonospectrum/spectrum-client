@@ -1,31 +1,8 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
-  title="Notificacoes"
-  subtitle="Central de alertas"
   (logout)="logout()"
 >
-  <button
-    class="notifications-action"
-    type="button"
-    social-actions
-    [disabled]="unreadCount === 0"
-    (click)="markAllRead()"
-  >
-    Marcar todas como lidas
-  </button>
-
-  <section class="notifications-summary" aria-label="Resumo de notificacoes">
-    <article>
-      <span>Nao lidas</span>
-      <strong>{{ unreadCount }}</strong>
-    </article>
-    <article>
-      <span>Total</span>
-      <strong>{{ notifications.length }}</strong>
-    </article>
-  </section>
-
   @if (loading) {
     <div class="notifications-loading" aria-label="Carregando notificacoes"></div>
   } @else if (notifications.length) {
@@ -38,6 +15,7 @@
         />
       }
     </section>
+    <p class="notifications-end">Não há mais mensagens</p>
   } @else {
     <section class="notifications-empty">
       <h2>Tudo em dia</h2>

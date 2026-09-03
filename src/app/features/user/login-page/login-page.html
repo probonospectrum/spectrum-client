@@ -1,6 +1,13 @@
 <app-auth-shell [compact]="isRegisterMode">
+
   @if (!isRegisterMode) {
-    <form class="auth-form auth-form--login" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+
+    <form
+      class="auth-form auth-form--login"
+      [formGroup]="loginForm"
+      (ngSubmit)="submitLogin()"
+    >
+
       <app-input
         label="Nome de usuario ou email"
         placeholder="Seu nome de usuario ou email"
@@ -28,11 +35,19 @@
         Entrar com o Google
       </button>
     </form>
+
   } @else {
+
     <app-auth-mode-toggle [registerStep]="registerStep" />
 
-    <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
+    <form
+      class="auth-form"
+      [formGroup]="registerForm"
+      (ngSubmit)="submitRegister()"
+    >
+
       @if (registerStep === 1) {
+
         <app-input
           label="Nome de usuario"
           placeholder="Seu nome de usuario"
@@ -67,8 +82,15 @@
           [error]="fieldError('register', 'password')"
         />
 
-        <app-button type="button" (click)="goToNextRegisterStep()">Proximo</app-button>
+        <app-button
+          type="button"
+          (click)="goToNextRegisterStep()"
+        >
+          Proximo
+        </app-button>
+
       } @else {
+
         <div class="auth-avatar" aria-hidden="true">
           <span></span>
         </div>
@@ -101,20 +123,42 @@
         />
 
         <div class="auth-actions">
-          <button class="auth-link" type="button" (click)="goToPreviousRegisterStep()">Voltar</button>
-          <app-button type="submit" [disabled]="isSubmitting">Cadastrar</app-button>
+
+          <button
+            class="auth-link"
+            type="button"
+            (click)="goToPreviousRegisterStep()"
+          >
+            Voltar
+          </button>
+
+          <app-button
+            type="submit"
+            [disabled]="isSubmitting"
+          >
+            Cadastrar
+          </app-button>
+
         </div>
+
       }
+
     </form>
 
-    <button class="auth-link auth-link--footer" type="button" (click)="goToLogin()">
+    <button
+      class="auth-link auth-link--footer"
+      type="button"
+      (click)="goToLogin()"
+    >
       Ja possui cadastro? Entrar
     </button>
+
   }
 
 </app-auth-shell>
 
 @if (alert) {
+
   <app-alert-popup
     [type]="alert.type"
     [title]="alert.title"
@@ -122,4 +166,5 @@
     [actionLabel]="alert.actionLabel"
     (dismissed)="dismissAlert()"
   />
+
 }
