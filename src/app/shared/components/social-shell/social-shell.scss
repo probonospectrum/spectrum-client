@@ -94,10 +94,16 @@
   position: sticky;
   top: 92px;
   height: calc(100vh - 108px);
-  display: grid;
-  align-content: space-between;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   padding: 18px 10px;
   border-right: 1px solid #d9dde2;
+}
+
+.social-sidebar__bottom {
+  display: grid;
+  gap: 8px;
 }
 
 .social-nav {
@@ -208,6 +214,15 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 22px;
+}
+
+.social-content__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.social-content__actions:empty {
+  display: none;
 }
 
 .social-content__header p,

@@ -2,10 +2,41 @@
   [user]="user"
   [suggestions]="suggestions"
   title="Publicacoes"
-  subtitle="Atualizacoes da comunidade"
+  [showContentHeader]="false"
   (logout)="logout()"
+  (createPost)="openCreatePost()"
 >
 
+
+  <section
+    class="post-composer"
+    role="button"
+    tabindex="0"
+    (click)="openCreatePost()"
+    (keydown.enter)="openCreatePost()"
+    (keydown.space)="openCreatePost()"
+  >
+    <div class="post-composer__avatar">
+      {{ userInitial }}
+    </div>
+
+    <div class="post-composer__content">
+      <span>O que você está pensando?</span>
+
+      <div class="post-composer__actions">
+        <span aria-hidden="true">📷</span>
+        <span aria-hidden="true">🎥</span>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="post-composer__publish"
+      (click)="$event.stopPropagation(); openCreatePost()"
+    >
+      Publicar
+    </button>
+  </section>
 
   @for (post of posts; track post.id) {
     <app-post-card [post]="post" (report)="openReport($event)" />
@@ -16,42 +47,83 @@
       <a routerLink="/publicacoes/nova">Criar publicacao</a>
     </section>
   }
+
+  @if (showCreatePost) {
+    <div
+      class="create-post-backdrop"
+      role="presentation"
+      (click)="closeCreatePost()"
+    >
+      <section
+        class="create-post-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-post-title"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="create-post-modal__close"
+          type="button"
+          aria-label="Fechar"
+          (click)="closeCreatePost()"
+        >
+          ×
+        </button>
+
+        <div class="create-post-modal__author">
+          <div class="create-post-modal__avatar">
+            {{ userInitial }}
+          </div>
+
+          <div>
+            <strong>{{ displayName }}</strong>
+            <span>@{{ nickname }}</span>
+          </div>
+        </div>
+
+        <textarea
+          id="create-post-title"
+          class="create-post-modal__textarea"
+          [(ngModel)]="newPostContent"
+          placeholder="O que está acontecendo?"
+          maxlength="420"
+        ></textarea>
+
+        <div class="create-post-modal__footer">
+          <span>Adicionar no seu post:</span>
+
+          <div class="create-post-modal__actions">
+            <button type="button" aria-label="Adicionar imagem">
+              📷
+            </button>
+
+            <button type="button" aria-label="Adicionar localização">
+              📍
+            </button>
+
+            <button type="button" aria-label="Adicionar vídeo">
+              🎥
+            </button>
+          </div>
+        </div>
+
+        <button
+          class="create-post-modal__submit"
+          type="button"
+          (click)="publishPost()"
+        >
+          Postar
+        </button>
+      </section>
+    </div>
+  }
+
 </app-social-shell>
 
 @if (reportPost) {
-  <div class="report-backdrop" role="presentation" (click)="reportPost = null">
-    <section
-      class="report-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="report-title"
-      (click)="$event.stopPropagation()"
-    >
-      <button class="report-modal__close" type="button" aria-label="Fechar" (click)="reportPost = null">
-        x
-      </button>
-
-      <p>Postagem</p>
-      <h2 id="report-title">Reportar publicacao</h2>
-      <span class="report-modal__subtitle">{{ reportPost.title }}</span>
-
-      <div class="report-options" role="radiogroup" aria-label="Motivo da denuncia">
-        @for (reason of reportReasons; track reason) {
-          <button
-            type="button"
-            role="radio"
-            [attr.aria-checked]="selectedReason === reason"
-            [class.report-options__item--active]="selectedReason === reason"
-            class="report-options__item"
-            (click)="selectedReason = reason"
-          >
-            {{ reason }}
-            <span aria-hidden="true"></span>
-          </button>
-        }
-      </div>
-
-      <button class="report-modal__submit" type="button" (click)="confirmReport()">Enviar denuncia</button>
-    </section>
-  </div>
+  <app-report-modal
+    title="O que está sendo reportado?"
+    (close)="reportPost = null"
+    (confirm)="confirmReport()"
+  />
 }

@@ -15,11 +15,15 @@
         </span>
       </label>
 
-      <a class="social-create" routerLink="/publicacoes/nova" aria-label="Criar publicacao">
-        <span class="material-symbols-outlined" aria-hidden="true">
-          add
-        </span>
-      </a>
+      <button
+        class="social-create"
+        type="button"
+        routerLink="/publicacoes/nova"
+        aria-label="Criar publicacao"
+        (click)="createPost.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      </button>
 
     </div>
   </header>
@@ -91,7 +95,21 @@
 
     <!-- CONTEÚDO PRINCIPAL -->
     <section class="social-content" aria-labelledby="social-title">
-      <ng-content select="[social-actions]"></ng-content>
+      @if (showContentHeader) {
+        <div class="social-content__header">
+          <div>
+            <p>{{ title }}</p>
+            <h1 id="social-title">
+              {{ subtitle }}
+            </h1>
+          </div>
+          <ng-content select="[social-actions]"></ng-content>
+        </div>
+      } @else {
+        <div class="social-content__actions">
+          <ng-content select="[social-actions]"></ng-content>
+        </div>
+      }
       <ng-content></ng-content>
     </section>
 
@@ -110,7 +128,9 @@
           <span>@{{ profile.nickname }}</span>
         </div>
         @if (profile.verified) {
-        <span class="material-symbols-outlined social-suggestion__verified" aria-label="Perfil verificado">verified</span>
+          <span class="material-symbols-outlined social-suggestion__verified" aria-label="Perfil verificado">
+            verified
+          </span>
         }
       </article>
       }
