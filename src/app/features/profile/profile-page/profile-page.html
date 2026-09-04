@@ -1,9 +1,4 @@
-<app-social-shell
-  [user]="user"
-  [suggestions]="suggestions"
-  [showContentHeader]="false"
-  (logout)="logout()"
->
+<app-social-shell [user]="user" [suggestions]="suggestions" [showContentHeader]="false" (logout)="logout()">
   <section class="profile-header">
     <div class="profile-header__cover">
       <img
@@ -23,14 +18,6 @@
             <p class="profile-header__username">@{{ nickname }}</p>
           </div>
           <div class="profile-header__actions">
-            <button
-              class="profile-header__report-btn"
-              type="button"
-              aria-label="Denunciar perfil"
-              (click)="openReport()"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
-            </button>
             <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
               Configurações de perfil
             </button>
@@ -39,11 +26,22 @@
 
         <div class="profile-header__meta">
           <span class="profile-header__joined">
-            <svg class="profile-header__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
+            <svg
+              class="profile-header__icon"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
             Entrou em {{ joinedDate }}
           </span>
@@ -65,46 +63,120 @@
       (click)="activeTab = 'posts'"
       aria-label="Publicações"
     >
-      <svg class="profile-tabs__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="7" height="7"/>
-        <rect x="14" y="3" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/>
-        <rect x="14" y="14" width="7" height="7"/>
+      <svg
+        class="profile-tabs__icon"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
       </svg>
     </button>
     <button
       class="profile-tabs__tab"
-      [class.profile-tabs__tab--active]="activeTab === 'shares'"
+      [class.profile-tabs__tab--active]="activeTab === 'reposts'"
       type="button"
-      (click)="activeTab = 'shares'"
-      aria-label="Compartilhamentos"
+      (click)="activeTab = 'reposts'"
+      aria-label="Reposts"
     >
-      <svg class="profile-tabs__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="17 1 21 5 17 9"/>
-        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-        <polyline points="7 23 3 19 7 15"/>
-        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-      </svg>
+      <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
+      <span class="profile-tabs__count">{{ reposts.length }}</span>
+    </button>
+    <button
+      class="profile-tabs__tab"
+      [class.profile-tabs__tab--active]="activeTab === 'saved'"
+      type="button"
+      (click)="activeTab = 'saved'"
+      aria-label="Posts salvos"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+      <span class="profile-tabs__count">{{ savedPosts.length }}</span>
     </button>
   </nav>
 
   <div class="profile-feed">
-    @for (post of userPosts; track post.id) {
-      <app-post-card [post]="post" />
-    }
+    @if (activeTab === 'posts') {
+      @for (post of userPosts; track post.id) {
+        <app-post-card
+          [post]="post"
+          [currentUser]="user"
+          (repost)="toggleRepost($event)"
+          (edit)="editPost($event)"
+          (remove)="deletePost($event)"
+          (report)="reportPost($event)"
+          (hideAuthor)="hideAuthor($event)"
+          (notInterested)="hidePost($event)"
+          (aiSpam)="reportPost($event, 'Parece spam de IA')"
+          (copyLink)="copyPostLink($event)"
+        />
+      }
 
-    @if (userPosts.length === 0) {
-      <div class="profile-feed__empty">
-        <p>Nenhuma publicação ainda.</p>
-      </div>
+      @if (userPosts.length === 0) {
+        <div class="profile-feed__empty">
+          <p>Nenhuma publicação ainda.</p>
+        </div>
+      }
+    } @else if (activeTab === 'reposts') {
+      @for (post of visibleReposts; track post.id) {
+        <app-post-card
+          [post]="post"
+          [currentUser]="user"
+          (repost)="toggleRepost($event)"
+          (edit)="editPost($event)"
+          (remove)="deletePost($event)"
+          (report)="reportPost($event)"
+          (hideAuthor)="hideAuthor($event)"
+          (notInterested)="hidePost($event)"
+          (aiSpam)="reportPost($event, 'Parece spam de IA')"
+          (copyLink)="copyPostLink($event)"
+        />
+      }
+
+      @if (visibleReposts.length === 0) {
+        <div class="profile-feed__empty">
+          <p>Nenhum repost ainda.</p>
+        </div>
+      }
+    } @else {
+      @for (post of visibleSavedPosts; track post.id) {
+        <app-post-card
+          [post]="post"
+          [currentUser]="user"
+          (repost)="toggleRepost($event)"
+          (edit)="editPost($event)"
+          (remove)="deletePost($event)"
+          (report)="reportPost($event)"
+          (hideAuthor)="hideAuthor($event)"
+          (notInterested)="hidePost($event)"
+          (aiSpam)="reportPost($event, 'Parece spam de IA')"
+          (copyLink)="copyPostLink($event)"
+        />
+      }
+
+      @if (visibleSavedPosts.length === 0) {
+        <div class="profile-feed__empty">
+          <p>Nenhum post salvo ainda.</p>
+        </div>
+      }
     }
   </div>
-</app-social-shell>
 
-@if (reportingProfile) {
-  <app-report-modal
-    title="O que está sendo reportado?"
-    (close)="reportingProfile = false"
-    (confirm)="confirmReport()"
-  />
-}
+  @if (profileAlert) {
+    <app-alert-popup
+      [type]="profileAlert.type"
+      [title]="profileAlert.title"
+      [message]="profileAlert.message"
+      actionLabel="Ok"
+      (dismissed)="profileAlert = null"
+    />
+  }
+</app-social-shell>

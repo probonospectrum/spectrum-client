@@ -128,10 +128,6 @@
   background: rgba(7, 46, 91, 0.08);
 }
 
-.comment-section__save {
-  margin-left: auto;
-}
-
 .comment-section__count {
   font: 700 12px/1 Arial, sans-serif;
 }
@@ -140,15 +136,9 @@
   color: #072e5b;
 }
 
-.comment-section__save.comment-section__action--active {
-  background: #072e5b;
-  color: #ffffff;
-}
-
-.comment-section__save.comment-section__action--active .material-symbols-outlined {
+.comment-section__action--active .material-symbols-outlined {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
-
 
 .comment-section__toggle {
   justify-self: start;
