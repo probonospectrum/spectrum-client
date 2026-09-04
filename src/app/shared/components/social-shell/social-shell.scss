@@ -60,14 +60,30 @@
 
 .social-create {
   justify-self: end;
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #d9dde2;
-  color: #072e5b;
-  font: 800 28px/1 Arial, sans-serif;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.social-create:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.social-create:active {
+  transform: translateY(1px);
+}
+
+.social-create .material-symbols-outlined {
+  font-size: 25px;
+  line-height: 1;
 }
 
 .social-layout {
@@ -85,7 +101,8 @@
   height: calc(100vh - 108px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 18px 10px;
   border-right: 1px solid #d9dde2;
 }
@@ -153,7 +170,7 @@
   color: #4c4c4c;
   cursor: pointer;
   text-align: left;
-  transform: translateY(150px);
+  margin-top: auto;
 }
 
 .social-avatar {
@@ -173,8 +190,6 @@
   min-width: 0;
 }
 
-/* FIX: excluído o ícone (.material-symbols-outlined) desses seletores genéricos de span,
-   pra não herdar display/overflow/font-size feitos pro @handle de texto */
 .social-user strong,
 .social-user small,
 .social-suggestion strong,
