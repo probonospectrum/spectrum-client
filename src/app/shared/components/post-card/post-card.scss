@@ -144,8 +144,8 @@
 .post-card__actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 5px;
 }
 
 .post-card__actions button {
@@ -162,6 +162,26 @@
 .post-card__action--active {
   background: #f0f4f8;
   color: #072e5b;
+}
+
+.post-card__actions button.post-card__action--liked {
+  background: transparent;
+  color: #0b63b6;
+}
+
+.post-card__actions button.post-card__action--disliked {
+  background: transparent;
+  color: #c0392b;
+}
+
+.post-card__actions button.post-card__action--liked:hover,
+.post-card__actions button.post-card__action--disliked:hover {
+  background: transparent;
+}
+
+.post-card__actions button.post-card__action--liked .material-symbols-outlined,
+.post-card__actions button.post-card__action--disliked .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
 }
 
 .post-card__icon {
@@ -200,28 +220,6 @@
   border-bottom: 2px solid currentColor;
 }
 
-.post-card__icon--share::before {
-  inset: 3px 5px 5px 3px;
-  border-top: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-}
-
-.post-card__icon--share::after {
-  top: 3px;
-  right: 4px;
-  width: 7px;
-  height: 7px;
-  border-top: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-  transform: rotate(45deg);
-}
-
-.post-card__icon--save::before {
-  inset: 2px 4px;
-  border: 2px solid currentColor;
-  border-bottom-width: 6px;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
-}
 
 @media (max-width: 540px) {
   .post-card {

@@ -14,7 +14,8 @@ export class PostCard {
   @Output() report = new EventEmitter<SpectrumPost>();
 
   liked = false;
-  saved = false;
+  disliked = false;
+  dislikesCount = 0;
   commentsOpen = false;
   addedCommentsCount = 0;
 
@@ -26,16 +27,22 @@ export class PostCard {
     return this.post.likes + (this.liked ? 1 : 0);
   }
 
-  get isSaved(): boolean {
-    return this.saved || this.post.saved;
-  }
-
   toggleLike(): void {
     this.liked = !this.liked;
+
+    if (this.liked && this.disliked) {
+      this.disliked = false;
+      this.dislikesCount--;
+    }
   }
 
-  toggleSaved(): void {
-    this.saved = !this.saved;
+  toggleDislike(): void {
+    this.disliked = !this.disliked;
+    this.dislikesCount += this.disliked ? 1 : -1;
+
+    if (this.disliked && this.liked) {
+      this.liked = false;
+    }
   }
 
   toggleComments(): void {

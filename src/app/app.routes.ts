@@ -6,7 +6,7 @@ export const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'home',
+    redirectTo: 'publicacoes',
     pathMatch: 'full',
   },
 
@@ -59,15 +59,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/interests/interests-page/interests-page')
         .then((m) => m.InterestsPage),
-
-    canActivate: [authGuard],
-  },
-
-  {
-    path: 'home',
-    loadComponent: () =>
-      import('./features/home/home-page/home-page')
-        .then((m) => m.HomePage),
 
     canActivate: [authGuard],
   },
