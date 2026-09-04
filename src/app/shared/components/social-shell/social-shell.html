@@ -1,142 +1,116 @@
-<main class="social-page">
+<div class="social-search">
 
-    <header class="social-header">
+  <header class="social-header">
     <div class="social-header__inner">
 
-      <a class="social-logo" routerLink="/home" aria-label="Spectrum">
-        <img src="/logo.png" alt="Spectrum" class="logo">
-      </a>
+      <span class="sr-only">Pesquisar</span>
 
-      <label class="social-search">
-        <span class="sr-only">Pesquisar</span>
-        <input type="search" placeholder="Pesquise cidades, comunidades, usuarios" />
-        <span class="material-symbols-outlined" aria-hidden="true">
-          search
-        </span>
-      </label>
-
-      <button
-        class="social-create"
-        type="button"
-        routerLink="/publicacoes/nova"
-        aria-label="Criar publicacao"
-        (click)="createPost.emit()"
+      <span
+        class="material-symbols-outlined social-search__icon"
+        aria-hidden="true"
       >
-        <span class="material-symbols-outlined" aria-hidden="true">add</span>
-      </button>
+        search
+      </span>
+
+      <input
+        type="search"
+        placeholder="Pesquise cidades, comunidades, usuarios"
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()"
+      />
+
+      @if (searchTerm.trim()) {
+
+        <div class="social-search__results">
+
+          <!-- skeleton -->
+          @if (isSearching) {
+
+            <div class="search-skeleton-list">
+
+              @for (item of searchSkeletons; track $index) {
+                <div class="search-skeleton">
+                  <div class="search-skeleton__avatar"></div>
+                  <div class="search-skeleton__content">
+                    <div class="search-skeleton__title"></div>
+                    <div class="search-skeleton__description"></div>
+                  </div>
+                </div>
+              }
+
+            </div>
+          }
+
+          <!-- exibindo os resultados -->
+          @else {
+
+            @if (searchResults.length > 0) {
+
+              <div class="search-results">
+
+                <span class="search-results__title">
+                  RESULTADOS
+                </span>
+
+                @for (result of searchResults; track result.id) {
+
+                  <button
+                    type="button"
+                    class="search-result"
+                  >
+
+                    <span class="search-result__icon">
+                      @if (result.type === 'Pessoa') {
+                        <span class="material-symbols-outlined">
+                          person
+                        </span>
+                      }
+                      @if (result.type === 'Comunidade') {
+                        <span class="material-symbols-outlined">
+                          groups
+                        </span>
+                      }
+                      @if (result.type === 'Publicação') {
+                        <span class="material-symbols-outlined">
+                          article
+                        </span>
+                      }
+                    </span>
+
+                    <span class="search-result__content">
+                      <strong>
+                        {{ result.name }}
+                      </strong>
+                      <small>
+                        {{ result.description }}
+                      </small>
+                    </span>
+
+                  </button>
+                }
+              </div>
+
+            } @else {
+
+              <div class="search-no-results">
+                <span class="material-symbols-outlined">
+                  search_off
+                </span>
+                <strong>
+                  Nenhum resultado encontrado
+                </strong>
+                <span>
+                  Tente pesquisar por outro termo.
+                </span>
+              </div>
+
+            }
+          }
+
+        </div>
+      }
 
     </div>
   </header>
 
-  <div class="social-layout">
-
-    <!-- MENU LATERAL -->
-    <aside class="social-sidebar" aria-label="Navegacao principal">
-
-      <nav class="social-nav">
-
-        <!-- INÍCIO -->
-        <a class="social-nav__item" routerLink="/publicacoes" routerLinkActive="social-nav__item--active">
-          <span class="material-symbols-outlined">
-            home
-          </span>
-          Inicio
-        </a>
-
-        <!-- NOTIFICAÇÕES -->
-        <a class="social-nav__item" routerLink="/notificacoes" routerLinkActive="social-nav__item--active">
-          <span class="material-symbols-outlined">
-            notifications
-          </span>
-          Notificações
-        </a>
-
-        <!-- PERFIL -->
-        <a class="social-nav__item" routerLink="/perfil" routerLinkActive="social-nav__item--active">
-          <span class="material-symbols-outlined">
-            account_circle
-          </span>
-          Perfil
-        </a>
-
-        <!-- CONFIGURAÇÕES -->
-        <a class="social-nav__item" routerLink="/configuracoes" routerLinkActive="social-nav__item--active">
-          <span class="material-symbols-outlined">
-            settings
-          </span>
-          Configurações
-        </a>
-
-      </nav>
-
-      <!-- USUÁRIO LOGADO -->
-      <a class="social-user" routerLink="/perfil">
-        <span class="social-avatar">
-          {{ userInitial }}
-        </span>
-        <span class="social-user__text">
-          <strong>{{ displayName }}</strong>
-          <small>@{{ nickname }}</small>
-        </span>
-        <span class="material-symbols-outlined social-user__more" aria-hidden="true">
-          more_horiz
-        </span>
-      </a>
-
-      <!-- SAIR -->
-      <button class="social-nav__item" type="button" (click)="logout.emit()">
-        <span class="material-symbols-outlined">
-          logout
-        </span>
-        Sair
-      </button>
-
-    </aside>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <section class="social-content" aria-labelledby="social-title">
-      @if (showContentHeader) {
-        <div class="social-content__header">
-          <div>
-            <p>{{ title }}</p>
-            <h1 id="social-title">
-              {{ subtitle }}
-            </h1>
-          </div>
-          <ng-content select="[social-actions]"></ng-content>
-        </div>
-      } @else {
-        <div class="social-content__actions">
-          <ng-content select="[social-actions]"></ng-content>
-        </div>
-      }
-      <ng-content></ng-content>
-    </section>
-
-    <!-- SUGESTÕES -->
-    <aside class="social-suggestions" aria-label="Sugestoes para voce">
-      <h2>Sugestões para você</h2>
-
-      @for (profile of suggestions; track profile.nickname) {
-      <article class="social-suggestion">
-        <span class="social-avatar social-avatar--small">
-          <img class="social-avatar" src="https://img.magnific.com/vetores-premium/icone-de-perfil-de-avatar-em-estilo-plano-ilustracao-vetorial-de-perfil-de-usuario-feminino-em-fundo-isolado-perfil-de-mulheres-sinal-conceito-de-negocio_157943-38866.jpg?semt=ais_hybrid&w=740&q=80"
-            alt="Foto de perfil" />
-        </span>
-        <div>
-          <strong>{{ profile.name }}</strong>
-          <span>@{{ profile.nickname }}</span>
-        </div>
-        @if (profile.verified) {
-          <span class="material-symbols-outlined social-suggestion__verified" aria-label="Perfil verificado">
-            verified
-          </span>
-        }
-      </article>
-      }
-
-    </aside>
-
-  </div>
-
-</main>
+</div>
