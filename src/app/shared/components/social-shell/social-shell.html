@@ -25,10 +25,9 @@
     <button 
       class="social-create" 
       type="button" 
-      routerLink="/publicacoes/nova"
       aria-label="Criar publicacao"
-      (click)="createPost.emit()" >
-      <span class="material-symbols-outlined" aria-hidden="true">+</span>
+      (click)="handleCreatePost()" >
+      <span class="material-symbols-outlined" aria-hidden="true">post_add</span>
     </button>
   </header>
 

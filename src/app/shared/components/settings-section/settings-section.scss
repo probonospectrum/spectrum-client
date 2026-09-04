@@ -1,10 +1,10 @@
 .settings-section {
   display: grid;
-  gap: 16px;
-  padding: 22px;
+  gap: 4px;
+  padding: 18px 22px 4px;
   border-radius: 8px;
   background: #fcfcfc;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 .settings-section h2,
@@ -14,7 +14,7 @@
 
 .settings-section h2 {
   color: #072e5b;
-  font: 800 20px/1.2 Arial, sans-serif;
+  font: 800 18px/1.2 Arial, sans-serif;
 }
 
 .settings-section p {
@@ -25,5 +25,4 @@
 
 .settings-section__body {
   display: grid;
-  gap: 12px;
 }

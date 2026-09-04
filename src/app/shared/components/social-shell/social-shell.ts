@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { SuggestedProfile } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
 
@@ -11,6 +11,8 @@ import { LoggedUser } from '../../../core/services/user/user.service';
   styleUrl: './social-shell.scss',
 })
 export class SocialShell {
+  private readonly router = inject(Router);
+
   @Input() user: LoggedUser | null = null;
   @Input() suggestions: SuggestedProfile[] = [];
   @Input() title = 'Publicacoes';
@@ -29,5 +31,10 @@ export class SocialShell {
 
   get userInitial(): string {
     return this.displayName.charAt(0).toUpperCase();
+  }
+
+  handleCreatePost(): void {
+    this.createPost.emit();
+    void this.router.navigate(['/publicacoes'], { queryParams: { criar: '1' } });
   }
 }

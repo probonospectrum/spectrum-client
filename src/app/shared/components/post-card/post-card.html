@@ -1,74 +1,175 @@
-<article class="post-card"> 
-  <header class="post-card__header"> 
-    <span class="post-card__avatar">{{ post.authorInitial }}</span> 
-    <div class="post-card__author"> 
-      <strong>{{ post.authorName }}</strong> 
-      <span>@{{ post.authorNickname }}</span> 
-    </div> 
-    <button class="post-card__more" type="button" aria-label="Reportar publicacao" (click)="report.emit(post)"> 
-      <span class="material-symbols-outlined">more_horiz</span>
-    </button> 
-  </header> 
- 
-  <h2>{{ post.title }}</h2> 
-  <p class="post-card__copy">{{ post.content }}</p> 
- 
-  <div class="post-card__location"> 
+<article class="post-card">
+  <header class="post-card__header">
+    <span class="post-card__avatar">{{ post.authorInitial }}</span>
+    <div class="post-card__author">
+      <strong>{{ post.authorName }}</strong>
+      <span>@{{ post.authorNickname }}</span>
+    </div>
+
+    <div class="post-card__menu-wrap" (click)="$event.stopPropagation()">
+      <button
+        class="post-card__more"
+        type="button"
+        aria-label="Abrir opcoes da publicacao"
+        [attr.aria-expanded]="menuOpen"
+        (click)="toggleMenu($event)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+      </button>
+
+      @if (menuOpen) {
+        <div class="post-card__menu" role="menu">
+          @if (isOwnPost) {
+            <button
+              type="button"
+              role="menuitem"
+              [disabled]="!canModifyOwnPost"
+              (click)="selectModifyAction(edit)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              <span>
+                Editar publicacao
+                <small>{{ editWindowStatus }}</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              [disabled]="!canModifyOwnPost"
+              (click)="selectModifyAction(remove)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              <span>
+                Excluir publicacao
+                <small>{{ editWindowStatus }}</small>
+              </span>
+            </button>
+            <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
+              <span
+                class="material-symbols-outlined"
+                [class.post-card__filled-icon]="isSaved"
+                aria-hidden="true"
+              >
+                {{ isSaved ? 'bookmark' : 'bookmark_border' }}
+              </span>
+              Salvar
+            </button>
+            <button type="button" role="menuitem" (click)="selectMenuAction(copyLink)">
+              <span class="material-symbols-outlined" aria-hidden="true">link</span>
+              Copiar link
+            </button>
+          } @else {
+            <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
+              <span
+                class="material-symbols-outlined"
+                [class.post-card__filled-icon]="isSaved"
+                aria-hidden="true"
+              >
+                {{ isSaved ? 'bookmark' : 'bookmark_border' }}
+              </span>
+              Salvar
+            </button>
+            <button type="button" role="menuitem" (click)="selectMenuAction(copyLink)">
+              <span class="material-symbols-outlined" aria-hidden="true">link</span>
+              Copiar link
+            </button>
+            <button type="button" role="menuitem" (click)="selectMenuAction(hideAuthor)">
+              <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+              Ocultar publicacoes desse usuario
+            </button>
+            <button type="button" role="menuitem" (click)="selectMenuAction(notInterested)">
+              <span class="material-symbols-outlined" aria-hidden="true">block</span>
+              Nao tenho interesse
+            </button>
+            <button type="button" role="menuitem" (click)="selectMenuAction(aiSpam)">
+              <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+              Parece spam de IA
+            </button>
+            <button type="button" role="menuitem" (click)="selectMenuAction(report)">
+              <span class="material-symbols-outlined" aria-hidden="true">flag</span>
+              Denunciar publicacao
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </header>
+
+  <h2>{{ post.title }}</h2>
+  <p class="post-card__copy">{{ post.content }}</p>
+
+  <div class="post-card__location">
     <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-    {{ post.authorCity }} 
-  </div> 
- 
-  <div 
-    class="post-card__media" 
-    [class.post-card__media--text]="post.mediaType === 'text'" 
-    [class.post-card__media--image]="post.mediaType === 'image'" 
-  > 
-    @if (post.mediaType === 'video') { 
+    {{ post.authorCity }}
+  </div>
+
+  <div
+    class="post-card__media"
+    [class.post-card__media--text]="post.mediaType === 'text'"
+    [class.post-card__media--image]="post.mediaType === 'image'"
+  >
+    @if (post.mediaType === 'video') {
       <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>
-    } @else if (post.mediaType === 'image') { 
-      <span>Registro da comunidade</span> 
-    } @else { 
-      <span>Publicacao em texto</span> 
-    } 
-  </div> 
- 
-  @if (post.tags.length) { 
-    <div class="post-card__tags" aria-label="Tags"> 
-      @for (tag of post.tags; track tag) { 
-        <span>#{{ tag }}</span> 
-      } 
-    </div> 
-  } 
- 
-  <footer class="post-card__footer"> 
-    <span>{{ post.publishedAtLabel }}</span> 
-    <div class="post-card__actions" aria-label="Interacoes"> 
-      <button 
-        type="button" 
-        [class.post-card__action--active]="liked" 
-        aria-label="Curtir publicacao" 
-        (click)="toggleLike()" 
-      > 
-        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
-        {{ likes }} 
-      </button> 
+    } @else if (post.mediaType === 'image') {
+      <span>Registro da comunidade</span>
+    } @else {
+      <span>Publicacao em texto</span>
+    }
+  </div>
 
-      <button type="button" aria-label="Comentar publicacao"> 
-        <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
-        {{ post.comments }} 
-      </button> 
+  @if (post.tags.length) {
+    <div class="post-card__tags" aria-label="Tags">
+      @for (tag of post.tags; track tag) {
+        <span>#{{ tag }}</span>
+      }
+    </div>
+  }
 
-      <button type="button" aria-label="Compartilhar publicacao"> 
-        <span class="material-symbols-outlined" aria-hidden="true">share</span>
-        {{ post.shares }} 
-      </button> 
-
-      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()"> 
+  <footer class="post-card__footer">
+    <span>{{ post.publishedAtLabel }}</span>
+    <div class="post-card__actions" aria-label="Interacoes">
+      <button
+        type="button"
+        [class.post-card__action--active]="post.liked"
+        aria-label="Curtir publicacao"
+        (click)="toggleLike()"
+      >
         <span class="material-symbols-outlined" aria-hidden="true">
+          {{ post.liked ? 'favorite' : 'favorite_border' }}
+        </span>
+        {{ likes }}
+      </button>
+      <button type="button" aria-label="Comentar publicacao" (click)="toggleComments()">
+        <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+        {{ commentsCount }}
+      </button>
+      <button
+        type="button"
+        [class.post-card__action--active]="post.reposted"
+        [attr.aria-label]="post.reposted ? 'Remover repost' : 'Repostar publicacao'"
+        (click)="repost.emit(post)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
+        {{ reposts }}
+      </button>
+      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()">
+        <span
+          class="material-symbols-outlined"
+          [class.post-card__filled-icon]="isSaved"
+          aria-hidden="true"
+        >
           {{ isSaved ? 'bookmark' : 'bookmark_border' }}
         </span>
-        {{ isSaved ? 'Salvo' : 'Salvar' }} 
-      </button> 
-    </div> 
-  </footer> 
+        {{ isSaved ? 'Salvo' : 'Salvar' }}
+      </button>
+    </div>
+  </footer>
+
+  @if (commentsOpen) {
+    <app-comment-section
+      [postId]="post.id"
+      [currentUser]="currentUser"
+      (commentAdded)="onCommentAdded()"
+    />
+  }
 </article>
