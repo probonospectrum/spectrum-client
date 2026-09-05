@@ -8,8 +8,9 @@ import { LoggedUser } from '../../../core/services/user/user.service';
 interface SearchResult {
   id: number;
   name: string;
-  description: string;
-  type: 'Pessoa' | 'Comunidade' | 'Publicação';
+  type: 'Pessoa' | 'Cidade';
+  nickname?: string;
+  location?: string;
 }
 
 @Component({
@@ -39,42 +40,41 @@ export class SocialShell {
 
   // Dados MOCKADOS
   private mockSearchResults: SearchResult[] = [
-
     {
       id: 1,
-      name: 'Ana Souza',
-      description: 'Desenvolvedora de Software',
-      type: 'Pessoa'
+      name: 'Juliana a Banana',
+      type: 'Pessoa',
+      nickname: 'juliana.a.banana'
     },
     {
       id: 2,
-      name: 'João Silva',
-      description: 'Estudante de tecnologia',
-      type: 'Pessoa'
+      name: 'Carlão da ZN',
+      type: 'Pessoa',
+      nickname: 'carlao.zn'
     },
     {
       id: 3,
-      name: 'Comunidade de Tecnologia',
-      description: 'Compartilhe conhecimentos sobre tecnologia',
-      type: 'Comunidade'
-    },
+      name: 'Luana Prado',
+      type: 'Pessoa',
+      nickname: 'luanapradoofc'
+    }, 
     {
       id: 4,
-      name: 'Programação e Desenvolvimento',
-      description: 'Espaço para conversar sobre programação',
-      type: 'Comunidade'
+      name: 'Gustavo Lima',
+      type: 'Pessoa',
+      nickname: 'gustavolimaevc'
     },
     {
       id: 5,
-      name: 'Como começar na programação?',
-      description: 'Publicação • 12 comentários',
-      type: 'Publicação'
+      name: 'Guarulhos',
+      location: 'São Paulo, Brasil',
+      type: 'Cidade'
     },
     {
       id: 6,
-      name: 'Desenvolvimento Web',
-      description: 'Publicação • 8 comentários',
-      type: 'Publicação'
+      name: 'São Paulo',
+      location: 'São Paulo, Brasil',
+      type: 'Cidade'
     }
   ];
 
@@ -105,7 +105,8 @@ export class SocialShell {
 
       this.searchResults = this.mockSearchResults.filter(result =>
         result.name.toLowerCase().includes(term) ||
-        result.description.toLowerCase().includes(term) ||
+        result.nickname?.toLowerCase().includes(term) ||
+        result.location?.toLowerCase().includes(term) ||
         result.type.toLowerCase().includes(term)
 
       );
