@@ -10,6 +10,13 @@
       <div class="social-search">
 
         <span class="sr-only">Pesquisar</span>
+        
+        <input
+          type="search"
+          placeholder="Pesquise por cidades e usuarios"
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+        />
 
         <span
           class="material-symbols-outlined social-search__icon"
@@ -17,13 +24,6 @@
         >
           search
         </span>
-
-        <input
-          type="search"
-          placeholder="Pesquise cidades, comunidades, usuarios"
-          [(ngModel)]="searchTerm"
-          (input)="onSearch()"
-        />
 
         @if (searchTerm.trim()) {
 
@@ -65,38 +65,32 @@
                       class="search-result"
                     >
 
-                      <span class="search-result__icon">
+                    <span class="search-result__icon">
+                      @if (result.type === 'Pessoa') {
+                        {{ result.name.charAt(0).toUpperCase() }}
+                      }
 
-                        @if (result.type === 'Pessoa') {
-                          <span class="material-symbols-outlined">
-                            person
-                          </span>
-                        }
-
-                        @if (result.type === 'Comunidade') {
-                          <span class="material-symbols-outlined">
-                            groups
-                          </span>
-                        }
-
-                        @if (result.type === 'Publicação') {
-                          <span class="material-symbols-outlined">
-                            article
-                          </span>
-                        }
-
-                      </span>
+                      @if (result.type === 'Cidade') {
+                        <span class="material-symbols-outlined">
+                          location_city
+                        </span>
+                      }
+                    </span>
 
                       <span class="search-result__content">
-
                         <strong>
                           {{ result.name }}
                         </strong>
 
-                        <small>
-                          {{ result.description }}
-                        </small>
-
+                        @if (result.type === 'Pessoa' && result.nickname) {
+                          <small>
+                            @{{ result.nickname }}
+                          </small>
+                        } @else {
+                          <small>
+                            {{ result.location }}
+                          </small>
+                        }
                       </span>
 
                     </button>
