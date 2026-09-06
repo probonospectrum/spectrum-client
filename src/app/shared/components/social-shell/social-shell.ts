@@ -130,4 +130,15 @@ export class SocialShell {
     this.createPost.emit();
     void this.router.navigate(['/publicacoes'], { queryParams: { criar: '1' } });
   }
+
+  closeSearch(): void {
+    this.isSearching = false;
+    this.searchResults = [];
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.closeSearch();
+    }
+  }
 }
