@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 
 @Component({
   selector: 'app-comment-section',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReportModal],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
@@ -20,6 +21,8 @@ export class CommentSection implements OnInit {
   comments: SpectrumComment[] = [];
   showAll = false;
   newComment = '';
+  openMenuCommentId: string | null = null;
+  reportingCommentId: string | null = null;
 
   constructor(
     private readonly postService: PostService,
@@ -48,6 +51,11 @@ export class CommentSection implements OnInit {
 
   get userInitial(): string {
     return this.displayName.charAt(0).toUpperCase();
+  }
+
+  @HostListener('document:click')
+  closeMenu(): void {
+    this.openMenuCommentId = null;
   }
 
   toggleShowAll(): void {
@@ -147,7 +155,28 @@ export class CommentSection implements OnInit {
     }
   }
 
-  reportComment(commentId: string): void {
+  toggleCommentMenu(event: MouseEvent, commentId: string): void {
+    event.stopPropagation();
+    this.openMenuCommentId = this.openMenuCommentId === commentId ? null : commentId;
+  }
+
+  openReportModal(commentId: string): void {
+    this.reportingCommentId = commentId;
+    this.openMenuCommentId = null;
+  }
+
+  closeReportModal(): void {
+    this.reportingCommentId = null;
+  }
+
+  onReportConfirm(reason: string): void {
+    if (this.reportingCommentId) {
+      this.reportComment(this.reportingCommentId, reason);
+    }
+    this.reportingCommentId = null;
+  }
+
+  reportComment(commentId: string, reason?: string): void {
     return;
   }
 

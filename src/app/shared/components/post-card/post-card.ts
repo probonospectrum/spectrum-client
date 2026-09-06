@@ -41,6 +41,8 @@ export class PostCard implements OnChanges, OnDestroy {
   addedCommentsCount = 0;
   menuOpen = false;
   now = Date.now();
+  voteState: 'up' | 'down' | null = null;
+  dislikesCount = 0;
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -86,6 +88,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(): void {
+    this.voteState = this.post.liked ? 'up' : null;
     this.configureEditWindowTimer();
   }
 
@@ -112,6 +115,44 @@ export class PostCard implements OnChanges, OnDestroy {
       this.post = previousPost;
     }
   }
+
+upvote(): void {
+  const previousState = this.voteState;
+
+  if (previousState === 'up') {
+    if (this.post.liked) {
+      this.toggleLike();
+    }
+    this.voteState = null;
+    return;
+  }
+
+  if (previousState === 'down') {
+    this.dislikesCount = Math.max(0, this.dislikesCount - 1);
+  }
+
+  if (!this.post.liked) {
+    this.toggleLike();
+  }
+  this.voteState = 'up';
+}
+
+downvote(): void {
+  const previousState = this.voteState;
+
+  if (previousState === 'down') {
+    this.voteState = null;
+    this.dislikesCount = Math.max(0, this.dislikesCount - 1);
+    return;
+  }
+
+  if (previousState === 'up' && this.post.liked) {
+    this.toggleLike();
+  }
+
+  this.voteState = 'down';
+  this.dislikesCount++;
+}
 
   toggleSaved(): void {
     const previousPost = this.post;

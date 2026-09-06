@@ -1,8 +1,7 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
-  title="Configuracoes"
-  subtitle="Conta, seguranca e preferencias"
+  [showContentHeader]="false"
   (logout)="logout()"
 >
   <button class="settings-save" type="button" social-actions (click)="save()">Salvar alteracoes</button>
@@ -25,14 +24,14 @@
         <span class="settings-row__arrow" aria-hidden="true"></span>
       </button>
 
-      <button class="settings-row settings-row--button" type="button" (click)="goToProfile()">
+      <button class="settings-row settings-row--button settings-row--avatar" type="button" (click)="goToProfile()">
         <span class="settings-row__content">
-          <strong>Foto / Avatar</strong>
-          <small>Inicial {{ profile.avatarInitial }}</small>
-        </span>
-        <span class="settings-row__avatar">{{ profile.avatarInitial }}</span>
-        <span class="settings-row__arrow" aria-hidden="true"></span>
-      </button>
+        <strong>Foto / Avatar</strong>
+        <small>Inicial {{ profile.avatarInitial }}</small>
+      </span>
+      <span class="settings-row__avatar">{{ profile.avatarInitial }}</span>
+      <span class="settings-row__arrow" aria-hidden="true"></span>
+    </button>
 
       <div class="settings-row">
         <span class="settings-row__content">

@@ -47,6 +47,10 @@
   gap: 4px;
 }
 
+.settings-row--avatar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .settings-row__content strong,
 .settings-row__content small {
   overflow: hidden;

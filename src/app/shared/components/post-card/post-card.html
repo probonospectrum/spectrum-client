@@ -129,16 +129,23 @@
     <span>{{ post.publishedAtLabel }}</span>
     <div class="post-card__actions" aria-label="Interacoes">
       <button
-        type="button"
-        [class.post-card__action--active]="post.liked"
-        aria-label="Curtir publicacao"
-        (click)="toggleLike()"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">
-          {{ post.liked ? 'favorite' : 'favorite_border' }}
-        </span>
-        {{ likes }}
-      </button>
+  type="button"
+  [class.post-card__vote--up]="voteState === 'up'"
+  aria-label="Curtir publicacao"
+  (click)="upvote()"
+>
+  <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+  {{ likes }}
+</button>
+<button
+  type="button"
+  [class.post-card__vote--down]="voteState === 'down'"
+  aria-label="Nao curtir publicacao"
+  (click)="downvote()"
+>
+  <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
+  {{ dislikesCount }}
+</button>
       <button type="button" aria-label="Comentar publicacao" (click)="toggleComments()">
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
         {{ commentsCount }}
