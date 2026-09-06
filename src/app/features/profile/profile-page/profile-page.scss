@@ -217,3 +217,39 @@
     align-self: flex-start;
   }
 }
+//MenuToggle:
+.profile-header__menu-wrapper {
+  position: relative; 
+  display: inline-block;
+}
+
+.profile-header__menu {
+  position: absolute;
+  top: 100%;       
+  right: 0;         
+  margin-top: 8px;
+  min-width: 180px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;      
+  overflow: hidden;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color:#072e5b;
+
+    &:hover {
+      background:#072e5b;
+      color:#fff;
+    }
+  }
+}

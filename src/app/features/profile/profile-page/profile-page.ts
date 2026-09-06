@@ -22,6 +22,21 @@ export class ProfilePage {
 
   activeTab: 'posts' | 'shares' = 'posts';
   reportingProfile = false;
+  menuOpen = false;
+
+  toggleMenu(): void {
+    this.menuOpen = !this.menuOpen;
+  }
+
+  goToSavedPosts(): void {
+    this.menuOpen = false;
+    this.router.navigate(['/perfil/salvos']);
+  }
+
+  openReport(): void {
+    this.menuOpen = false;
+    this.reportingProfile = true; 
+  }
 
   get displayName(): string {
     return this.user?.name || 'Usuário Spectrum';
@@ -58,10 +73,6 @@ export class ProfilePage {
 
   goToSettings(): void {
     void this.router.navigateByUrl('/configuracoes');
-  }
-
-  openReport(): void {
-    this.reportingProfile = true;
   }
 
   confirmReport(): void {

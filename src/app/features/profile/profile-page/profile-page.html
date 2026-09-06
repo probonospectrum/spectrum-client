@@ -23,14 +23,30 @@
             <p class="profile-header__username">@{{ nickname }}</p>
           </div>
           <div class="profile-header__actions">
-            <button
-              class="profile-header__report-btn"
-              type="button"
-              aria-label="Denunciar perfil"
-              (click)="openReport()"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
-            </button>
+            <div class="profile-header__menu-wrapper">
+    <button
+      class="profile-header__report-btn"
+      type="button"
+      aria-label="Mais opções"
+      (click)="toggleMenu()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+    </button>
+
+    @if (menuOpen) {
+      <div class="profile-header__menu">
+        <button type="button" (click)="goToSavedPosts()">
+          <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+          Itens salvos
+        </button>
+
+        <button type="button" (click)="openReport()">
+          <span class="material-symbols-outlined" aria-hidden="true">flag</span>
+          Denunciar perfil
+        </button>
+      </div>
+    }
+  </div>
             <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
               Configurações de perfil
             </button>

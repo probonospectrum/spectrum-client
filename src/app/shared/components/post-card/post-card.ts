@@ -13,6 +13,7 @@ import { SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
 
 const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
+import { SavedPostsService } from '../../../core/services/posts/savedPost.service';
 
 @Component({
   selector: 'app-post-card',
@@ -31,17 +32,34 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() notInterested = new EventEmitter<SpectrumPost>();
   @Output() aiSpam = new EventEmitter<SpectrumPost>();
   @Output() copyLink = new EventEmitter<SpectrumPost>();
+  @Input() showSaveButton = true;
+
+  constructor(private savedPostsService:SavedPostsService){}
 
   commentsOpen = false;
   addedCommentsCount = 0;
   menuOpen = false;
-  now = Date.now();
+  now = Date.now(); 
   liked = false;
   disliked = false;
   dislikesCount = 0;
+  isSaved = false;
+
+  ngOnInit(): void {
+    this.isSaved = this.savedPostsService.isSaved(this.post.id);
+  }
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
+  toggleSaved(): void{
+    this.isSaved = !this.isSaved;
+
+     if (this.isSaved) {
+    this.savedPostsService.save(this.post);
+    } else {
+    this.savedPostsService.unsave(this.post.id);
+      }
+  }
   get likes(): number {
     return this.post.likes + (this.liked ? 1 : 0);
   }
@@ -50,9 +68,9 @@ export class PostCard implements OnChanges, OnDestroy {
     return this.post.comments + this.addedCommentsCount;
   }
 
-  get isSaved(): boolean {
+  /*get isSaved(): boolean {
     return this.post.saved;
-  }
+  }*/
 
   get isOwnPost(): boolean {
     if (!this.currentUser) {
@@ -110,12 +128,12 @@ export class PostCard implements OnChanges, OnDestroy {
     }
   }
 
-  toggleSaved(): void {
+  /*toggleSaved(): void {
     this.post = {
       ...this.post,
       saved: !this.post.saved,
     };
-  }
+  }*/
 
   toggleComments(): void {
     this.commentsOpen = !this.commentsOpen;

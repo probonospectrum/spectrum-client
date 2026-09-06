@@ -100,6 +100,15 @@ export const routes: Routes = [
   },
 
   {
+  path: 'perfil/salvos',
+  loadComponent: () =>
+    import('./features/profile/savedPosts/saved-post')
+      .then((m) => m.SavedPostsComponent),
+
+  canActivate: [authGuard],
+  },
+
+  {
     path: 'configuracoes',
     loadComponent: () =>
       import('./features/settings/settings-page/settings-page')
