@@ -2,50 +2,22 @@
   [user]="user"
   [suggestions]="suggestions"
   title="Configuracoes"
-  subtitle="Conta, seguranca e preferencias"
+  subtitle="Preferencias e seguranca"
   (logout)="logout()"
 >
   <button class="settings-save" type="button" social-actions (click)="save()">Salvar alteracoes</button>
 
-  <div class="settings-list">
-    <app-settings-section title="Conta">
-      <button class="settings-row settings-row--button" type="button" (click)="goToProfile()">
-        <span class="settings-row__content">
-          <strong>Alterar nome</strong>
-          <small>{{ profile.name }}</small>
-        </span>
-        <span class="settings-row__arrow" aria-hidden="true"></span>
-      </button>
-
-      <button class="settings-row settings-row--button" type="button" (click)="goToProfile()">
-        <span class="settings-row__content">
-          <strong>Username</strong>
-          <small>@{{ profile.nickname }}</small>
-        </span>
-        <span class="settings-row__arrow" aria-hidden="true"></span>
-      </button>
-
-      <button class="settings-row settings-row--button" type="button" (click)="goToProfile()">
-        <span class="settings-row__content">
-          <strong>Foto / Avatar</strong>
-          <small>Inicial {{ profile.avatarInitial }}</small>
-        </span>
-        <span class="settings-row__avatar">{{ profile.avatarInitial }}</span>
-        <span class="settings-row__arrow" aria-hidden="true"></span>
-      </button>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>E-mail principal</strong>
-          <small>{{ user?.email || profile.email }}</small>
-        </span>
-      </div>
-
-      <label class="settings-row">
-        <span class="settings-row__content">
-          <strong>Idioma</strong>
-          <small>Idioma usado na interface</small>
-        </span>
+  <div class="settings-grid">
+    <app-settings-section
+      title="Conta"
+      description="Dados basicos usados para identificar sua conta no Spectrum."
+    >
+      <label>
+        E-mail principal
+        <input type="email" [value]="user?.email || 'usuario@spectrum.com'" disabled />
+      </label>
+      <label>
+        Idioma
         <select
           [ngModel]="settings.language"
           (ngModelChange)="setSetting('language', $event)"
@@ -57,137 +29,59 @@
       </label>
     </app-settings-section>
 
-    <app-settings-section title="Seguranca">
-      <button class="settings-row settings-row--button" type="button" (click)="togglePasswordForm()">
-        <span class="settings-row__content">
-          <strong>Alterar senha</strong>
-          <small>{{ passwordExpanded ? 'Ocultar campos de senha' : 'Atualizar senha da conta' }}</small>
-        </span>
-        <span class="settings-row__arrow" aria-hidden="true"></span>
-      </button>
-
-      @if (passwordExpanded) {
-        <div class="settings-password">
-          <label>
-            Senha atual
-            <input type="password" [(ngModel)]="currentPassword" name="currentPassword" />
-          </label>
-          <label>
-            Nova senha
-            <input type="password" [(ngModel)]="newPassword" name="newPassword" />
-          </label>
-        </div>
-      }
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Sessoes ativas</strong>
-          <small>{{ settings.activeSessions }} sessoes - {{ settings.trustedDevice }}</small>
-        </span>
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Autenticacao de dois fatores</strong>
-          <small>Exigir uma etapa extra ao entrar</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.twoFactorAuth"
-          (checkedChange)="setSetting('twoFactorAuth', $event)"
-        />
-      </div>
+    <app-settings-section title="Preferencias" description="Ajustes gerais da experiencia.">
+      <app-toggle-switch
+        label="Modo compacto"
+        [checked]="settings.compactMode"
+        (checkedChange)="setSetting('compactMode', $event)"
+      />
+      <app-toggle-switch
+        label="Receber novidades"
+        [checked]="settings.news"
+        (checkedChange)="setSetting('news', $event)"
+      />
     </app-settings-section>
 
-    <app-settings-section title="Preferencias">
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Conta privada</strong>
-          <small>Aprovar seguidores antes de liberar suas publicacoes</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.privateAccount"
-          (checkedChange)="setSetting('privateAccount', $event)"
-        />
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Tema claro/escuro</strong>
-          <small>{{ settings.darkTheme ? 'Tema escuro ativo' : 'Tema claro ativo' }}</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.darkTheme"
-          (checkedChange)="setSetting('darkTheme', $event)"
-        />
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Modo compacto</strong>
-          <small>Reduzir espacamentos no feed</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.compactMode"
-          (checkedChange)="setSetting('compactMode', $event)"
-        />
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Receber novidades</strong>
-          <small>Comunicados sobre recursos e melhorias</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.news"
-          (checkedChange)="setSetting('news', $event)"
-        />
-      </div>
+    <app-settings-section title="Notificacoes" description="Escolha quais alertas elu deseja receber.">
+      <app-toggle-switch
+        label="Notificacoes dentro do app"
+        [checked]="settings.inAppNotifications"
+        (checkedChange)="setSetting('inAppNotifications', $event)"
+      />
+      <app-toggle-switch
+        label="E-mails"
+        [checked]="settings.emailNotifications"
+        (checkedChange)="setSetting('emailNotifications', $event)"
+      />
+      <app-toggle-switch
+        label="Atualizacoes importantes"
+        [checked]="settings.importantUpdates"
+        (checkedChange)="setSetting('importantUpdates', $event)"
+      />
+      <app-toggle-switch
+        label="Alertas de seguranca"
+        [checked]="settings.securityAlerts"
+        (checkedChange)="setSetting('securityAlerts', $event)"
+      />
     </app-settings-section>
 
-    <app-settings-section title="Notificacoes">
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Notificacoes dentro do app</strong>
-          <small>Alertas enquanto voce usa o Spectrum</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.inAppNotifications"
-          (checkedChange)="setSetting('inAppNotifications', $event)"
-        />
+    <app-settings-section title="Seguranca" description="Simulacao local de senha e dispositivos.">
+      <div class="settings-session">
+        <span>Sessoes ativas</span>
+        <strong>{{ settings.activeSessions }}</strong>
       </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>E-mails</strong>
-          <small>Receber notificacoes no e-mail principal</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.emailNotifications"
-          (checkedChange)="setSetting('emailNotifications', $event)"
-        />
+      <div class="settings-session">
+        <span>Dispositivo confiavel</span>
+        <strong>{{ settings.trustedDevice }}</strong>
       </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Atualizacoes importantes</strong>
-          <small>Priorizar avisos de alta relevancia</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.importantUpdates"
-          (checkedChange)="setSetting('importantUpdates', $event)"
-        />
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
-          <strong>Alertas de seguranca</strong>
-          <small>Notificar sobre acessos e atividades sensiveis</small>
-        </span>
-        <app-toggle-switch
-          [checked]="settings.securityAlerts"
-          (checkedChange)="setSetting('securityAlerts', $event)"
-        />
-      </div>
+      <label>
+        Senha atual
+        <input type="password" [(ngModel)]="currentPassword" name="currentPassword" />
+      </label>
+      <label>
+        Nova senha
+        <input type="password" [(ngModel)]="newPassword" name="newPassword" />
+      </label>
     </app-settings-section>
   </div>
 
@@ -195,7 +89,7 @@
     <app-alert-popup
       type="success"
       title="Configuracoes salvas"
-      message="As preferencias foram atualizadas."
+      message="As preferencias foram atualizadas localmente para demonstracao."
       actionLabel="Ok"
       (dismissed)="showSuccess = false"
     />

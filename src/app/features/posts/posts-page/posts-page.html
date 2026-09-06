@@ -20,52 +20,26 @@
       {{ userInitial }}
     </div>
 
-    <div class="post-composer__body">
-      <div class="post-composer__field">
-        <span>O que você está pensando?</span>
+    <div class="post-composer__content">
+      <span>O que você está pensando?</span>
 
-        <button
-          type="button"
-          class="post-composer__publish"
-          (click)="$event.stopPropagation(); openCreatePost()"
-        >
-          Publicar
-        </button>
-      </div>
-
-      <div class="post-composer__actions" aria-label="Adicionar mídia">
-        <button
-          type="button"
-          aria-label="Adicionar imagem"
-          (click)="$event.stopPropagation(); openCreatePost()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
-        </button>
-
-        <button
-          type="button"
-          aria-label="Adicionar vídeo"
-          (click)="$event.stopPropagation(); openCreatePost()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
-        </button>
+      <div class="post-composer__actions">
+        <span aria-hidden="true">📷</span>
+        <span aria-hidden="true">🎥</span>
       </div>
     </div>
+
+    <button
+      type="button"
+      class="post-composer__publish"
+      (click)="$event.stopPropagation(); openCreatePost()"
+    >
+      Publicar
+    </button>
   </section>
 
   @for (post of posts; track post.id) {
-    <app-post-card
-      [post]="post"
-      [currentUser]="user"
-      (report)="openReport($event)"
-      (edit)="editPost($event)"
-      (remove)="deletePost($event)"
-      (repost)="toggleRepost($event)"
-      (hideAuthor)="hideAuthor($event)"
-      (notInterested)="hidePost($event)"
-      (aiSpam)="openReport($event, 'Parece spam de IA')"
-      (copyLink)="copyPostLink($event)"
-    />
+    <app-post-card [post]="post" (report)="openReport($event)" />
   } @empty {
     <section class="posts-empty">
       <h2>Nenhuma publicacao por aqui</h2>
@@ -84,56 +58,51 @@
         class="create-post-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="create-post-modal-title"
+        aria-labelledby="create-post-title"
         (click)="$event.stopPropagation()"
       >
-        <header class="create-post-modal__header">
-          <div class="create-post-modal__author">
-            <div class="create-post-modal__avatar">
-              {{ userInitial }}
-            </div>
+        <button
+          class="create-post-modal__close"
+          type="button"
+          aria-label="Fechar"
+          (click)="closeCreatePost()"
+        >
+          ×
+        </button>
 
-            <div>
-              <h2 id="create-post-modal-title">Criar publicação</h2>
-              <strong>{{ displayName }}</strong>
-              <span>@{{ nickname }}</span>
-            </div>
+        <div class="create-post-modal__author">
+          <div class="create-post-modal__avatar">
+            {{ userInitial }}
           </div>
 
-          <button
-            class="create-post-modal__close"
-            type="button"
-            aria-label="Fechar"
-            (click)="closeCreatePost()"
-          >
-            <span class="material-symbols-outlined" aria-hidden="true">close</span>
-          </button>
-        </header>
+          <div>
+            <strong>{{ displayName }}</strong>
+            <span>@{{ nickname }}</span>
+          </div>
+        </div>
 
-        <label class="create-post-modal__field">
-          <textarea
-            class="create-post-modal__textarea"
-            [(ngModel)]="newPostContent"
-            placeholder="O que está acontecendo?"
-            maxlength="420"
-            aria-label="Conteúdo da publicação"
-          ></textarea>
-          <span>{{ newPostContent.length }}/420</span>
-        </label>
+        <textarea
+          id="create-post-title"
+          class="create-post-modal__textarea"
+          [(ngModel)]="newPostContent"
+          placeholder="O que está acontecendo?"
+          maxlength="420"
+        ></textarea>
 
-        <div class="create-post-modal__toolbar">
-          <span>Adicionar no post</span>
+        <div class="create-post-modal__footer">
+          <span>Adicionar no seu post:</span>
+
           <div class="create-post-modal__actions">
             <button type="button" aria-label="Adicionar imagem">
-              <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+              📷
             </button>
 
             <button type="button" aria-label="Adicionar localização">
-              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+              📍
             </button>
 
             <button type="button" aria-label="Adicionar vídeo">
-              <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
+              🎥
             </button>
           </div>
         </div>
@@ -141,10 +110,9 @@
         <button
           class="create-post-modal__submit"
           type="button"
-          [disabled]="!newPostContent.trim()"
           (click)="publishPost()"
         >
-          Publicar
+          Postar
         </button>
       </section>
     </div>
@@ -157,15 +125,5 @@
     title="O que está sendo reportado?"
     (close)="reportPost = null"
     (confirm)="confirmReport()"
-  />
-}
-
-@if (feedAlert) {
-  <app-alert-popup
-    [type]="feedAlert.type"
-    [title]="feedAlert.title"
-    [message]="feedAlert.message"
-    actionLabel="Ok"
-    (dismissed)="feedAlert = null"
   />
 }

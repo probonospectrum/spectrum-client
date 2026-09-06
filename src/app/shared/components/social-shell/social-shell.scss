@@ -71,30 +71,14 @@
 .social-create {
   grid-column: 3;
   justify-self: end;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border: 0;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
-}
-
-.social-create:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-}
-
-.social-create:active {
-  transform: translateY(1px);
-}
-
-.social-create .material-symbols-outlined {
-  font-size: 25px;
-  line-height: 1;
+  border-radius: 8px;
+  background: #d9dde2;
+  color: #072e5b;
+  font: 800 28px/1 Arial, sans-serif;
 }
 
 .social-layout {
@@ -112,8 +96,7 @@
   height: calc(100vh - 108px);
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 8px;
+  justify-content: space-between;
   padding: 18px 10px;
   border-right: 1px solid #d9dde2;
 }
@@ -181,7 +164,7 @@
   color: #4c4c4c;
   cursor: pointer;
   text-align: left;
-  margin-top: auto;
+  transform: translateY(150px);
 }
 
 .social-avatar {
@@ -201,6 +184,8 @@
   min-width: 0;
 }
 
+/* FIX: excluído o ícone (.material-symbols-outlined) desses seletores genéricos de span,
+   pra não herdar display/overflow/font-size feitos pro @handle de texto */
 .social-user strong,
 .social-user small,
 .social-suggestion strong,
@@ -338,4 +323,233 @@
     border-right: 0;
     border-bottom: 1px solid #d9dde2;
   }
+}
+
+// PESQUISA
+
+.social-search {
+  position: relative;
+}
+
+.social-search__icon {
+  flex-shrink: 0;
+}
+
+.social-search__results {
+  position: absolute;
+
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+
+  min-width: 360px;
+  max-height: 420px;
+
+  overflow-y: auto;
+
+  background: #ffffff;
+
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.12);
+
+  z-index: 100;
+}
+
+.search-skeleton-list {
+  display: flex;
+  flex-direction: column;
+
+  padding: 12px;
+}
+
+.search-skeleton {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 12px;
+}
+
+.search-skeleton__avatar {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #e8e8e8;
+
+  animation: search-skeleton-pulse 1.3s ease-in-out infinite;
+}
+
+.search-skeleton__content {
+  flex: 1;
+}
+
+.search-skeleton__title,
+.search-skeleton__description {
+  background: #e8e8e8;
+
+  border-radius: 5px;
+
+  animation: search-skeleton-pulse 1.3s ease-in-out infinite;
+}
+
+.search-skeleton__title {
+  width: 45%;
+  height: 12px;
+
+  margin-bottom: 9px;
+}
+
+.search-skeleton__description {
+  width: 75%;
+  height: 9px;
+}
+
+@keyframes search-skeleton-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+
+}
+
+
+// RESULTADOS DA PESQUISA
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+
+  padding: 12px;
+}
+
+.search-results__title {
+  padding: 8px 12px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+
+  color: #888888;
+}
+
+// RESULTADO INDIVIDUAL DA PESQUISA
+
+.search-result {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+
+  padding: 12px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+.search-result__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  margin-right: 12px;
+
+  border-radius: 50%;
+
+  background: #eeeeee;
+
+  color: #555555;
+}
+
+.search-result__content {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.search-result__content strong {
+  font-size: 14px;
+
+  color: #222222;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result__content small {
+  font-size: 12px;
+
+  color: #777777;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+// NENHUM RESULTADO PARA A PESQUISA
+
+.search-no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 45px 20px;
+
+  text-align: center;
+
+  color: #777777;
+}
+
+.search-no-results .material-symbols-outlined {
+  margin-bottom: 10px;
+
+  font-size: 32px;
+}
+
+.search-no-results strong {
+  margin-bottom: 5px;
+
+  font-size: 14px;
+
+  color: #333333;
+}
+
+.search-no-results span:last-child {
+  font-size: 12px;
 }

@@ -130,28 +130,34 @@
     <div class="post-card__actions" aria-label="Interacoes">
       <button
         type="button"
-        [class.post-card__action--active]="post.liked"
+        [class.post-card__action--liked]="liked"
         aria-label="Curtir publicacao"
         (click)="toggleLike()"
       >
-        <span class="material-symbols-outlined" aria-hidden="true">
-          {{ post.liked ? 'favorite' : 'favorite_border' }}
-        </span>
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
         {{ likes }}
       </button>
-      <button type="button" aria-label="Comentar publicacao" (click)="toggleComments()">
+
+      <button
+        type="button"
+        [class.post-card__action--disliked]="disliked"
+        aria-label="Nao curtir publicacao"
+        (click)="toggleDislike()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
+        {{ dislikesCount }}
+      </button>
+
+      <button
+        type="button"
+        [class.post-card__action--active]="commentsOpen"
+        aria-label="Comentar publicacao"
+        (click)="toggleComments()"
+      >
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
         {{ commentsCount }}
       </button>
-      <button
-        type="button"
-        [class.post-card__action--active]="post.reposted"
-        [attr.aria-label]="post.reposted ? 'Remover repost' : 'Repostar publicacao'"
-        (click)="repost.emit(post)"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
-        {{ reposts }}
-      </button>
+
       <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()">
         <span
           class="material-symbols-outlined"
@@ -166,10 +172,6 @@
   </footer>
 
   @if (commentsOpen) {
-    <app-comment-section
-      [postId]="post.id"
-      [currentUser]="currentUser"
-      (commentAdded)="onCommentAdded()"
-    />
+    <app-comment-section [postId]="post.id" (commentAdded)="onCommentAdded()" />
   }
 </article>

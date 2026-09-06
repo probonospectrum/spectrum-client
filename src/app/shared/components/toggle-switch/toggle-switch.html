@@ -1,7 +1,5 @@
 <label class="toggle">
-  @if (label) {
-    <span>{{ label }}</span>
-  }
+  <span>{{ label }}</span>
   <input type="checkbox" [checked]="checked" (change)="checkedChange.emit($any($event.target).checked)" />
   <i aria-hidden="true"></i>
 </label>

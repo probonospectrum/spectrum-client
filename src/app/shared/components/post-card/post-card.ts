@@ -4,18 +4,15 @@ import {
   EventEmitter,
   HostListener,
   Input,
-  inject,
   OnChanges,
   OnDestroy,
   Output,
 } from '@angular/core';
 import { CommentSection } from '../../../features/posts/comment-section/comment-section';
-import {
-  POST_EDIT_WINDOW_MS,
-  PostService,
-  SpectrumPost,
-} from '../../../core/services/posts/post.service';
+import { SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
+
+const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 @Component({
   selector: 'app-post-card',
@@ -24,8 +21,6 @@ import { LoggedUser } from '../../../core/services/user/user.service';
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
-  private readonly postService = inject(PostService);
-
   @Input({ required: true }) post!: SpectrumPost;
   @Input() currentUser: LoggedUser | null = null;
   @Output() report = new EventEmitter<SpectrumPost>();
@@ -41,19 +36,18 @@ export class PostCard implements OnChanges, OnDestroy {
   addedCommentsCount = 0;
   menuOpen = false;
   now = Date.now();
+  liked = false;
+  disliked = false;
+  dislikesCount = 0;
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
   get likes(): number {
-    return this.post.likes;
+    return this.post.likes + (this.liked ? 1 : 0);
   }
 
   get commentsCount(): number {
     return this.post.comments + this.addedCommentsCount;
-  }
-
-  get reposts(): number {
-    return this.post.reposts;
   }
 
   get isSaved(): boolean {
@@ -65,14 +59,11 @@ export class PostCard implements OnChanges, OnDestroy {
       return false;
     }
 
-    return (
-      this.post.createdBy === this.currentUser._id ||
-      this.post.authorNickname === this.currentUser.nickname
-    );
+    return this.post.authorNickname === this.currentUser.nickname;
   }
 
   get canModifyOwnPost(): boolean {
-    const createdAt = new Date(this.post.createdAt || this.post.publishedAt).getTime();
+    const createdAt = new Date(this.post.publishedAt).getTime();
 
     if (!this.isOwnPost || !Number.isFinite(createdAt)) {
       return false;
@@ -99,32 +90,31 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleLike(): void {
-    const previousPost = this.post;
-    this.post = {
-      ...this.post,
-      liked: !this.post.liked,
-      likes: Math.max(0, this.post.likes + (this.post.liked ? -1 : 1)),
-    };
+    const willLike = !this.liked;
 
-    try {
-      this.post = this.postService.togglePostLike(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
+    if (willLike && this.disliked) {
+      this.disliked = false;
+      this.dislikesCount = Math.max(0, this.dislikesCount - 1);
+    }
+
+    this.liked = willLike;
+  }
+
+  toggleDislike(): void {
+    const wasLiked = this.liked;
+    this.disliked = !this.disliked;
+    this.dislikesCount = Math.max(0, this.dislikesCount + (this.disliked ? 1 : -1));
+
+    if (this.disliked && wasLiked) {
+      this.toggleLike();
     }
   }
 
   toggleSaved(): void {
-    const previousPost = this.post;
     this.post = {
       ...this.post,
       saved: !this.post.saved,
     };
-
-    try {
-      this.post = this.postService.togglePostSaved(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
-    }
   }
 
   toggleComments(): void {
