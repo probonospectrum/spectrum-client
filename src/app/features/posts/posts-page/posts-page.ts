@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
+import { InterestsPage } from '../../../features/interests/interests-page/interests-page';
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
@@ -17,7 +18,16 @@ interface FeedAlert {
 
 @Component({
   selector: 'app-posts-page',
-  imports: [CommonModule, FormsModule, RouterLink, SocialShell, PostCard, ReportModal, AlertPopup],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    SocialShell,
+    PostCard,
+    ReportModal,
+    AlertPopup,
+    InterestsPage,
+  ],
   templateUrl: './posts-page.html',
   styleUrl: './posts-page.scss',
 })
@@ -31,6 +41,7 @@ export class PostsPage implements OnInit {
   readonly suggestions = this.postService.suggestions;
   allPosts = this.postService.getPosts(this.user);
   showCreatePost = false;
+  showInterests = false;
   newPostContent = '';
   reportPost: SpectrumPost | null = null;
   selectedReason = 'Discurso de odio';
@@ -69,6 +80,8 @@ export class PostsPage implements OnInit {
     if (this.route.snapshot.queryParamMap.get('criar') === '1') {
       this.openCreatePost();
     }
+
+    this.showInterests = !this.userService.getInteresses(this.user)?.length;
   }
 
   @HostListener('document:keydown.escape')
@@ -227,6 +240,13 @@ export class PostsPage implements OnInit {
       message: 'Sua publicacao ja aparece no feed.',
     };
   }
+
+onInteressesEscolhidos(interesses: string[]): void {
+  console.log('🟠 onInteressesEscolhidos RECEBIDO no pai', interesses);
+  this.userService.salvarInteresses(this.user, interesses);
+  this.showInterests = false;
+  console.log('🔵 showInterests agora é', this.showInterests);
+}
 
   private refreshPosts(): void {
     this.allPosts = this.postService.getPosts(this.user);

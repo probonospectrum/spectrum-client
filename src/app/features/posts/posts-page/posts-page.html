@@ -7,7 +7,6 @@
   (createPost)="openCreatePost()"
 >
 
-
   <section
     class="post-composer"
     role="button"
@@ -88,17 +87,8 @@
         (click)="$event.stopPropagation()"
       >
         <header class="create-post-modal__header">
-          <div class="create-post-modal__author">
-            <div class="create-post-modal__avatar">
-              {{ userInitial }}
-            </div>
-
-            <div>
-              <h2 id="create-post-modal-title">Criar publicação</h2>
-              <strong>{{ displayName }}</strong>
-              <span>@{{ nickname }}</span>
-            </div>
-          </div>
+          <span class="create-post-modal__spacer" aria-hidden="true"></span>
+          <h2 id="create-post-modal-title">Criar post</h2>
 
           <button
             class="create-post-modal__close"
@@ -109,6 +99,17 @@
             <span class="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
         </header>
+
+        <div class="create-post-modal__author">
+          <div class="create-post-modal__avatar">
+            {{ userInitial }}
+          </div>
+
+          <div class="create-post-modal__author-info">
+            <strong>{{ displayName }}</strong>
+            <span>@{{ nickname }}</span>
+          </div>
+        </div>
 
         <label class="create-post-modal__field">
           <textarea
@@ -167,5 +168,11 @@
     [message]="feedAlert.message"
     actionLabel="Ok"
     (dismissed)="feedAlert = null"
+  />
+}
+
+@if (showInterests) {
+  <app-interests-page
+    (fechou)="onInteressesEscolhidos($event)"
   />
 }
