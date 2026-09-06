@@ -33,29 +33,29 @@
     </aside>
 
     <form class="create-form" (ngSubmit)="publish()">
-      <p>Formulário</p>
+      <p>Formulario</p>
       <h2 id="create-post-title">Detalhes da publicacao</h2>
 
       <label>
-        Título
+        Titulo
         <input name="title" type="text" maxlength="90" [(ngModel)]="title"
           placeholder="Ex: Movimento na praca central" />
       </label>
 
       <label>
-        Conteúdo
+        Conteudo
         <textarea name="content" rows="7" maxlength="420" [(ngModel)]="content"
           placeholder="Conte o que aconteceu de forma objetiva"></textarea>
       </label>
 
       <label>
-        Localizacão
+        Localizacao
         <input name="authorCity" type="text" [(ngModel)]="authorCity" placeholder="Ex: Centro, Salvador - BA" />
       </label>
 
       <div class="create-form__grid">
         <label>
-          Tipo de mídia
+          Tipo de midia
           <select name="mediaType" [(ngModel)]="mediaType">
             @for (type of mediaTypes; track type.value) {
             <option [value]="type.value">{{ type.label }}</option>
