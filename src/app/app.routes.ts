@@ -38,29 +38,19 @@ export const routes: Routes = [
       import('./features/user/forgot-password-page/forgot-password-page').then(
         (m) => m.ForgotPasswordPage,
       ),
-  },  
+  },
   {
-  path: 'reset-password',
-  loadComponent: () =>
-    import('./features/user/reset-password-page/reset-password-page').then(
-      (m) => m.ResetPasswordPage,
-    ),
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/user/reset-password-page/reset-password-page').then(
+        (m) => m.ResetPasswordPage,
+      ),
   },
   {
     path: 'verify-email',
     loadComponent: () =>
       import('./features/user/verify-email-page/verify-email-page')
         .then((m) => m.VerifyEmailPage),
-  },
-
-  {
-    path: 'interesses',
-    outlet: 'modal',
-    loadComponent: () =>
-      import('./features/interests/interests-page/interests-page')
-        .then((m) => m.InterestsPage),
-
-    canActivate: [authGuard],
   },
 
   {
@@ -81,6 +71,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
 
+  {
+    path: 'publicacoes/:id/editar',
+    loadComponent: () =>
+      import('./features/posts/create-post-page/create-post-page').then((m) => m.CreatePostPage),
+    canActivate: [authGuard],
+  },
   {
     path: 'notificacoes',
     loadComponent: () =>
@@ -107,10 +103,4 @@ export const routes: Routes = [
 
     canActivate: [authGuard],
   },
-{
-  path: 'interesses',
-  loadComponent: () =>
-    import('./features/interests/interests-page/interests-page')
-      .then((m) => m.InterestsPage),
-},
 ];

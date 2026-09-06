@@ -31,11 +31,14 @@ export interface ProfileData {
 export interface SettingsData {
   language: string;
   compactMode: boolean;
+  privateAccount: boolean;
+  darkTheme: boolean;
   inAppNotifications: boolean;
   emailNotifications: boolean;
   importantUpdates: boolean;
   securityAlerts: boolean;
   news: boolean;
+  twoFactorAuth: boolean;
   activeSessions: number;
   trustedDevice: string;
 }
@@ -101,11 +104,14 @@ export class AccountMockService {
   private settings: SettingsData = {
     language: 'pt-BR',
     compactMode: false,
+    privateAccount: false,
+    darkTheme: false,
     inAppNotifications: true,
     emailNotifications: true,
     importantUpdates: true,
     securityAlerts: true,
     news: false,
+    twoFactorAuth: false,
     activeSessions: 2,
     trustedDevice: 'Windows - Sao Paulo',
   };
