@@ -16,6 +16,7 @@
           placeholder="Pesquise por cidades e usuarios"
           [(ngModel)]="searchTerm"
           (input)="onSearch()"
+          (keydown)="onSearchKeydown($event)"
         />
 
         <span
@@ -130,7 +131,6 @@
       <button
         class="social-create"
         type="button"
-        routerLink="/publicacoes/nova"
         aria-label="Criar publicacao"
         (click)="createPost.emit()"
       >
