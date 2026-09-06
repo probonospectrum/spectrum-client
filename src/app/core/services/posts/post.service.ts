@@ -522,7 +522,7 @@ export class PostService {
         publishedAtLabel: 'Publicado em 10/04/2026, as 11:30',
         likes: 47,
         liked: false,
-        comments: 12,
+        comments: 0,
         reposts: 3,
         reposted: false,
         saved: false,
