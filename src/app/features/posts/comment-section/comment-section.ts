@@ -1,19 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
-import { LoggedUser, UserService } from '../../../core/services/user/user.service';
-import { ReportModal } from '../../../shared/components/report-modal/report-modal';
+import { UserService } from '../../../core/services/user/user.service';
 
 @Component({
   selector: 'app-comment-section',
-  imports: [CommonModule, FormsModule, ReportModal],
+  imports: [CommonModule, FormsModule],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
 export class CommentSection implements OnInit {
   @Input({ required: true }) postId!: string;
-  @Input() currentUser: LoggedUser | null = null;
   @Output() commentAdded = new EventEmitter<void>();
 
   readonly visibleCount = 2;
@@ -21,8 +19,12 @@ export class CommentSection implements OnInit {
   comments: SpectrumComment[] = [];
   showAll = false;
   newComment = '';
-  openMenuCommentId: string | null = null;
-  reportingCommentId: string | null = null;
+
+  private likedIds = new Set<string>();
+  private dislikedIds = new Set<string>();
+  private savedIds = new Set<string>();
+  private likeCounts = new Map<string, number>();
+  private dislikeCounts = new Map<string, number>();
 
   constructor(
     private readonly postService: PostService,
@@ -30,7 +32,11 @@ export class CommentSection implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.comments = this.postService.getComments(this.postId, this.currentUser);
+    this.comments = this.postService.getComments(this.postId);
+    this.comments.forEach((comment) => {
+      this.likeCounts.set(comment.id, 0);
+      this.dislikeCounts.set(comment.id, 0);
+    });
   }
 
   get visibleComments(): SpectrumComment[] {
@@ -53,11 +59,6 @@ export class CommentSection implements OnInit {
     return this.displayName.charAt(0).toUpperCase();
   }
 
-  @HostListener('document:click')
-  closeMenu(): void {
-    this.openMenuCommentId = null;
-  }
-
   toggleShowAll(): void {
     this.showAll = !this.showAll;
   }
@@ -76,117 +77,76 @@ export class CommentSection implements OnInit {
         authorInitial: this.userInitial,
         content,
         dateLabel: 'Agora',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
       },
       ...this.comments,
     ];
+    this.likeCounts.set(newId, 0);
+    this.dislikeCounts.set(newId, 0);
     this.newComment = '';
     this.commentAdded.emit();
   }
 
   isLiked(commentId: string): boolean {
-    return this.findComment(commentId)?.liked ?? false;
+    return this.likedIds.has(commentId);
   }
 
   isDisliked(commentId: string): boolean {
-    return this.findComment(commentId)?.disliked ?? false;
+    return this.dislikedIds.has(commentId);
+  }
+
+  isSaved(commentId: string): boolean {
+    return this.savedIds.has(commentId);
   }
 
   likeCount(commentId: string): number {
-    return this.findComment(commentId)?.likes ?? 0;
+    return this.likeCounts.get(commentId) ?? 0;
   }
 
   dislikeCount(commentId: string): number {
-    return this.findComment(commentId)?.dislikes ?? 0;
+    return this.dislikeCounts.get(commentId) ?? 0;
   }
 
   toggleLike(commentId: string): void {
-    const comment = this.findComment(commentId);
-
-    if (!comment) {
+    if (this.likedIds.has(commentId)) {
+      this.likedIds.delete(commentId);
+      this.likeCounts.set(commentId, this.likeCount(commentId) - 1);
       return;
     }
 
-    const previousComment = comment;
-    const nextLiked = !comment.liked;
-    const optimisticComment: SpectrumComment = {
-      ...comment,
-      liked: nextLiked,
-      disliked: nextLiked ? false : comment.disliked,
-      likes: comment.likes + (nextLiked ? 1 : -1),
-      dislikes: comment.disliked && nextLiked ? comment.dislikes - 1 : comment.dislikes,
-    };
+    this.likedIds.add(commentId);
+    this.likeCounts.set(commentId, this.likeCount(commentId) + 1);
 
-    this.replaceComment(optimisticComment);
-
-    try {
-      this.replaceComment(this.postService.toggleCommentLike(previousComment, this.currentUser));
-    } catch {
-      this.replaceComment(previousComment);
+    if (this.dislikedIds.has(commentId)) {
+      this.dislikedIds.delete(commentId);
+      this.dislikeCounts.set(commentId, this.dislikeCount(commentId) - 1);
     }
   }
 
   toggleDislike(commentId: string): void {
-    const comment = this.findComment(commentId);
-
-    if (!comment) {
+    if (this.dislikedIds.has(commentId)) {
+      this.dislikedIds.delete(commentId);
+      this.dislikeCounts.set(commentId, this.dislikeCount(commentId) - 1);
       return;
     }
 
-    const previousComment = comment;
-    const nextDisliked = !comment.disliked;
-    const optimisticComment: SpectrumComment = {
-      ...comment,
-      disliked: nextDisliked,
-      liked: nextDisliked ? false : comment.liked,
-      dislikes: comment.dislikes + (nextDisliked ? 1 : -1),
-      likes: comment.liked && nextDisliked ? comment.likes - 1 : comment.likes,
-    };
+    this.dislikedIds.add(commentId);
+    this.dislikeCounts.set(commentId, this.dislikeCount(commentId) + 1);
 
-    this.replaceComment(optimisticComment);
-
-    try {
-      this.replaceComment(this.postService.toggleCommentDislike(previousComment, this.currentUser));
-    } catch {
-      this.replaceComment(previousComment);
+    if (this.likedIds.has(commentId)) {
+      this.likedIds.delete(commentId);
+      this.likeCounts.set(commentId, this.likeCount(commentId) - 1);
     }
   }
 
-  toggleCommentMenu(event: MouseEvent, commentId: string): void {
-    event.stopPropagation();
-    this.openMenuCommentId = this.openMenuCommentId === commentId ? null : commentId;
-  }
-
-  openReportModal(commentId: string): void {
-    this.reportingCommentId = commentId;
-    this.openMenuCommentId = null;
-  }
-
-  closeReportModal(): void {
-    this.reportingCommentId = null;
-  }
-
-  onReportConfirm(reason: string): void {
-    if (this.reportingCommentId) {
-      this.reportComment(this.reportingCommentId, reason);
+  toggleSaved(commentId: string): void {
+    if (this.savedIds.has(commentId)) {
+      this.savedIds.delete(commentId);
+    } else {
+      this.savedIds.add(commentId);
     }
-    this.reportingCommentId = null;
   }
 
-  reportComment(commentId: string, reason?: string): void {
-    return;
-  }
-
-  private findComment(commentId: string): SpectrumComment | undefined {
-    return this.comments.find((comment) => comment.id === commentId);
-  }
-
-  private replaceComment(updatedComment: SpectrumComment): void {
-    this.comments = this.comments.map((comment) =>
-      comment.id === updatedComment.id ? updatedComment : comment,
-    );
+  reportComment(commentId: string): void {
+    console.log('report', commentId);
   }
 }

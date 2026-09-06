@@ -1,22 +1,19 @@
-<app-social-shell
-  [user]="user"
-  [suggestions]="suggestions"
-  [title]="isEditing ? 'Editar publicacao' : 'Nova publicacao'"
-  [subtitle]="isEditing ? 'Atualize sua publicacao' : 'Compartilhe uma atualizacao'"
-  (logout)="logout()"
->
+<app-social-shell [user]="user" [suggestions]="suggestions" title="Nova publicacao"
+  subtitle="Compartilhe uma atualizacao" (logout)="logout()">
   <a class="create-secondary-action" routerLink="/publicacoes" social-actions>Ver publicacoes</a>
 
   <section class="create-post" aria-labelledby="create-post-title">
     <aside class="create-preview" aria-label="Previa da publicacao">
       <div class="create-preview__author">
-        <span class="create-avatar">
-          {{ userInitial }}
-        </span>
+        <div class="create-preview__author">
+          <span class="create-avatar">
+            {{ userInitial }}
+          </span>
 
-        <div>
-          <strong>{{ displayName }}</strong>
-          <span>@{{ nickname }}</span>
+          <div>
+            <strong>{{ displayName }}</strong>
+            <span>@{{ nickname }}</span>
+          </div>
         </div>
       </div>
 
@@ -26,51 +23,34 @@
 
       <div class="create-preview__media" [class.create-preview__media--text]="mediaType === 'text'">
         @if (mediaType === 'video') {
-          <span class="create-preview__play" aria-hidden="true"></span>
+        <span class="create-preview__play" aria-hidden="true"></span>
         } @else if (mediaType === 'image') {
-          <span>Imagem da publicacao</span>
+        <span>Imagem da publicacao</span>
         } @else {
-          <span>Publicacao sem midia</span>
+        <span>Publicacao sem midia</span>
         }
       </div>
     </aside>
 
-    <form class="create-form" (ngSubmit)="submitPost()">
+    <form class="create-form" (ngSubmit)="publish()">
       <p>Formulario</p>
-      <h2 id="create-post-title">
-        {{ isEditing ? 'Editar detalhes da publicacao' : 'Detalhes da publicacao' }}
-      </h2>
+      <h2 id="create-post-title">Detalhes da publicacao</h2>
 
       <label>
         Titulo
-        <input
-          name="title"
-          type="text"
-          maxlength="90"
-          [(ngModel)]="title"
-          placeholder="Ex: Movimento na praca central"
-        />
+        <input name="title" type="text" maxlength="90" [(ngModel)]="title"
+          placeholder="Ex: Movimento na praca central" />
       </label>
 
       <label>
         Conteudo
-        <textarea
-          name="content"
-          rows="7"
-          maxlength="420"
-          [(ngModel)]="content"
-          placeholder="Conte o que aconteceu de forma objetiva"
-        ></textarea>
+        <textarea name="content" rows="7" maxlength="420" [(ngModel)]="content"
+          placeholder="Conte o que aconteceu de forma objetiva"></textarea>
       </label>
 
       <label>
         Localizacao
-        <input
-          name="authorCity"
-          type="text"
-          [(ngModel)]="authorCity"
-          placeholder="Ex: Centro, Salvador - BA"
-        />
+        <input name="authorCity" type="text" [(ngModel)]="authorCity" placeholder="Ex: Centro, Salvador - BA" />
       </label>
 
       <div class="create-form__grid">
@@ -78,7 +58,7 @@
           Tipo de midia
           <select name="mediaType" [(ngModel)]="mediaType">
             @for (type of mediaTypes; track type.value) {
-              <option [value]="type.value">{{ type.label }}</option>
+            <option [value]="type.value">{{ type.label }}</option>
             }
           </select>
         </label>
@@ -89,19 +69,12 @@
         </label>
       </div>
 
-      <button class="create-submit" type="submit">
-        {{ isEditing ? 'Salvar alteracoes' : 'Publicar agora' }}
-      </button>
+      <button class="create-submit" type="submit">Publicar agora</button>
     </form>
   </section>
 
   @if (alert) {
-    <app-alert-popup
-      [type]="alert.type"
-      [title]="alert.title"
-      [message]="alert.message"
-      [actionLabel]="alert.type === 'success' ? 'Ver no feed' : 'Entendi'"
-      (dismissed)="dismissAlert()"
-    />
+  <app-alert-popup [type]="alert.type" [title]="alert.title" [message]="alert.message"
+    [actionLabel]="alert.type === 'success' ? 'Ver no feed' : 'Entendi'" (dismissed)="dismissAlert()" />
   }
 </app-social-shell>

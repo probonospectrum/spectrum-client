@@ -20,7 +20,7 @@ interface SearchResult {
   styleUrl: './social-shell.scss',
 })
 export class SocialShell {
-  private readonly router = inject(Router);
+  private router = inject(Router);
 
   @Input() user: LoggedUser | null = null;
   @Input() suggestions: SuggestedProfile[] = [];
@@ -31,7 +31,6 @@ export class SocialShell {
   @Output() createPost = new EventEmitter<void>();
 
   // PESQUISA 
-
   searchTerm = '';
   isSearching = false;
   searchResults: SearchResult[] = [];
@@ -79,9 +78,7 @@ export class SocialShell {
   ];
 
   // MÉTODO DA PESQUISA
-
   onSearch(): void {
-
     // Cancela a pesquisa anterior
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
@@ -102,13 +99,11 @@ export class SocialShell {
 
     // Simula o tempo de resposta da pesquisa
     this.searchTimeout = setTimeout(() => {
-
       this.searchResults = this.mockSearchResults.filter(result =>
         result.name.toLowerCase().includes(term) ||
         result.nickname?.toLowerCase().includes(term) ||
         result.location?.toLowerCase().includes(term) ||
         result.type.toLowerCase().includes(term)
-
       );
       this.isSearching = false;
     }, 600);

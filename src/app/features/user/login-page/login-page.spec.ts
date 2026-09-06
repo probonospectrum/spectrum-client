@@ -1,7 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { ActivatedRoute, provideRouter } from '@angular/router';
-import { OAuthService } from 'angular-oauth2-oidc';
 import { of } from 'rxjs';
 
 import { CityService } from '../../../core/services/city/city.service';
@@ -17,19 +15,6 @@ describe('LoginPage', () => {
       imports: [LoginPage],
       providers: [
         provideRouter([]),
-        provideHttpClient(),
-        {
-          provide: OAuthService,
-          useValue: {
-            configure: () => undefined,
-            loadDiscoveryDocument: () => Promise.resolve(),
-            loadDiscoveryDocumentAndTryLogin: () => Promise.resolve(),
-            initLoginFlow: () => undefined,
-            getIdToken: () => '',
-            hasValidIdToken: () => false,
-            logOut: () => undefined,
-          },
-        },
         {
           provide: ActivatedRoute,
           useValue: {
