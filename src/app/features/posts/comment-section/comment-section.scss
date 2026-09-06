@@ -67,7 +67,7 @@
 
 .comment-section__item-header {
   display: grid;
-  grid-template-columns: 34px 1fr 34px;
+  grid-template-columns: 34px 1fr auto;
   align-items: center;
   gap: 10px;
 }
@@ -87,69 +87,13 @@
   font-size: 12px;
 }
 
-.comment-section__menu-wrap {
-  position: relative;
-  justify-self: end;
-}
-
 .comment-section__more {
-  width: 34px;
-  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #6b6b6b;
+  cursor: pointer;
   display: grid;
   place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: #666666;
-  cursor: pointer;
-}
-
-.comment-section__more:hover,
-.comment-section__more[aria-expanded='true'] {
-  background: #eef3f7;
-  color: #072e5b;
-}
-
-.comment-section__more .material-symbols-outlined {
-  font-size: 22px;
-}
-
-.comment-section__menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 10;
-  width: min(220px, calc(100vw - 40px));
-  display: grid;
-  overflow: hidden;
-  border: 1px solid #d9dde2;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(7, 46, 91, 0.18);
-}
-
-.comment-section__menu button {
-  min-height: 44px;
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding: 9px 14px;
-  border: 0;
-  background: transparent;
-  color: #303030;
-  font: 700 14px/1.2 Arial, sans-serif;
-  text-align: left;
-  cursor: pointer;
-}
-
-.comment-section__menu .material-symbols-outlined {
-  font-size: 20px;
-}
-
-.comment-section__menu button:hover {
-  background: #f0f4f8;
-  color: #072e5b;
 }
 
 .comment-section__content {
@@ -184,6 +128,10 @@
   background: rgba(7, 46, 91, 0.08);
 }
 
+.comment-section__save {
+  margin-left: auto;
+}
+
 .comment-section__count {
   font: 700 12px/1 Arial, sans-serif;
 }
@@ -192,9 +140,15 @@
   color: #072e5b;
 }
 
-.comment-section__action--active .material-symbols-outlined {
+.comment-section__save.comment-section__action--active {
+  background: #072e5b;
+  color: #ffffff;
+}
+
+.comment-section__save.comment-section__action--active .material-symbols-outlined {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
 
 .comment-section__toggle {
   justify-self: start;

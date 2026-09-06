@@ -1,8 +1,8 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 interface Interest {
-  id: string;
   name: string;
   description: string;
   icon: string;
@@ -10,63 +10,109 @@ interface Interest {
 
 @Component({
   selector: 'app-interests-page',
-  standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+  ],
   templateUrl: './interests-page.html',
   styleUrl: './interests-page.scss',
 })
-export class InterestsPage implements OnInit, OnDestroy {
-  @Output() fechou = new EventEmitter<string[]>();
+export class InterestsPage {
+
+  private readonly router = inject(Router);
 
   readonly interests: Interest[] = [
-    { id: 'tecnologia', name: 'Tecnologia', description: 'Programação, inovação e tecnologia', icon: '💻' },
-    { id: 'games', name: 'Games', description: 'Jogos, consoles e cultura gamer', icon: '🎮' },
-    { id: 'musica', name: 'Música', description: 'Artistas, bandas e novidades', icon: '🎵' },
-    { id: 'filmes-series', name: 'Filmes e séries', description: 'Cinema, séries e entretenimento', icon: '🎬' },
-    { id: 'esportes', name: 'Esportes', description: 'Futebol, basquete e outros esportes', icon: '⚽' },
-    { id: 'arte', name: 'Arte', description: 'Design, ilustração e criatividade', icon: '🎨' },
-    { id: 'livros', name: 'Livros', description: 'Literatura, leitura e escrita', icon: '📚' },
-    { id: 'viagens', name: 'Viagens', description: 'Destinos, experiências e turismo', icon: '✈️' },
-    { id: 'fotografia', name: 'Fotografia', description: 'Fotos, câmeras e edição', icon: '📷' },
-    { id: 'culinaria', name: 'Culinária', description: 'Receitas, gastronomia e comida', icon: '🍳' },
-    { id: 'ciencia', name: 'Ciência', description: 'Descobertas, espaço e conhecimento', icon: '🔬' },
-    { id: 'moda', name: 'Moda', description: 'Estilo, tendências e beleza', icon: '👗' },
+    {
+      name: 'Tecnologia',
+      description: 'Programação, inovação e tecnologia',
+      icon: '💻',
+    },
+    {
+      name: 'Games',
+      description: 'Jogos, consoles e cultura gamer',
+      icon: '🎮',
+    },
+    {
+      name: 'Música',
+      description: 'Artistas, bandas e novidades',
+      icon: '🎵',
+    },
+    {
+      name: 'Filmes e séries',
+      description: 'Cinema, séries e entretenimento',
+      icon: '🎬',
+    },
+    {
+      name: 'Esportes',
+      description: 'Futebol, basquete e outros esportes',
+      icon: '⚽',
+    },
+    {
+      name: 'Arte',
+      description: 'Design, ilustração e criatividade',
+      icon: '🎨',
+    },
+    {
+      name: 'Livros',
+      description: 'Literatura, leitura e escrita',
+      icon: '📚',
+    },
+    {
+      name: 'Viagens',
+      description: 'Destinos, experiências e turismo',
+      icon: '✈️',
+    },
+    {
+      name: 'Fotografia',
+      description: 'Fotos, câmeras e edição',
+      icon: '📷',
+    },
+    {
+      name: 'Culinária',
+      description: 'Receitas, gastronomia e comida',
+      icon: '🍳',
+    },
+    {
+      name: 'Ciência',
+      description: 'Descobertas, espaço e conhecimento',
+      icon: '🔬',
+    },
+    {
+      name: 'Moda',
+      description: 'Estilo, tendências e beleza',
+      icon: '👗',
+    },
   ];
 
-  private selectedIds = new Set<string>();
-
-  ngOnInit(): void {
-    console.log('🔵 InterestsPage carregado');
-  }
-
-  ngOnDestroy(): void {}
+  selectedInterests: Interest[] = [];
 
   isSelected(interest: Interest): boolean {
-    return this.selectedIds.has(interest.id);
+    return this.selectedInterests.some(
+      (selected) => selected.name === interest.name,
+    );
   }
 
   toggleInterest(interest: Interest): void {
-    if (this.selectedIds.has(interest.id)) {
-      this.selectedIds.delete(interest.id);
-    } else {
-      this.selectedIds.add(interest.id);
-    }
-    console.log('🟡 toggleInterest', interest.id, 'selecionados agora:', this.selectedIds.size);
-  }
+    if (this.isSelected(interest)) {
+      this.selectedInterests = this.selectedInterests.filter(
+        (selected) => selected.name !== interest.name,
+      );
 
-  get selectedInterests(): Interest[] {
-    return this.interests.filter((interest) => this.selectedIds.has(interest.id));
-  }
-
-  continue(): void {
-    console.log('🟢 continue() CHAMADO, selecionados:', this.selectedIds.size);
-
-    if (this.selectedIds.size === 0) {
-      console.log('🔴 saindo, nada selecionado');
       return;
     }
 
-    console.log('🟣 emitindo fechou com', Array.from(this.selectedIds));
-    this.fechou.emit(Array.from(this.selectedIds));
+    this.selectedInterests = [
+      ...this.selectedInterests,
+      interest,
+    ];
+  }
+
+  continue(): void {
+    if (this.selectedInterests.length === 0) {
+      return;
+    }
+
+    console.log('Interesses selecionados:', this.selectedInterests);
+
+    void this.router.navigateByUrl('/home');
   }
 }

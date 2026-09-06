@@ -240,7 +240,7 @@ export class LoginPage implements OnInit {
             'Login realizado',
             response.message,
             'Escolher interesses',
-            '/publicacoes',
+            '/publicacoes(modal:interesses)',
           );
         },
 
