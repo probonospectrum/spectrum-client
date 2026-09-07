@@ -1,7 +1,22 @@
 <article class="post-card">
   <header class="post-card__header">
-    <span class="post-card__avatar">{{ post.authorInitial }}</span>
-    <div class="post-card__author">
+    <button
+      type="button"
+      class="post-card__avatar"
+      [attr.aria-label]="'Ver perfil de ' + post.authorName"
+      (click)="goToAuthorProfile()"
+    >
+      {{ post.authorInitial }}
+    </button>
+    <div
+      class="post-card__author"
+      role="link"
+      tabindex="0"
+      [attr.aria-label]="'Ver perfil de ' + post.authorName"
+      (click)="goToAuthorProfile()"
+      (keydown.enter)="goToAuthorProfile()"
+      (keydown.space)="goToAuthorProfile()"
+    >
       <strong>{{ post.authorName }}</strong>
       <span>@{{ post.authorNickname }}</span>
     </div>

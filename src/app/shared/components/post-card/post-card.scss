@@ -23,11 +23,37 @@
   background: #b9c7d4;
   color: #ffffff;
   font: 800 18px/1 Arial, sans-serif;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  transition: filter 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    filter: brightness(0.95);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(7, 46, 91, 0.35);
+  }
 }
 
 .post-card__author {
   min-width: 0;
   color: #303030;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+
+    strong {
+      text-decoration: underline;
+    }
+  }
+
+  &:hover strong {
+    text-decoration: underline;
+  }
 }
 
 .post-card__author strong,
