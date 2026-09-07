@@ -9,11 +9,13 @@
     (click)="$event.stopPropagation()"
   >
     <button class="alert-popup__close" type="button" aria-label="Fechar alerta" (click)="dismiss()">
-      x
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
     </button>
 
     <div class="alert-popup__icon" aria-hidden="true">
-      {{ type === 'success' ? 'OK' : '!' }}
+      <span class="material-symbols-outlined">
+        {{ type === 'success' ? 'check_circle' : 'error' }}
+      </span>
     </div>
 
     <div class="alert-popup__content">
