@@ -106,6 +106,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'perfil/:nickname',
+    loadComponent: () =>
+      import('./features/profile/profile-page/profile-page')
+        .then((m) => m.ProfilePage),
+
+    canActivate: [authGuard],
+  },
+
+  {
     path: 'configuracoes',
     loadComponent: () =>
       import('./features/settings/settings-page/settings-page')

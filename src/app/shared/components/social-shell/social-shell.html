@@ -176,6 +176,7 @@
           class="social-nav__item"
           routerLink="/perfil"
           routerLinkActive="social-nav__item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
         >
           <span class="material-symbols-outlined">
             account_circle
@@ -222,7 +223,7 @@
       <button
         class="social-nav__item"
         type="button"
-        (click)="logout.emit()"
+        (click)="openLogoutConfirm()"
       >
         <span class="material-symbols-outlined">
           logout
@@ -313,3 +314,7 @@
   </div>
 
 </main>
+
+@if (isLogoutConfirmOpen) {
+  <app-logout-confirm (confirm)="confirmLogout()" (cancel)="cancelLogout()" />
+}

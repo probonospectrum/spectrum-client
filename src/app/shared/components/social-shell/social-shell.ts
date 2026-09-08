@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SuggestedProfile } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
+import { LogoutConfirm } from '../logout-confirm/logout-confirm';
 
 interface SearchResult {
   id: number;
@@ -15,7 +16,7 @@ interface SearchResult {
 
 @Component({
   selector: 'app-social-shell',
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, LogoutConfirm],
   templateUrl: './social-shell.html',
   styleUrl: './social-shell.scss',
 })
@@ -29,6 +30,9 @@ export class SocialShell {
   @Input() showContentHeader = true;
   @Output() logout = new EventEmitter<void>();
   @Output() createPost = new EventEmitter<void>();
+
+  // Confirmacao de logout
+  isLogoutConfirmOpen = false;
 
   // PESQUISA 
 
@@ -129,6 +133,19 @@ export class SocialShell {
   handleCreatePost(): void {
     this.createPost.emit();
     void this.router.navigate(['/publicacoes'], { queryParams: { criar: '1' } });
+  }
+
+  openLogoutConfirm(): void {
+    this.isLogoutConfirmOpen = true;
+  }
+
+  cancelLogout(): void {
+    this.isLogoutConfirmOpen = false;
+  }
+
+  confirmLogout(): void {
+    this.isLogoutConfirmOpen = false;
+    this.logout.emit();
   }
 
   closeSearch(): void {
