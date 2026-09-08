@@ -9,6 +9,7 @@ import {
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
 import { PostCard } from '../../../shared/components/post-card/post-card';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
 interface ProfileAlert {
@@ -19,7 +20,7 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [CommonModule, SocialShell, PostCard, AlertPopup],
+  imports: [CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })

@@ -211,4 +211,12 @@
       (dismissed)="profileAlert = null"
     />
   }
+
+  @if (reportingProfile) {
+    <app-report-modal
+      title="O que está sendo reportado?"
+      (close)="reportingProfile = false"
+      (confirm)="confirmReport()"
+    />
+  }
 </app-social-shell>
