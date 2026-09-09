@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
@@ -23,26 +23,21 @@ interface PostAlert {
 export class CreatePostPage {
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
-  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   readonly user = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
-  readonly editPostId = this.route.snapshot.paramMap.get('id');
-  readonly editPost = this.editPostId ? this.postService.findPostById(this.editPostId, this.user) : null;
-  readonly isEditing = Boolean(this.editPostId);
   readonly mediaTypes: Array<{ label: string; value: SpectrumPost['mediaType'] }> = [
     { label: 'Video', value: 'video' },
     { label: 'Imagem', value: 'image' },
     { label: 'Texto', value: 'text' },
   ];
 
-  title = this.editPost?.title ?? '';
-  content = this.editPost?.content ?? '';
-  authorCity = this.editPost?.authorCity ?? this.user?.cityUser ?? '';
-  tagText = this.editPost?.tags.join(', ') ?? '';
-  mediaType: SpectrumPost['mediaType'] = this.editPost?.mediaType ?? 'video';
-  alert: PostAlert | null = this.getInitialAlert();
+  content = '';
+  authorCity = this.user?.cityUser ?? '';
+  tagText = '';
+  mediaType: SpectrumPost['mediaType'] = 'video';
+  alert: PostAlert | null = null;
 
   get displayName(): string {
     return this.user?.name || 'Usuario Spectrum';
@@ -57,31 +52,25 @@ export class CreatePostPage {
   }
 
   submitPost(): void {
-    const title = this.title.trim();
     const content = this.content.trim();
     const authorCity = this.authorCity.trim();
 
-    if (!title || !content || !authorCity) {
+    if (!content || !authorCity) {
       this.alert = {
         type: 'error',
-        title: this.isEditing ? 'Nao foi possivel salvar' : 'Nao foi possivel publicar',
-        message: 'Preencha titulo, conteudo e localizacao para continuar.',
+        title: 'Nao foi possivel publicar',
+        message: 'Preencha conteudo e localizacao para continuar.',
       };
       return;
     }
 
     const payload = {
-      title,
+      title: this.getPostTitle(content),
       content,
       authorCity,
       mediaType: this.mediaType,
       tags: this.parseTags(),
     };
-
-    if (this.isEditing) {
-      this.updatePost(payload);
-      return;
-    }
 
     const createdPost = this.postService.createPost(payload, this.user);
 
@@ -115,60 +104,8 @@ export class CreatePostPage {
       .slice(0, 4);
   }
 
-  private updatePost(payload: {
-    title: string;
-    content: string;
-    authorCity: string;
-    mediaType: SpectrumPost['mediaType'];
-    tags: string[];
-  }): void {
-    if (!this.editPostId || !this.editPost) {
-      this.alert = {
-        type: 'error',
-        title: 'Publicacao nao encontrada',
-        message: 'Volte ao feed e tente abrir a edicao novamente.',
-      };
-      return;
-    }
-
-    try {
-      const updatedPost = this.postService.updatePost(this.editPostId, payload, this.user);
-      this.alert = {
-        type: 'success',
-        title: 'Publicacao atualizada',
-        message: 'As alteracoes foram salvas e ja aparecem no feed.',
-        resultPost: updatedPost,
-      };
-    } catch (error) {
-      this.alert = {
-        type: 'error',
-        title: 'Nao foi possivel salvar',
-        message: error instanceof Error ? error.message : 'Tente novamente em instantes.',
-      };
-    }
+  private getPostTitle(content: string): string {
+    return content.length > 72 ? `${content.slice(0, 69)}...` : content;
   }
 
-  private getInitialAlert(): PostAlert | null {
-    if (!this.isEditing) {
-      return null;
-    }
-
-    if (!this.editPost) {
-      return {
-        type: 'error',
-        title: 'Publicacao nao encontrada',
-        message: 'Nao encontramos esta publicacao para edicao.',
-      };
-    }
-
-    if (!this.postService.canModifyPost(this.editPost, this.user)) {
-      return {
-        type: 'error',
-        title: 'Prazo de edicao expirado',
-        message: 'Edicoes ficam disponiveis somente nos primeiros 15 minutos apos a criacao.',
-      };
-    }
-
-    return null;
-  }
 }

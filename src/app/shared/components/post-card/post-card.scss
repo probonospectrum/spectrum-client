@@ -57,14 +57,14 @@
 }
 
 .post-card__author strong,
-.post-card__author span {
+.post-card__author-meta {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.post-card__author span {
+.post-card__author-meta {
   color: #767676;
   font-size: 13px;
 }
@@ -156,34 +156,10 @@
   background: #edf1f4;
 }
 
-.post-card h2 {
-  margin: 0;
-  color: #303030;
-  font: 800 18px/1.25 Arial, sans-serif;
-}
-
 .post-card__copy {
   margin: 0;
   color: #4c4c4c;
   font: 400 15px/1.45 Arial, sans-serif;
-}
-
-.post-card__location {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #959595;
-  font: 700 14px/1.4 Arial, sans-serif;
-}
-
-.post-card__location .material-symbols-outlined {
-  position: static;
-  width: auto;
-  height: auto;
-  border: none;
-  border-radius: 0;
-  transform: none;
-  font-size: 20px;
 }
 
 .post-card__media {
@@ -205,14 +181,6 @@
     url('/Background.png') center / cover;
   color: #ffffff;
 }
-
-.post-card__media--text {
-  min-height: 88px;
-  justify-items: start;
-  padding: 0 20px;
-  background: #eef3f7;
-}
-
 
 .post-card__play {
   color: #536273;
@@ -241,9 +209,39 @@
   gap: 12px;
 }
 
-.post-card__footer > span {
+.post-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   color: #767676;
   font-size: 14px;
+}
+
+.post-card__meta-location {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #657789;
+  font-weight: 700;
+}
+
+.post-card__meta-location .material-symbols-outlined {
+  flex: 0 0 auto;
+  font-size: 17px;
+}
+
+.post-card__meta-location span:last-child,
+.post-card__meta-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-card__meta-date {
+  flex: 0 0 auto;
+  color: #767676;
 }
 
 .post-card__actions {
@@ -277,6 +275,16 @@
 @media (max-width: 540px) {
   .post-card {
     padding: 18px;
+  }
+
+  .post-card__meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .post-card__meta-date {
+    flex: 0 1 auto;
   }
 
   .post-card__actions {

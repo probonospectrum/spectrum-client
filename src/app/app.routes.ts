@@ -82,16 +82,19 @@ export const routes: Routes = [
   },
 
   {
-    path: 'publicacoes/:id/editar',
-    loadComponent: () =>
-      import('./features/posts/create-post-page/create-post-page').then((m) => m.CreatePostPage),
-    canActivate: [authGuard],
-  },
-  {
     path: 'notificacoes',
     loadComponent: () =>
       import('./features/notifications/notifications-page/notifications-page')
         .then((m) => m.NotificationsPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'cidades/:slug',
+    loadComponent: () =>
+      import('./features/cities/city-page/city-page')
+        .then((m) => m.CityPage),
 
     canActivate: [authGuard],
   },
