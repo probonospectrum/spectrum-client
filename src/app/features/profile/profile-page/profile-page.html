@@ -1,4 +1,16 @@
-<app-social-shell [user]="user" [suggestions]="suggestions" [showContentHeader]="false" (logout)="logout()">
+<app-social-shell
+  #socialShell
+  [user]="user"
+  [suggestions]="suggestions"
+  [showContentHeader]="false"
+  (logout)="logout()"
+  (postUpdated)="onPostUpdated()"
+>
+  @if (profileLoading()) {
+    <section class="profile-loading">
+      <app-loading-indicator label="Carregando perfil" />
+    </section>
+  } @else {
   <section class="profile-header">
     <div class="profile-header__cover">
       <img
@@ -18,7 +30,7 @@
             <p class="profile-header__username">@{{ nickname }}</p>
           </div>
           <div class="profile-header__actions">
-            @if (isOwnProfile) {
+            @if (isOwnProfile()) {
               <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
                 Configurações de perfil
               </button>
@@ -46,11 +58,11 @@
 
               <button
                 class="profile-header__follow-btn"
-                [class.profile-header__follow-btn--following]="isFollowing"
+                [class.profile-header__follow-btn--following]="isFollowing()"
                 type="button"
                 (click)="toggleFollow()"
               >
-                {{ isFollowing ? 'Seguindo' : 'Seguir' }}
+                {{ isFollowing() ? 'Seguindo' : 'Seguir' }}
               </button>
             }
           </div>
@@ -123,16 +135,18 @@
       <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
       <span class="profile-tabs__count">{{ reposts.length }}</span>
     </button>
-    <button
-      class="profile-tabs__tab"
-      [class.profile-tabs__tab--active]="activeTab === 'saved'"
-      type="button"
-      (click)="activeTab = 'saved'"
-      aria-label="Posts salvos"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
-      <span class="profile-tabs__count">{{ savedPosts.length }}</span>
-    </button>
+    @if (isOwnProfile()) {
+      <button
+        class="profile-tabs__tab"
+        [class.profile-tabs__tab--active]="activeTab === 'saved'"
+        type="button"
+        (click)="activeTab = 'saved'"
+        aria-label="Posts salvos"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+        <span class="profile-tabs__count">{{ savedPosts.length }}</span>
+      </button>
+    }
   </nav>
 
   <div class="profile-feed">
@@ -142,7 +156,7 @@
           [post]="post"
           [currentUser]="user"
           (repost)="toggleRepost($event)"
-          (edit)="editPost($event)"
+          (edit)="socialShell.openEditPost($event)"
           (remove)="deletePost($event)"
           (report)="reportPost($event)"
           (hideAuthor)="hideAuthor($event)"
@@ -163,7 +177,7 @@
           [post]="post"
           [currentUser]="user"
           (repost)="toggleRepost($event)"
-          (edit)="editPost($event)"
+          (edit)="socialShell.openEditPost($event)"
           (remove)="deletePost($event)"
           (report)="reportPost($event)"
           (hideAuthor)="hideAuthor($event)"
@@ -178,13 +192,13 @@
           <p>Nenhum repost ainda.</p>
         </div>
       }
-    } @else {
+    } @else if (isOwnProfile()) {
       @for (post of visibleSavedPosts; track post.id) {
         <app-post-card
           [post]="post"
           [currentUser]="user"
           (repost)="toggleRepost($event)"
-          (edit)="editPost($event)"
+          (edit)="socialShell.openEditPost($event)"
           (remove)="deletePost($event)"
           (report)="reportPost($event)"
           (hideAuthor)="hideAuthor($event)"
@@ -199,16 +213,21 @@
           <p>Nenhum post salvo ainda.</p>
         </div>
       }
+    } @else {
+      <div class="profile-feed__empty">
+        <p>Posts salvos são privados.</p>
+      </div>
     }
   </div>
+  }
 
-  @if (profileAlert) {
+  @if (profileAlert(); as currentProfileAlert) {
     <app-alert-popup
-      [type]="profileAlert.type"
-      [title]="profileAlert.title"
-      [message]="profileAlert.message"
+      [type]="currentProfileAlert.type"
+      [title]="currentProfileAlert.title"
+      [message]="currentProfileAlert.message"
       actionLabel="Ok"
-      (dismissed)="profileAlert = null"
+      (dismissed)="profileAlert.set(null)"
     />
   }
 

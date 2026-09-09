@@ -68,15 +68,13 @@
 
 .notifications-loading {
   min-height: 150px;
+  display: grid;
+  place-items: center;
   border-radius: 8px;
-  background: linear-gradient(90deg, #eef3f7, #fcfcfc, #eef3f7);
-  animation: pulse 1.2s infinite;
-}
-
-@keyframes pulse {
-  50% {
-    opacity: 0.55;
-  }
+  background: #fcfcfc;
+  color: #072e5b;
+  font: 800 14px/1.2 Arial, sans-serif;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
 }
 
 @media (max-width: 540px) {

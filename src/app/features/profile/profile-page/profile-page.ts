@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject, OnInit } from '@angular/core';
-import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { switchMap, tap } from 'rxjs';
+import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import {
   PublicProfile,
@@ -8,6 +11,7 @@ import {
 } from '../../../core/services/profile/public-profile-mock.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
+import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
@@ -20,7 +24,7 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [CommonModule, SocialShell, PostCard, AlertPopup, ReportModal, LoadingIndicator],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
@@ -30,45 +34,57 @@ export class ProfilePage implements OnInit {
   private readonly publicProfileService = inject(PublicProfileMockService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly mockLoadingService = inject(MockLoadingService);
 
   readonly user: LoggedUser | null = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
 
   reposts = this.postService.getUserReposts(this.user);
   activeTab: 'posts' | 'reposts' | 'saved' = 'posts';
-  profileAlert: ProfileAlert | null = null;
+  profileAlert = signal<ProfileAlert | null>(null);
   private readonly hiddenPostIds = new Set<string>();
   private readonly hiddenAuthorNicknames = new Set<string>();
 
   /** Perfil publico carregado quando a rota tem :nickname de outro usuario. */
-  publicProfile: PublicProfile | null = null;
+  publicProfile = signal<PublicProfile | null>(null);
 
   /** true quando estamos vendo o perfil de outra pessoa (nao o proprio). */
-  isOwnProfile = true;
+  isOwnProfile = signal(true);
+  profileLoading = signal(true);
 
   reportingProfile = false;
   reportMenuOpen = false;
-  isFollowing = false;
+  isFollowing = signal(false);
 
   /** Base de seguidores do perfil de terceiro, ajustada ao seguir/deixar de seguir. */
-  private followersBase = 0;
+  private followersBase = signal(0);
 
   ngOnInit(): void {
     // Reage a mudancas do :nickname para reusar a mesma instancia do componente
     // ao navegar entre /perfil (proprio) e /perfil/:nickname (terceiro).
-    this.route.paramMap.subscribe((params) => this.loadProfile(params));
+    this.route.paramMap
+      .pipe(
+        tap(() => this.profileLoading.set(true)),
+        switchMap((params) =>
+          this.mockLoadingService.load(() => this.resolvePublicProfile(params.get('nickname'))),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((profile) => this.applyProfile(profile));
   }
 
-  private loadProfile(params: ParamMap): void {
-    this.publicProfile = this.resolvePublicProfile(params.get('nickname'));
-    this.isOwnProfile = this.publicProfile === null;
-    this.followersBase = this.publicProfile?.followersCount ?? 0;
+  private applyProfile(profile: PublicProfile | null): void {
+    this.publicProfile.set(profile);
+    this.isOwnProfile.set(profile === null);
+    this.followersBase.set(profile?.followersCount ?? 0);
 
     // Reseta o estado de interacao ao trocar de perfil.
-    this.isFollowing = false;
+    this.isFollowing.set(false);
     this.reportingProfile = false;
     this.reportMenuOpen = false;
     this.activeTab = 'posts';
+    this.profileLoading.set(false);
   }
 
   @HostListener('document:click')
@@ -82,47 +98,55 @@ export class ProfilePage implements OnInit {
   }
 
   get displayName(): string {
-    if (this.publicProfile) {
-      return this.publicProfile.name;
+    const publicProfile = this.publicProfile();
+
+    if (publicProfile) {
+      return publicProfile.name;
     }
     return this.user?.name || 'Usuário Spectrum';
   }
 
   get nickname(): string {
-    if (this.publicProfile) {
-      return this.publicProfile.nickname;
+    const publicProfile = this.publicProfile();
+
+    if (publicProfile) {
+      return publicProfile.nickname;
     }
     return this.user?.nickname || 'spectrum';
   }
 
   get userInitial(): string {
-    if (this.publicProfile) {
-      return this.publicProfile.initial;
+    const publicProfile = this.publicProfile();
+
+    if (publicProfile) {
+      return publicProfile.initial;
     }
     return this.displayName.charAt(0).toUpperCase();
   }
 
   get coverUrl(): string {
     return (
-      this.publicProfile?.coverUrl ||
+      this.publicProfile()?.coverUrl ||
       'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800&q=80'
     );
   }
 
   get joinedDate(): string {
-    return this.publicProfile?.joinedDate || 'Janeiro de 2027';
+    return this.publicProfile()?.joinedDate || 'Janeiro de 2027';
   }
 
   get followingCount(): number {
-    if (this.publicProfile) {
-      return this.publicProfile.followingCount;
+    const publicProfile = this.publicProfile();
+
+    if (publicProfile) {
+      return publicProfile.followingCount;
     }
     return this.user?.following?.length ?? 250;
   }
 
   get followersCount(): number {
-    if (this.publicProfile) {
-      return this.followersBase + (this.isFollowing ? 1 : 0);
+    if (this.publicProfile()) {
+      return this.followersBase() + (this.isFollowing() ? 1 : 0);
     }
     return 350;
   }
@@ -130,7 +154,7 @@ export class ProfilePage implements OnInit {
   get userPosts(): SpectrumPost[] {
     const userNickname = this.nickname;
 
-    if (this.publicProfile) {
+    if (this.publicProfile()) {
       const mockPosts = this.publicProfileService.getPosts(userNickname);
 
       if (mockPosts.length) {
@@ -155,10 +179,18 @@ export class ProfilePage implements OnInit {
   }
 
   get savedPosts(): SpectrumPost[] {
+    if (!this.isOwnProfile()) {
+      return [];
+    }
+
     return this.postService.getUserSavedPosts(this.user);
   }
 
   get visibleSavedPosts(): SpectrumPost[] {
+    if (!this.isOwnProfile()) {
+      return [];
+    }
+
     return this.savedPosts.filter(
       (post) =>
         !this.hiddenPostIds.has(post.id) && !this.hiddenAuthorNicknames.has(post.authorNickname),
@@ -170,7 +202,7 @@ export class ProfilePage implements OnInit {
   }
 
   toggleFollow(): void {
-    this.isFollowing = !this.isFollowing;
+    this.isFollowing.update((isFollowing) => !isFollowing);
   }
 
   openReport(): void {
@@ -192,66 +224,65 @@ export class ProfilePage implements OnInit {
       this.postService.toggleRepost(post, this.user);
       this.reposts = this.postService.getUserReposts(this.user);
     } catch (error) {
-      this.profileAlert = {
+      this.profileAlert.set({
         type: 'error',
         title: 'Nao foi possivel repostar',
         message: error instanceof Error ? error.message : 'Tente novamente em instantes.',
-      };
+      });
     }
-  }
-
-  editPost(post: SpectrumPost): void {
-    void this.router.navigate(['/publicacoes', post.id, 'editar']);
   }
 
   deletePost(post: SpectrumPost): void {
-    const confirmed = window.confirm('Tem certeza que deseja excluir esta publicacao?');
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       this.postService.deletePost(post.id, this.user);
       this.reposts = this.postService.getUserReposts(this.user);
-      this.profileAlert = {
+      this.profileAlert.set({
         type: 'success',
         title: 'Publicacao excluida',
         message: 'A publicacao foi removida.',
-      };
+      });
     } catch (error) {
-      this.profileAlert = {
+      this.profileAlert.set({
         type: 'error',
         title: 'Nao foi possivel excluir',
         message: error instanceof Error ? error.message : 'Tente novamente em instantes.',
-      };
+      });
     }
   }
 
   hideAuthor(post: SpectrumPost): void {
     this.hiddenAuthorNicknames.add(post.authorNickname);
-    this.profileAlert = {
+    this.profileAlert.set({
       type: 'success',
       title: 'Publicacoes ocultadas',
       message: `Voce nao vera mais publicacoes de @${post.authorNickname} nesta aba.`,
-    };
+    });
   }
 
   hidePost(post: SpectrumPost): void {
     this.hiddenPostIds.add(post.id);
-    this.profileAlert = {
+    this.profileAlert.set({
       type: 'success',
       title: 'Publicacao ocultada',
       message: 'A publicacao foi removida desta visualizacao.',
-    };
+    });
   }
 
   reportPost(post: SpectrumPost, reason = 'Denunciar publicacao'): void {
-    this.profileAlert = {
+    this.profileAlert.set({
       type: 'success',
       title: 'Denuncia enviada',
-      message: `${reason}: ${post.title}`,
-    };
+      message: `${reason}: ${post.content.slice(0, 72)}`,
+    });
+  }
+
+  onPostUpdated(): void {
+    this.reposts = this.postService.getUserReposts(this.user);
+    this.profileAlert.set({
+      type: 'success',
+      title: 'Publicacao atualizada',
+      message: 'As alteracoes foram salvas.',
+    });
   }
 
   copyPostLink(post: SpectrumPost): void {
@@ -260,18 +291,18 @@ export class ProfilePage implements OnInit {
     void navigator.clipboard
       .writeText(link)
       .then(() => {
-        this.profileAlert = {
+        this.profileAlert.set({
           type: 'success',
           title: 'Link copiado',
           message: 'O link da publicacao foi copiado para a area de transferencia.',
-        };
+        });
       })
       .catch(() => {
-        this.profileAlert = {
+        this.profileAlert.set({
           type: 'error',
           title: 'Nao foi possivel copiar',
           message: link,
-        };
+        });
       });
   }
 
