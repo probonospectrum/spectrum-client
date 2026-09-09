@@ -1,19 +1,21 @@
 <app-social-shell
+  #socialShell
   [user]="user"
   [suggestions]="suggestions"
   title="Publicacoes"
   [showContentHeader]="false"
   (logout)="logout()"
-  (createPost)="openCreatePost()"
+  (postCreated)="onPostCreated()"
+  (postUpdated)="onPostUpdated()"
 >
 
   <section
     class="post-composer"
     role="button"
     tabindex="0"
-    (click)="openCreatePost()"
-    (keydown.enter)="openCreatePost()"
-    (keydown.space)="openCreatePost()"
+    (click)="socialShell.openCreatePost()"
+    (keydown.enter)="socialShell.openCreatePost()"
+    (keydown.space)="socialShell.openCreatePost()"
   >
     <div class="post-composer__avatar">
       {{ userInitial }}
@@ -26,129 +28,40 @@
         <button
           type="button"
           class="post-composer__publish"
-          (click)="$event.stopPropagation(); openCreatePost()"
+          (click)="$event.stopPropagation(); socialShell.openCreatePost()"
         >
           Publicar
         </button>
       </div>
 
-      <div class="post-composer__actions" aria-label="Adicionar mídia">
-        <button
-          type="button"
-          aria-label="Adicionar imagem"
-          (click)="$event.stopPropagation(); openCreatePost()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
-        </button>
-
-        <button
-          type="button"
-          aria-label="Adicionar vídeo"
-          (click)="$event.stopPropagation(); openCreatePost()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
-        </button>
-      </div>
     </div>
   </section>
 
-  @for (post of posts; track post.id) {
-    <app-post-card
-      [post]="post"
-      [currentUser]="user"
-      (report)="openReport($event)"
-      (edit)="editPost($event)"
-      (remove)="deletePost($event)"
-      (repost)="toggleRepost($event)"
-      (hideAuthor)="hideAuthor($event)"
-      (notInterested)="hidePost($event)"
-      (aiSpam)="openReport($event, 'Parece spam de IA')"
-      (copyLink)="copyPostLink($event)"
-    />
-  } @empty {
-    <section class="posts-empty">
-      <h2>Nenhuma publicacao por aqui</h2>
-      <p>Crie a primeira publicacao para movimentar sua comunidade.</p>
-      <a routerLink="/publicacoes/nova">Criar publicacao</a>
+  @if (feedLoading()) {
+    <section class="posts-loading">
+      <app-loading-indicator label="Carregando publicacoes" />
     </section>
-  }
-
-  @if (showCreatePost) {
-    <div
-      class="create-post-backdrop"
-      role="presentation"
-      (click)="closeCreatePost()"
-    >
-      <section
-        class="create-post-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-post-modal-title"
-        (click)="$event.stopPropagation()"
-      >
-        <header class="create-post-modal__header">
-          <span class="create-post-modal__spacer" aria-hidden="true"></span>
-          <h2 id="create-post-modal-title">Criar post</h2>
-
-          <button
-            class="create-post-modal__close"
-            type="button"
-            aria-label="Fechar"
-            (click)="closeCreatePost()"
-          >
-            <span class="material-symbols-outlined" aria-hidden="true">close</span>
-          </button>
-        </header>
-
-        <div class="create-post-modal__author">
-          <div class="create-post-modal__avatar">
-            {{ userInitial }}
-          </div>
-
-          <div class="create-post-modal__author-info">
-            <strong>{{ displayName }}</strong>
-            <span>@{{ nickname }}</span>
-          </div>
-        </div>
-
-        <label class="create-post-modal__field">
-          <textarea
-            class="create-post-modal__textarea"
-            [(ngModel)]="newPostContent"
-            placeholder="O que está acontecendo?"
-            maxlength="420"
-            aria-label="Conteúdo da publicação"
-          ></textarea>
-          <span>{{ newPostContent.length }}/420</span>
-        </label>
-
-        <div class="create-post-modal__toolbar">
-          <span>Adicionar no post</span>
-          <div class="create-post-modal__actions">
-            <button type="button" aria-label="Adicionar imagem">
-              <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
-            </button>
-
-            <button type="button" aria-label="Adicionar localização">
-              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-            </button>
-
-            <button type="button" aria-label="Adicionar vídeo">
-              <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
-            </button>
-          </div>
-        </div>
-
-        <button
-          class="create-post-modal__submit"
-          type="button"
-          [disabled]="!newPostContent.trim()"
-          (click)="publishPost()"
-        >
-          Publicar
-        </button>
+  } @else {
+    @for (post of posts; track post.id) {
+      <app-post-card
+        [post]="post"
+        [currentUser]="user"
+        (report)="openReport($event)"
+        (edit)="socialShell.openEditPost($event)"
+        (remove)="deletePost($event)"
+        (repost)="toggleRepost($event)"
+        (hideAuthor)="hideAuthor($event)"
+        (notInterested)="hidePost($event)"
+        (aiSpam)="openReport($event, 'Parece spam de IA')"
+        (copyLink)="copyPostLink($event)"
+      />
+    } @empty {
+      <section class="posts-empty">
+        <h2>Nenhuma publicacao por aqui</h2>
+        <p>Crie a primeira publicacao para movimentar sua comunidade.</p>
+        <button type="button" (click)="socialShell.openCreatePost()">Criar publicacao</button>
       </section>
-    </div>
+    }
   }
 
 </app-social-shell>
@@ -161,13 +74,13 @@
   />
 }
 
-@if (feedAlert) {
+@if (feedAlert(); as currentFeedAlert) {
   <app-alert-popup
-    [type]="feedAlert.type"
-    [title]="feedAlert.title"
-    [message]="feedAlert.message"
+    [type]="currentFeedAlert.type"
+    [title]="currentFeedAlert.title"
+    [message]="currentFeedAlert.message"
     actionLabel="Ok"
-    (dismissed)="feedAlert = null"
+    (dismissed)="feedAlert.set(null)"
   />
 }
 

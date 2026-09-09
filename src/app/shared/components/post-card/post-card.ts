@@ -3,12 +3,13 @@ import {
   Component,
   EventEmitter,
   HostListener,
-  Input,
   inject,
+  Input,
   OnChanges,
   OnDestroy,
   Output,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommentSection } from '../../../features/posts/comment-section/comment-section';
 import {
   POST_EDIT_WINDOW_MS,
@@ -25,6 +26,7 @@ import { LoggedUser } from '../../../core/services/user/user.service';
 })
 export class PostCard implements OnChanges, OnDestroy {
   private readonly postService = inject(PostService);
+  private readonly router = inject(Router);
 
   @Input({ required: true }) post!: SpectrumPost;
   @Input() currentUser: LoggedUser | null = null;
@@ -170,6 +172,14 @@ downvote(): void {
 
   toggleComments(): void {
     this.commentsOpen = !this.commentsOpen;
+  }
+
+  goToAuthorProfile(): void {
+    if (!this.post.authorNickname) {
+      return;
+    }
+
+    void this.router.navigate(['/perfil', this.post.authorNickname]);
   }
 
   onCommentAdded(): void {

@@ -357,8 +357,8 @@ export class PostService {
       throw new Error('Publicacao nao encontrada para exclusao.');
     }
 
-    if (!this.canModifyPost(this.withPostState(post, user), user)) {
-      throw new Error('O prazo para excluir esta publicacao expirou.');
+    if (!this.isOwnPost(this.withPostState(post, user), user)) {
+      throw new Error('Voce so pode excluir suas proprias publicacoes.');
     }
 
     localStorage.setItem(

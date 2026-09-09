@@ -72,12 +72,6 @@ export const routes: Routes = [
   },
 
   {
-    path: 'publicacoes/:id/editar',
-    loadComponent: () =>
-      import('./features/posts/create-post-page/create-post-page').then((m) => m.CreatePostPage),
-    canActivate: [authGuard],
-  },
-  {
     path: 'notificacoes',
     loadComponent: () =>
       import('./features/notifications/notifications-page/notifications-page')
@@ -87,7 +81,25 @@ export const routes: Routes = [
   },
 
   {
+    path: 'cidades/:slug',
+    loadComponent: () =>
+      import('./features/cities/city-page/city-page')
+        .then((m) => m.CityPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
     path: 'perfil',
+    loadComponent: () =>
+      import('./features/profile/profile-page/profile-page')
+        .then((m) => m.ProfilePage),
+
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'perfil/:nickname',
     loadComponent: () =>
       import('./features/profile/profile-page/profile-page')
         .then((m) => m.ProfilePage),

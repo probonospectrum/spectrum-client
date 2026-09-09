@@ -1,8 +1,8 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
-  [title]="isEditing ? 'Editar publicacao' : 'Nova publicacao'"
-  [subtitle]="isEditing ? 'Atualize sua publicacao' : 'Compartilhe uma atualizacao'"
+  title="Nova publicacao"
+  subtitle="Compartilhe uma atualizacao"
   (logout)="logout()"
 >
   <a class="create-secondary-action" routerLink="/publicacoes" social-actions>Ver publicacoes</a>
@@ -20,7 +20,6 @@
         </div>
       </div>
 
-      <h2>{{ title || 'Titulo da sua publicacao' }}</h2>
       <p>{{ content || 'O texto que voce escrever aparece aqui em uma previa limpa.' }}</p>
       <span class="create-preview__location">{{ authorCity || 'Localizacao da publicacao' }}</span>
 
@@ -37,20 +36,7 @@
 
     <form class="create-form" (ngSubmit)="submitPost()">
       <p>Formulario</p>
-      <h2 id="create-post-title">
-        {{ isEditing ? 'Editar detalhes da publicacao' : 'Detalhes da publicacao' }}
-      </h2>
-
-      <label>
-        Titulo
-        <input
-          name="title"
-          type="text"
-          maxlength="90"
-          [(ngModel)]="title"
-          placeholder="Ex: Movimento na praca central"
-        />
-      </label>
+      <h2 id="create-post-title">Detalhes da publicacao</h2>
 
       <label>
         Conteudo
@@ -90,7 +76,7 @@
       </div>
 
       <button class="create-submit" type="submit">
-        {{ isEditing ? 'Salvar alteracoes' : 'Publicar agora' }}
+        Publicar agora
       </button>
     </form>
   </section>

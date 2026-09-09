@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap, timeout } from 'rxjs/operators';
 import { API_BASE_URL } from '../../constants/api-routes';
@@ -52,6 +52,9 @@ export class UserService {
   private readonly sessionStorageKey = 'spectrum-auth-session';
 
   private readonly apiUrl = `${API_BASE_URL}/user`;
+  private readonly session = signal<LoginResponse | null>(this.readStoredSession());
+  readonly currentUser = computed(() => this.session()?.user ?? null);
+  readonly token = computed(() => this.session()?.token ?? null);
 
   constructor(private readonly http: HttpClient) {}
 
@@ -66,19 +69,20 @@ export class UserService {
   }
 
   getCurrentUser(): LoggedUser | null {
-    return this.getSession()?.user ?? null;
+    return this.currentUser();
   }
 
   getToken(): string | null {
-    return this.getSession()?.token ?? null;
+    return this.token();
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken() && !!this.getCurrentUser();
+    return !!this.token() && !!this.currentUser();
   }
 
   logout(): void {
     localStorage.removeItem(this.sessionStorageKey);
+    this.session.set(null);
   }
 
   getInteresses(user: LoggedUser | null): string[] {
@@ -90,7 +94,7 @@ export class UserService {
       return;
     }
 
-    const session = this.getSession();
+    const session = this.session();
 
     if (!session) {
       return;
@@ -107,9 +111,10 @@ export class UserService {
 
   private saveSession(response: LoginResponse): void {
     localStorage.setItem(this.sessionStorageKey, JSON.stringify(response));
+    this.session.set(response);
   }
 
-  private getSession(): LoginResponse | null {
+  private readStoredSession(): LoginResponse | null {
     const rawSession = localStorage.getItem(this.sessionStorageKey);
 
     if (!rawSession) {
@@ -119,7 +124,7 @@ export class UserService {
     try {
       return JSON.parse(rawSession) as LoginResponse;
     } catch {
-      this.logout();
+      localStorage.removeItem(this.sessionStorageKey);
       return null;
     }
   }

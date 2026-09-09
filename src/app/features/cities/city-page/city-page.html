@@ -1,0 +1,39 @@
+<app-social-shell
+  [user]="user"
+  [suggestions]="suggestions"
+  [title]="cityTitle"
+  [subtitle]="citySubtitle"
+  (logout)="logout()"
+>
+  @if (cityLoading()) {
+    <section class="city-loading">
+      <app-loading-indicator label="Carregando cidade" />
+    </section>
+  } @else {
+    <section class="city-header">
+      <span class="material-symbols-outlined" aria-hidden="true">location_city</span>
+      <div>
+        <p>{{ citySubtitle }}</p>
+        <h2>{{ cityTitle }}</h2>
+      </div>
+    </section>
+  }
+
+  @if (!cityLoading() && location()) {
+    <section class="city-feed" aria-label="Publicacoes da cidade">
+      @for (post of posts; track post.id) {
+        <app-post-card [post]="post" [currentUser]="user" (repost)="toggleRepost($event)" />
+      } @empty {
+        <div class="city-empty">
+          <h3>Nenhuma publicacao por aqui</h3>
+          <p>Quando alguem publicar nessa cidade, o conteudo aparece aqui.</p>
+        </div>
+      }
+    </section>
+  } @else if (!cityLoading()) {
+    <section class="city-empty">
+      <h3>Cidade nao encontrada</h3>
+      <p>Volte para a pesquisa e escolha uma das cidades disponiveis.</p>
+    </section>
+  }
+</app-social-shell>
