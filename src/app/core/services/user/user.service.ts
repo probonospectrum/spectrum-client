@@ -80,7 +80,7 @@ export class UserService {
     localStorage.removeItem(this.sessionStorageKey);
   }
 
-  private saveSession(response: LoginResponse): void {
+  saveSession(response: LoginResponse): void {
     localStorage.setItem(this.sessionStorageKey, JSON.stringify(response));
   }
 
