@@ -33,7 +33,6 @@ export interface LoggedUser {
   avatarUrl?: string;
   cityUser?: string;
   following?: string[];
-  interests?: string[];
 }
 
 export interface LoginResponse extends MessageResponse {
@@ -81,31 +80,7 @@ export class UserService {
     localStorage.removeItem(this.sessionStorageKey);
   }
 
-  getInteresses(user: LoggedUser | null): string[] {
-    return user?.interests ?? [];
-  }
-
-  salvarInteresses(user: LoggedUser | null, interesses: string[]): void {
-    if (!user) {
-      return;
-    }
-
-    const session = this.getSession();
-
-    if (!session) {
-      return;
-    }
-
-    const updatedUser: LoggedUser = { ...session.user, interests: interesses };
-    const updatedSession: LoginResponse = { ...session, user: updatedUser };
-
-    this.saveSession(updatedSession);
-
-    // TODO: quando existir endpoint no backend (ex: PATCH `${this.apiUrl}/interests`),
-    // trocar a persistência acima por uma chamada HTTP real.
-  }
-
-  private saveSession(response: LoginResponse): void {
+  saveSession(response: LoginResponse): void {
     localStorage.setItem(this.sessionStorageKey, JSON.stringify(response));
   }
 

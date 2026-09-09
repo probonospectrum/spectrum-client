@@ -115,25 +115,28 @@ export class LoginPage implements OnInit {
   }
 
   private async tryGoogleLogin(): Promise<void> {
-  await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+   await this.oauthService.loadDiscoveryDocument();
 
-  if (this.googleAuth.isLoggedIn) {
-    const idToken = this.googleAuth.idToken;
-
-    this.authApiService.loginWithGoogle(idToken).subscribe({ //isso aqui é um arquivo que vai conectar ao back
-      next: () => {
-        this.router.navigate(['/home']);
-      },
-      error: (err) => {
-        this.alert = {
-          type: 'error',
-          title: 'Erro no login',
-          message: 'Não foi possível fazer o login com o Google.',
-          actionLabel: 'Fechar',
-        };
+      const code = this.googleAuth.getAuthorizationCode();
+       console.log('CODE:', code); //apagar  essa palhaçada dps
+      if (code) {
+        this.authApiService.loginWithGoogle(code).subscribe({
+          next: (response) => {
+            console.log('SUCESSO:', response);   //apagar isso  tbm
+            this.googleAuth.clearUrlParams();
+            this.router.navigate(['/publicacoes']);
+          },
+          error: (err) => {
+            this.googleAuth.clearUrlParams();
+            this.alert = {
+              type: 'error',
+              title: 'Erro no login',
+              message: 'Não foi possível fazer o login com o Google.',
+              actionLabel: 'Fechar',
+            };
+          }
+        });
       }
-    });
-  }
 }
 
   get isRegisterMode(): boolean {
@@ -240,7 +243,7 @@ export class LoginPage implements OnInit {
             'Login realizado',
             response.message,
             'Escolher interesses',
-            '/publicacoes',
+            '/publicacoes(modal:interesses)',
           );
         },
 
