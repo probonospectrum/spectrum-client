@@ -272,6 +272,19 @@
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
+.post-card__actions button.post-card__vote--up {
+  color: #1877f2;
+}
+
+.post-card__actions button.post-card__vote--down {
+  color: #e0245e;
+}
+
+.post-card__vote--up .material-symbols-outlined,
+.post-card__vote--down .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 @media (max-width: 540px) {
   .post-card {
     padding: 18px;

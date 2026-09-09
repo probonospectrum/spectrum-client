@@ -9,7 +9,6 @@
   (postUpdated)="onPostUpdated()"
 >
 
-
   <section
     class="post-composer"
     role="button"
@@ -82,5 +81,11 @@
     [message]="currentFeedAlert.message"
     actionLabel="Ok"
     (dismissed)="feedAlert.set(null)"
+  />
+}
+
+@if (showInterests) {
+  <app-interests-page
+    (fechou)="onInteressesEscolhidos($event)"
   />
 }
