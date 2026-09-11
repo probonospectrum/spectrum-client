@@ -3,11 +3,13 @@ import {
   Component,
   EventEmitter,
   HostListener,
+  inject,
   Input,
   OnChanges,
   OnDestroy,
   Output,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommentSection } from '../../../features/posts/comment-section/comment-section';
 import { SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
@@ -22,6 +24,9 @@ import { SavedPostsService } from '../../../core/services/posts/savedPost.servic
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
+  private readonly postService = inject(PostService);
+  private readonly router = inject(Router);
+
   @Input({ required: true }) post!: SpectrumPost;
   @Input() currentUser: LoggedUser | null = null;
   @Output() report = new EventEmitter<SpectrumPost>();
@@ -39,15 +44,9 @@ export class PostCard implements OnChanges, OnDestroy {
   commentsOpen = false;
   addedCommentsCount = 0;
   menuOpen = false;
-  now = Date.now(); 
-  liked = false;
-  disliked = false;
+  now = Date.now();
+  voteState: 'up' | 'down' | null = null;
   dislikesCount = 0;
-  isSaved = false;
-
-  ngOnInit(): void {
-    this.isSaved = this.savedPostsService.isSaved(this.post.id);
-  }
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -95,6 +94,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(): void {
+    this.voteState = this.post.liked ? 'up' : null;
     this.configureEditWindowTimer();
   }
 
@@ -118,17 +118,46 @@ export class PostCard implements OnChanges, OnDestroy {
     this.liked = willLike;
   }
 
-  toggleDislike(): void {
-    const wasLiked = this.liked;
-    this.disliked = !this.disliked;
-    this.dislikesCount = Math.max(0, this.dislikesCount + (this.disliked ? 1 : -1));
+upvote(): void {
+  const previousState = this.voteState;
 
-    if (this.disliked && wasLiked) {
+  if (previousState === 'up') {
+    if (this.post.liked) {
       this.toggleLike();
     }
+    this.voteState = null;
+    return;
   }
 
-  /*toggleSaved(): void {
+  if (previousState === 'down') {
+    this.dislikesCount = Math.max(0, this.dislikesCount - 1);
+  }
+
+  if (!this.post.liked) {
+    this.toggleLike();
+  }
+  this.voteState = 'up';
+}
+
+downvote(): void {
+  const previousState = this.voteState;
+
+  if (previousState === 'down') {
+    this.voteState = null;
+    this.dislikesCount = Math.max(0, this.dislikesCount - 1);
+    return;
+  }
+
+  if (previousState === 'up' && this.post.liked) {
+    this.toggleLike();
+  }
+
+  this.voteState = 'down';
+  this.dislikesCount++;
+}
+
+  toggleSaved(): void {
+    const previousPost = this.post;
     this.post = {
       ...this.post,
       saved: !this.post.saved,
@@ -137,6 +166,14 @@ export class PostCard implements OnChanges, OnDestroy {
 
   toggleComments(): void {
     this.commentsOpen = !this.commentsOpen;
+  }
+
+  goToAuthorProfile(): void {
+    if (!this.post.authorNickname) {
+      return;
+    }
+
+    void this.router.navigate(['/perfil', this.post.authorNickname]);
   }
 
   onCommentAdded(): void {

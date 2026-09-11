@@ -32,7 +32,7 @@
 .social-logo,
 .social-create,
 .social-nav__item,
-.social-user {
+.social-user__profile {
   text-decoration: none;
 }
 
@@ -153,18 +153,82 @@
 }
 
 .social-user {
+  position: relative;
   width: 100%;
   min-height: 60px;
   display: grid;
-  grid-template-columns: 42px 1fr 20px;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  border: 0;
+  padding: 8px;
+  color: #4c4c4c;
+  text-align: left;
+  margin-top: auto;
+}
+
+.social-user__profile {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+}
+
+.social-user__more {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #4c4c4c;
+  cursor: pointer;
+}
+
+.social-user__more:hover,
+.social-user__more[aria-expanded='true'] {
+  background: #eaf2fb;
+  color: #0b63b6;
+}
+
+.social-user__more .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.social-user__menu {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  padding: 6px;
+  border: 1px solid #d9dde2;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+}
+
+.social-user__menu button {
+  min-height: 40px;
+  display: flex;
   align-items: center;
   gap: 10px;
   border: 0;
-  padding: 8px 10px;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: transparent;
   color: #4c4c4c;
   cursor: pointer;
+  font: 700 14px/1 Arial, sans-serif;
   text-align: left;
-  transform: translateY(150px);
+}
+
+.social-user__menu button:hover {
+  background: #eaf2fb;
+  color: #0b63b6;
 }
 
 .social-avatar {
@@ -260,6 +324,17 @@
   grid-template-columns: 44px minmax(0, 1fr) 18px;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.social-suggestion:hover strong {
+  color: #0b63b6;
 }
 
 .social-suggestion__verified {

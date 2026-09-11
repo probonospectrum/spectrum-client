@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
-import { UserService } from '../../../core/services/user/user.service';
+import { LoggedUser, UserService } from '../../../core/services/user/user.service';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 
 @Component({
   selector: 'app-comment-section',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReportModal],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
@@ -19,6 +20,8 @@ export class CommentSection implements OnInit {
   comments: SpectrumComment[] = [];
   showAll = false;
   newComment = '';
+  openMenuCommentId: string | null = null;
+  reportingCommentId: string | null = null;
 
   private likedIds = new Set<string>();
   private dislikedIds = new Set<string>();
@@ -57,6 +60,11 @@ export class CommentSection implements OnInit {
 
   get userInitial(): string {
     return this.displayName.charAt(0).toUpperCase();
+  }
+
+  @HostListener('document:click')
+  closeMenu(): void {
+    this.openMenuCommentId = null;
   }
 
   toggleShowAll(): void {
@@ -132,10 +140,29 @@ export class CommentSection implements OnInit {
     this.dislikedIds.add(commentId);
     this.dislikeCounts.set(commentId, this.dislikeCount(commentId) + 1);
 
-    if (this.likedIds.has(commentId)) {
-      this.likedIds.delete(commentId);
-      this.likeCounts.set(commentId, this.likeCount(commentId) - 1);
+  toggleCommentMenu(event: MouseEvent, commentId: string): void {
+    event.stopPropagation();
+    this.openMenuCommentId = this.openMenuCommentId === commentId ? null : commentId;
+  }
+
+  openReportModal(commentId: string): void {
+    this.reportingCommentId = commentId;
+    this.openMenuCommentId = null;
+  }
+
+  closeReportModal(): void {
+    this.reportingCommentId = null;
+  }
+
+  onReportConfirm(reason: string): void {
+    if (this.reportingCommentId) {
+      this.reportComment(this.reportingCommentId, reason);
     }
+    this.reportingCommentId = null;
+  }
+
+  reportComment(commentId: string, reason?: string): void {
+    return;
   }
 
   toggleSaved(commentId: string): void {

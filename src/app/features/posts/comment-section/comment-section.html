@@ -22,14 +22,27 @@
               <strong>{{ comment.authorName }}</strong>
               <span class="comment-section__date">{{ comment.dateLabel }}</span>
             </div>
-            <button
-              type="button"
-              class="comment-section__more"
-              aria-label="Mais opcoes do comentario"
-              (click)="reportComment(comment.id)"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
-            </button>
+
+            <div class="comment-section__menu-wrap" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="comment-section__more"
+                aria-label="Mais opcoes do comentario"
+                [attr.aria-expanded]="openMenuCommentId === comment.id"
+                (click)="toggleCommentMenu($event, comment.id)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+              </button>
+
+              @if (openMenuCommentId === comment.id) {
+                <div class="comment-section__menu" role="menu">
+                  <button type="button" role="menuitem" (click)="openReportModal(comment.id)">
+                    <span class="material-symbols-outlined" aria-hidden="true">flag</span>
+                    Denunciar comentário
+                  </button>
+                </div>
+              }
+            </div>
           </div>
 
           <p class="comment-section__content">{{ comment.content }}</p>
@@ -82,5 +95,12 @@
     }
   } @else {
     <p class="comment-section__empty">Seja o primeiro a comentar.</p>
+  }
+
+  @if (reportingCommentId) {
+    <app-report-modal
+      (close)="closeReportModal()"
+      (confirm)="onReportConfirm($event)"
+    />
   }
 </section>

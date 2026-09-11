@@ -17,7 +17,21 @@
 
 label {
   display: grid;
-  gap: 8px;
+  gap: 4px;
+}
+
+.settings-row--avatar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.settings-row__content strong,
+.settings-row__content small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-row__content strong {
   color: #303030;
   font: 800 14px/1 Arial, sans-serif;
 }

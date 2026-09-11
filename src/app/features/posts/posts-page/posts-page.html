@@ -1,20 +1,21 @@
 <app-social-shell
+  #socialShell
   [user]="user"
   [suggestions]="suggestions"
   title="Publicacoes"
   [showContentHeader]="false"
   (logout)="logout()"
-  (createPost)="openCreatePost()"
+  (postCreated)="onPostCreated()"
+  (postUpdated)="onPostUpdated()"
 >
-
 
   <section
     class="post-composer"
     role="button"
     tabindex="0"
-    (click)="openCreatePost()"
-    (keydown.enter)="openCreatePost()"
-    (keydown.space)="openCreatePost()"
+    (click)="socialShell.openCreatePost()"
+    (keydown.enter)="socialShell.openCreatePost()"
+    (keydown.space)="socialShell.openCreatePost()"
   >
     <div class="post-composer__avatar">
       {{ userInitial }}
@@ -23,10 +24,15 @@
     <div class="post-composer__content">
       <span>O que você está pensando?</span>
 
-      <div class="post-composer__actions">
-        <span aria-hidden="true">📷</span>
-        <span aria-hidden="true">🎥</span>
+        <button
+          type="button"
+          class="post-composer__publish"
+          (click)="$event.stopPropagation(); socialShell.openCreatePost()"
+        >
+          Publicar
+        </button>
       </div>
+
     </div>
 
     <button
@@ -38,84 +44,31 @@
     </button>
   </section>
 
-  @for (post of posts; track post.id) {
-    <app-post-card [post]="post" (report)="openReport($event)" />
-  } @empty {
-    <section class="posts-empty">
-      <h2>Nenhuma publicacao por aqui</h2>
-      <p>Crie a primeira publicacao para movimentar sua comunidade.</p>
-      <a routerLink="/publicacoes/nova">Criar publicacao</a>
+  @if (feedLoading()) {
+    <section class="posts-loading">
+      <app-loading-indicator label="Carregando publicacoes" />
     </section>
-  }
-
-  @if (showCreatePost) {
-    <div
-      class="create-post-backdrop"
-      role="presentation"
-      (click)="closeCreatePost()"
-    >
-      <section
-        class="create-post-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-post-title"
-        (click)="$event.stopPropagation()"
-      >
-        <button
-          class="create-post-modal__close"
-          type="button"
-          aria-label="Fechar"
-          (click)="closeCreatePost()"
-        >
-          ×
-        </button>
-
-        <div class="create-post-modal__author">
-          <div class="create-post-modal__avatar">
-            {{ userInitial }}
-          </div>
-
-          <div>
-            <strong>{{ displayName }}</strong>
-            <span>@{{ nickname }}</span>
-          </div>
-        </div>
-
-        <textarea
-          id="create-post-title"
-          class="create-post-modal__textarea"
-          [(ngModel)]="newPostContent"
-          placeholder="O que está acontecendo?"
-          maxlength="420"
-        ></textarea>
-
-        <div class="create-post-modal__footer">
-          <span>Adicionar no seu post:</span>
-
-          <div class="create-post-modal__actions">
-            <button type="button" aria-label="Adicionar imagem">
-              📷
-            </button>
-
-            <button type="button" aria-label="Adicionar localização">
-              📍
-            </button>
-
-            <button type="button" aria-label="Adicionar vídeo">
-              🎥
-            </button>
-          </div>
-        </div>
-
-        <button
-          class="create-post-modal__submit"
-          type="button"
-          (click)="publishPost()"
-        >
-          Postar
-        </button>
+  } @else {
+    @for (post of posts; track post.id) {
+      <app-post-card
+        [post]="post"
+        [currentUser]="user"
+        (report)="openReport($event)"
+        (edit)="socialShell.openEditPost($event)"
+        (remove)="deletePost($event)"
+        (repost)="toggleRepost($event)"
+        (hideAuthor)="hideAuthor($event)"
+        (notInterested)="hidePost($event)"
+        (aiSpam)="openReport($event, 'Parece spam de IA')"
+        (copyLink)="copyPostLink($event)"
+      />
+    } @empty {
+      <section class="posts-empty">
+        <h2>Nenhuma publicacao por aqui</h2>
+        <p>Crie a primeira publicacao para movimentar sua comunidade.</p>
+        <button type="button" (click)="socialShell.openCreatePost()">Criar publicacao</button>
       </section>
-    </div>
+    }
   }
 
 </app-social-shell>
@@ -125,5 +78,21 @@
     title="O que está sendo reportado?"
     (close)="reportPost = null"
     (confirm)="confirmReport()"
+  />
+}
+
+@if (feedAlert(); as currentFeedAlert) {
+  <app-alert-popup
+    [type]="currentFeedAlert.type"
+    [title]="currentFeedAlert.title"
+    [message]="currentFeedAlert.message"
+    actionLabel="Ok"
+    (dismissed)="feedAlert.set(null)"
+  />
+}
+
+@if (showInterests) {
+  <app-interests-page
+    (fechou)="onInteressesEscolhidos($event)"
   />
 }

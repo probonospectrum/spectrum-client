@@ -33,9 +33,8 @@ export class CreatePostPage {
     { label: 'Texto', value: 'text' },
   ];
 
-  title = '';
   content = '';
-  authorCity = this.user?.cityUser || '';
+  authorCity = this.user?.cityUser ?? '';
   tagText = '';
   mediaType: SpectrumPost['mediaType'] = 'video';
   alert: PostAlert | null = null;
@@ -52,30 +51,28 @@ export class CreatePostPage {
     return this.displayName.charAt(0).toUpperCase();
   }
 
-  publish(): void {
-    const title = this.title.trim();
+  submitPost(): void {
     const content = this.content.trim();
     const authorCity = this.authorCity.trim();
 
-    if (!title || !content || !authorCity) {
+    if (!content || !authorCity) {
       this.alert = {
         type: 'error',
         title: 'Nao foi possivel publicar',
-        message: 'Preencha titulo, conteudo e localizacao para criar uma publicacao.',
+        message: 'Preencha conteudo e localizacao para continuar.',
       };
       return;
     }
 
-    const createdPost = this.postService.createPost(
-      {
-        title,
-        content,
-        authorCity,
-        mediaType: this.mediaType,
-        tags: this.parseTags(),
-      },
-      this.user,
-    );
+    const payload = {
+      title: this.getPostTitle(content),
+      content,
+      authorCity,
+      mediaType: this.mediaType,
+      tags: this.parseTags(),
+    };
+
+    const createdPost = this.postService.createPost(payload, this.user);
 
     this.alert = {
       type: 'success',
@@ -106,4 +103,9 @@ export class CreatePostPage {
       .filter(Boolean)
       .slice(0, 4);
   }
+
+  private getPostTitle(content: string): string {
+    return content.length > 72 ? `${content.slice(0, 69)}...` : content;
+  }
+
 }

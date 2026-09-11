@@ -38,29 +38,19 @@ export const routes: Routes = [
       import('./features/user/forgot-password-page/forgot-password-page').then(
         (m) => m.ForgotPasswordPage,
       ),
-  },  
+  },
   {
-  path: 'reset-password',
-  loadComponent: () =>
-    import('./features/user/reset-password-page/reset-password-page').then(
-      (m) => m.ResetPasswordPage,
-    ),
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/user/reset-password-page/reset-password-page').then(
+        (m) => m.ResetPasswordPage,
+      ),
   },
   {
     path: 'verify-email',
     loadComponent: () =>
       import('./features/user/verify-email-page/verify-email-page')
         .then((m) => m.VerifyEmailPage),
-  },
-
-  {
-    path: 'interesses',
-    outlet: 'modal',
-    loadComponent: () =>
-      import('./features/interests/interests-page/interests-page')
-        .then((m) => m.InterestsPage),
-
-    canActivate: [authGuard],
   },
 
   {
@@ -91,6 +81,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'cidades/:slug',
+    loadComponent: () =>
+      import('./features/cities/city-page/city-page')
+        .then((m) => m.CityPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
     path: 'perfil',
     loadComponent: () =>
       import('./features/profile/profile-page/profile-page')
@@ -106,6 +105,12 @@ export const routes: Routes = [
       .then((m) => m.SavedPostsComponent),
 
   canActivate: [authGuard],
+    path: 'perfil/:nickname',
+    loadComponent: () =>
+      import('./features/profile/profile-page/profile-page')
+        .then((m) => m.ProfilePage),
+
+    canActivate: [authGuard],
   },
 
   {
@@ -116,10 +121,4 @@ export const routes: Routes = [
 
     canActivate: [authGuard],
   },
-{
-  path: 'interesses',
-  loadComponent: () =>
-    import('./features/interests/interests-page/interests-page')
-      .then((m) => m.InterestsPage),
-},
 ];

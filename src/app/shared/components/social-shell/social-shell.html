@@ -3,7 +3,7 @@
     <header class="social-header">
     <div class="social-header__inner">
 
-      <a class="social-logo" routerLink="/home" aria-label="Spectrum">
+      <a class="social-logo" routerLink="/publicacoes" aria-label="Spectrum">
         <img src="/logo.png" alt="Spectrum" class="logo">
       </a>
 
@@ -14,8 +14,8 @@
         <input
           type="search"
           placeholder="Pesquise por cidades e usuarios"
-          [(ngModel)]="searchTerm"
-          (input)="onSearch()"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event); onSearch()"
           (keydown)="onSearchKeydown($event)"
         />
 
@@ -26,11 +26,11 @@
           search
         </span>
 
-        @if (searchTerm.trim()) {
+        @if (searchTerm().trim()) {
 
           <div class="social-search__results">
 
-            @if (isSearching) {
+            @if (isSearching()) {
 
               <div class="search-skeleton-list">
 
@@ -51,7 +51,7 @@
 
             } @else {
 
-              @if (searchResults.length > 0) {
+              @if (searchResults().length > 0) {
 
                 <div class="search-results">
 
@@ -59,11 +59,12 @@
                     RESULTADOS
                   </span>
 
-                  @for (result of searchResults; track result.id) {
+                  @for (result of searchResults(); track result.id) {
 
                     <button
                       type="button"
                       class="search-result"
+                      (click)="selectSearchResult(result)"
                     >
 
                     <span class="search-result__icon">
@@ -132,7 +133,7 @@
         class="social-create"
         type="button"
         aria-label="Criar publicacao"
-        (click)="createPost.emit()"
+        (click)="openCreatePost()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
       </button>
@@ -176,6 +177,7 @@
           class="social-nav__item"
           routerLink="/perfil"
           routerLinkActive="social-nav__item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
         >
           <span class="material-symbols-outlined">
             account_circle
@@ -198,37 +200,37 @@
       </nav>
 
       <!-- USUÁRIO LOGADO -->
-      <a class="social-user" routerLink="/perfil">
+      <div class="social-user" (click)="$event.stopPropagation()">
+        <a class="social-user__profile" routerLink="/perfil">
+          <span class="social-avatar">
+            {{ userInitial }}
+          </span>
 
-        <span class="social-avatar">
-          {{ userInitial }}
-        </span>
+          <span class="social-user__text">
+            <strong>{{ displayName }}</strong>
+            <small>@{{ nickname }}</small>
+          </span>
+        </a>
 
-        <span class="social-user__text">
-          <strong>{{ displayName }}</strong>
-          <small>@{{ nickname }}</small>
-        </span>
-
-        <span
-          class="material-symbols-outlined social-user__more"
-          aria-hidden="true"
+        <button
+          class="social-user__more"
+          type="button"
+          aria-label="Abrir opcoes da conta"
+          [attr.aria-expanded]="userMenuOpen"
+          (click)="toggleUserMenu($event)"
         >
-          more_horiz
-        </span>
+          <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+        </button>
 
-      </a>
-
-      <!-- SAIR -->
-      <button
-        class="social-nav__item"
-        type="button"
-        (click)="logout.emit()"
-      >
-        <span class="material-symbols-outlined">
-          logout
-        </span>
-        Sair
-      </button>
+        @if (userMenuOpen) {
+          <div class="social-user__menu" role="menu">
+            <button type="button" role="menuitem" (click)="openLogoutConfirm()">
+              <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+              Sair
+            </button>
+          </div>
+        }
+      </div>
 
     </aside>
 
@@ -276,7 +278,11 @@
 
       @for (profile of suggestions; track profile.nickname) {
 
-        <article class="social-suggestion">
+        <button
+          type="button"
+          class="social-suggestion"
+          (click)="goToProfile(profile.nickname)"
+        >
 
           <span class="social-avatar social-avatar--small">
 
@@ -304,7 +310,7 @@
 
           }
 
-        </article>
+        </button>
 
       }
 
@@ -313,3 +319,17 @@
   </div>
 
 </main>
+
+@if (isLogoutConfirmOpen) {
+  <app-logout-confirm (confirm)="confirmLogout()" (cancel)="cancelLogout()" />
+}
+
+@if (showCreatePost) {
+  <app-create-post-modal
+    [user]="user"
+    [editingPost]="editingPost"
+    (close)="closeCreatePost()"
+    (postCreated)="handlePostCreated($event)"
+    (postUpdated)="handlePostUpdated($event)"
+  />
+}

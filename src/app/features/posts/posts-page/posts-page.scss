@@ -1,19 +1,23 @@
 .posts-primary-action,
-.posts-empty a {
+.posts-empty a,
+.posts-empty button {
   min-height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: 0;
   border-radius: 6px;
   padding: 0 16px;
   background: #00488d;
   color: #ffffff;
+  cursor: pointer;
   font: 800 13px/1 Arial, sans-serif;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.posts-empty {
+.posts-empty,
+.posts-loading {
   display: grid;
   justify-items: start;
   gap: 12px;
@@ -21,6 +25,12 @@
   border-radius: 8px;
   background: #fcfcfc;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+}
+
+.posts-loading {
+  justify-items: center;
+  color: #072e5b;
+  font: 800 14px/1.2 Arial, sans-serif;
 }
 
 .posts-empty h2,
@@ -46,11 +56,11 @@
 // Css do composer
 .post-composer {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  min-height: 88px;
-  padding: 14px 18px;
+  gap: 14px;
+  min-height: 82px;
+  padding: 16px 18px;
   border: 0;
   border-radius: 8px;
   background: #fcfcfc;
@@ -85,18 +95,6 @@
   font: 400 14px/1 Arial, sans-serif;
 }
 
-.post-composer__actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-  padding-left: 4px;
-  color: #5e6871;
-}
-
-.post-composer__actions span {
-  font-size: 18px;
-}
-
 .post-composer__publish {
   min-height: 34px;
   padding: 0 16px;
@@ -106,138 +104,6 @@
   color: #ffffff;
   cursor: pointer;
   font: 800 13px/1 Arial, sans-serif;
-}
-
-// Css do modal
-.create-post-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.32);
-}
-
-.create-post-modal {
-  position: relative;
-  width: min(383px, 100%);
-  display: grid;
-  gap: 18px;
-  padding: 28px 27px 17px;
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
-}
-
-.create-post-modal__close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  background: transparent;
-  color: #555555;
-  cursor: pointer;
-  font: 700 20px/1 Arial, sans-serif;
-}
-
-.create-post-modal__author {
-  display: grid;
-  grid-template-columns: 38px 1fr;
-  align-items: center;
-  gap: 12px;
-  padding-right: 24px;
-}
-
-.create-post-modal__avatar {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #dbe2e7;
-  color: #7d8992;
-  font: 700 16px/1 Arial, sans-serif;
-}
-
-.create-post-modal__author strong,
-.create-post-modal__author span {
-  display: block;
-}
-
-.create-post-modal__author strong {
-  color: #333333;
-  font: 700 15px/1.2 Arial, sans-serif;
-}
-
-.create-post-modal__author span {
-  margin-top: 3px;
-  color: #9a9a9a;
-  font: 400 14px/1.2 Arial, sans-serif;
-}
-
-.create-post-modal__textarea {
-  width: 100%;
-  min-height: 78px;
-  box-sizing: border-box;
-  padding: 12px;
-  border: 0;
-  border-radius: 10px;
-  outline: 0;
-  resize: none;
-  background: #ffffff;
-  color: #333333;
-  font: 400 14px/1.4 Arial, sans-serif;
-  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.12);
-}
-
-.create-post-modal__textarea::placeholder {
-  color: #a5a5a5;
-}
-
-.create-post-modal__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.create-post-modal__footer > span {
-  color: #555555;
-  font: 400 13px/1.2 Arial, sans-serif;
-}
-
-.create-post-modal__actions {
-  display: flex;
-  gap: 12px;
-}
-
-.create-post-modal__actions button {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #5e6871;
-  cursor: pointer;
-  font-size: 17px;
-}
-
-.create-post-modal__submit {
-  width: 100%;
-  min-height: 34px;
-  border: 0;
-  border-radius: 6px;
-  background: #00488d;
-  color: #ffffff;
-  cursor: pointer;
-  font: 800 14px/1 Arial, sans-serif;
-}
-
-.create-post-modal__submit:hover {
-  background: #003c76;
 }
 
 @media (max-width: 540px) {
@@ -250,12 +116,4 @@
     justify-self: end;
   }
 
-  .create-post-backdrop {
-    padding: 12px;
-  }
-
-  .create-post-modal {
-    width: 100%;
-    padding: 25px 20px 16px;
-  }
 }

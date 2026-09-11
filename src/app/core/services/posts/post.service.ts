@@ -107,6 +107,171 @@ export class PostService {
     return post;
   }
 
+  togglePostLike(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para curtir.');
+    const postId = post.originalPostId ?? post.id;
+    const basePost = this.findRawPost(postId) ?? this.withoutComputedPostState({ ...post, id: postId });
+    const records = this.getPostInteractionRecords();
+    const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
+    const currentPost = this.withPostState(basePost, user);
+
+    record.liked = !currentPost.liked;
+    this.savePostInteractionRecords(records);
+
+    return this.withPostState(basePost, user);
+  }
+
+  togglePostSaved(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para salvar.');
+    const postId = post.originalPostId ?? post.id;
+    const basePost = this.findRawPost(postId) ?? this.withoutComputedPostState({ ...post, id: postId });
+    const records = this.getPostInteractionRecords();
+    const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
+    const currentPost = this.withPostState(basePost, user);
+
+    record.saved = !currentPost.saved;
+    this.savePostInteractionRecords(records);
+
+    return this.withPostState(basePost, user);
+  }
+
+  toggleCommentLike(comment: SpectrumComment, user: LoggedUser | null): SpectrumComment {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para curtir.');
+    const baseComment = this.findRawComment(comment.id) ?? this.withoutComputedCommentState(comment);
+    const records = this.getCommentInteractionRecords();
+    const record = this.getOrCreateCommentInteractionRecord(records, userId, comment.id);
+    const currentComment = this.withCommentState(baseComment, user);
+
+    record.liked = !currentComment.liked;
+
+    if (record.liked) {
+      record.disliked = false;
+    }
+
+    this.saveCommentInteractionRecords(records);
+
+    return this.withCommentState(baseComment, user);
+  }
+
+  toggleCommentDislike(comment: SpectrumComment, user: LoggedUser | null): SpectrumComment {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para descurtir.');
+    const baseComment = this.findRawComment(comment.id) ?? this.withoutComputedCommentState(comment);
+    const records = this.getCommentInteractionRecords();
+    const record = this.getOrCreateCommentInteractionRecord(records, userId, comment.id);
+    const currentComment = this.withCommentState(baseComment, user);
+
+    record.disliked = !currentComment.disliked;
+
+    if (record.disliked) {
+      record.liked = false;
+    }
+
+    this.saveCommentInteractionRecords(records);
+
+    return this.withCommentState(baseComment, user);
+  }
+
+  updatePost(id: string, payload: CreatePostPayload, user: LoggedUser | null): SpectrumPost {
+    const posts = this.getUserPosts();
+    const index = posts.findIndex((post) => post.id === id);
+
+    if (index < 0) {
+      throw new Error('Publicacao nao encontrada para edicao.');
+    }
+
+    const currentPost = this.withPostState(posts[index], user);
+
+    if (!this.canModifyPost(currentPost, user)) {
+      throw new Error('O prazo para editar esta publicacao expirou.');
+    }
+
+    const updatedPost: SpectrumPost = {
+      ...posts[index],
+      authorCity: payload.authorCity.trim(),
+      title: payload.title.trim(),
+      content: payload.content.trim(),
+      mediaType: payload.mediaType,
+      tags: payload.tags,
+      updatedAt: new Date().toISOString(),
+    };
+
+    posts[index] = this.withoutComputedPostState(updatedPost);
+    localStorage.setItem(this.storageKey, JSON.stringify(posts));
+    return this.withPostState(updatedPost, user);
+  }
+
+  deletePost(id: string, user: LoggedUser | null): void {
+    const posts = this.getUserPosts();
+    const post = posts.find((item) => item.id === id);
+
+    if (!post) {
+      throw new Error('Publicacao nao encontrada para exclusao.');
+    }
+
+    if (!this.isOwnPost(this.withPostState(post, user), user)) {
+      throw new Error('Voce so pode excluir suas proprias publicacoes.');
+    }
+
+    localStorage.setItem(
+      this.storageKey,
+      JSON.stringify(posts.filter((item) => item.id !== id)),
+    );
+    localStorage.setItem(
+      this.repostStorageKey,
+      JSON.stringify(this.getRepostRecords().filter((repost) => repost.originalPostId !== id)),
+    );
+  }
+
+  toggleRepost(post: SpectrumPost, user: LoggedUser | null): RepostToggleResult {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para repostar.');
+
+    const originalPostId = post.originalPostId ?? post.id;
+    const records = this.getRepostRecords();
+    const existingIndex = records.findIndex(
+      (repost) => repost.userId === userId && repost.originalPostId === originalPostId,
+    );
+
+    if (existingIndex >= 0) {
+      records.splice(existingIndex, 1);
+      localStorage.setItem(this.repostStorageKey, JSON.stringify(records));
+      return {
+        post: this.findPostById(originalPostId, user) ?? this.withPostState(post, user),
+        reposted: false,
+      };
+    }
+
+    records.unshift({
+      id: `repost-${userId}-${originalPostId}`,
+      userId,
+      originalPostId,
+      createdAt: new Date().toISOString(),
+    });
+    localStorage.setItem(this.repostStorageKey, JSON.stringify(records));
+
+    return {
+      post: this.findPostById(originalPostId, user) ?? this.withPostState(post, user),
+      reposted: true,
+    };
+  }
+
+  canModifyPost(post: SpectrumPost, user: LoggedUser | null, now = Date.now()): boolean {
+    const createdAt = new Date(post.createdAt || post.publishedAt).getTime();
+
+    if (!Number.isFinite(createdAt)) {
+      return false;
+    }
+
+    return this.isOwnPost(post, user) && now - createdAt <= POST_EDIT_WINDOW_MS;
+  }
+
+  isOwnPost(post: SpectrumPost, user: LoggedUser | null): boolean {
+    if (!user) {
+      return false;
+    }
+
+    return post.createdBy === user._id || post.authorNickname === user.nickname;
+  }
+
   private getUserPosts(): SpectrumPost[] {
     const rawPosts = localStorage.getItem(this.storageKey);
 
@@ -137,8 +302,10 @@ export class PostService {
         publishedAt: '2026-04-10T14:30:00.000Z',
         publishedAtLabel: 'Publicado em 10/04/2026, as 11:30',
         likes: 47,
-        comments: 12,
-        shares: 3,
+        liked: false,
+        comments: 0,
+        reposts: 3,
+        reposted: false,
         saved: false,
         tags: [],
       },

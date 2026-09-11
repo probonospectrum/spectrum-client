@@ -1,23 +1,50 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
-  title="Configuracoes"
-  subtitle="Preferencias e seguranca"
+  [showContentHeader]="false"
   (logout)="logout()"
 >
   <button class="settings-save" type="button" social-actions (click)="save()">Salvar alteracoes</button>
 
-  <div class="settings-grid">
-    <app-settings-section
-      title="Conta"
-      description="Dados basicos usados para identificar sua conta no Spectrum."
-    >
-      <label>
-        E-mail principal
-        <input type="email" [value]="user?.email || 'usuario@spectrum.com'" disabled />
-      </label>
-      <label>
-        Idioma
+  <div class="settings-list">
+    <app-settings-section title="Conta">
+      <button class="settings-row settings-row--button" type="button" (click)="goToProfile()">
+        <span class="settings-row__content">
+          <strong>Alterar nome</strong>
+          <small>{{ profile.name }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <button class="settings-row settings-row--button" type="button" (click)="goToProfile()">
+        <span class="settings-row__content">
+          <strong>Username</strong>
+          <small>@{{ profile.nickname }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <button class="settings-row settings-row--button settings-row--avatar" type="button" (click)="goToProfile()">
+        <span class="settings-row__content">
+        <strong>Foto / Avatar</strong>
+        <small>Inicial {{ profile.avatarInitial }}</small>
+      </span>
+      <span class="settings-row__avatar">{{ profile.avatarInitial }}</span>
+      <span class="settings-row__arrow" aria-hidden="true"></span>
+    </button>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>E-mail principal</strong>
+          <small>{{ user?.email || profile.email }}</small>
+        </span>
+      </div>
+
+      <label class="settings-row">
+        <span class="settings-row__content">
+          <strong>Idioma</strong>
+          <small>Idioma usado na interface</small>
+        </span>
         <select
           [ngModel]="settings.language"
           (ngModelChange)="setSetting('language', $event)"
