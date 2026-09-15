@@ -109,7 +109,7 @@ export class UserService {
     // trocar a persistência acima por uma chamada HTTP real.
   }
 
-  private saveSession(response: LoginResponse): void {
+  saveSession(response: LoginResponse): void {
     localStorage.setItem(this.sessionStorageKey, JSON.stringify(response));
     this.session.set(response);
   }

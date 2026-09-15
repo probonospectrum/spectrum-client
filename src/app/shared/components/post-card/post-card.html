@@ -55,7 +55,7 @@
               <span class="material-symbols-outlined" aria-hidden="true">delete</span>
               Excluir publicacao
             </button>
-            <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
+           <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
               <span
                 class="material-symbols-outlined"
                 [class.post-card__filled-icon]="isSaved"
@@ -65,6 +65,7 @@
               </span>
               Salvar
             </button>
+
             <button type="button" role="menuitem" (click)="selectMenuAction(copyLink)">
               <span class="material-symbols-outlined" aria-hidden="true">link</span>
               Copiar link
@@ -157,33 +158,39 @@
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
         {{ commentsCount }}
       </button>
+
       <button
         type="button"
-        [class.post-card__action--active]="post.reposted"
-        [attr.aria-label]="post.reposted ? 'Remover repost' : 'Repostar publicacao'"
-        (click)="repost.emit(post)"
+        [class.post-card__action--active]="commentsOpen"
+        aria-label="Comentar publicacao"
+        (click)="toggleComments()"
       >
-        <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
-        {{ reposts }}
+        <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+        {{ commentsCount }}
       </button>
-      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()">
-        <span
-          class="material-symbols-outlined"
-          [class.post-card__filled-icon]="isSaved"
-          aria-hidden="true"
-        >
-          {{ isSaved ? 'bookmark' : 'bookmark_border' }}
-        </span>
-        {{ isSaved ? 'Salvo' : 'Salvar' }}
+
+      <button type="button" aria-label="Compartilhar publicacao">
+        <span class="material-symbols-outlined" aria-hidden="true">share</span>
+        {{ post.shares }}
       </button>
+
+    @if (showSaveButton) {
+      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()" [class.post-card__action--saved]="isSaved">
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ isSaved ? 'bookmark' : 'bookmark_border' }}
+          </span>
+            {{ isSaved ? 'Salvo' : 'Salvar' }}
+      </button>
+    } @else {
+        <button type="button" aria-label="Remover dos itens salvos" (click)="toggleSaved()">
+          <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+          Remover
+        </button>
+    }
     </div>
   </footer>
 
   @if (commentsOpen) {
-    <app-comment-section
-      [postId]="post.id"
-      [currentUser]="currentUser"
-      (commentAdded)="onCommentAdded()"
-    />
+    <app-comment-section [postId]="post.id" (commentAdded)="onCommentAdded()" />
   }
 </article>

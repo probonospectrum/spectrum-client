@@ -53,6 +53,7 @@
   }
 }
 
+// Css do composer
 .post-composer {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr);
@@ -65,16 +66,11 @@
   background: #fcfcfc;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
   cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.post-composer:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
 }
 
 .post-composer__avatar {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -83,83 +79,41 @@
   font: 800 18px/1 Arial, sans-serif;
 }
 
-.post-composer__body {
+.post-composer__content {
   min-width: 0;
 }
 
-.post-composer__field {
-  min-height: 48px;
+.post-composer__content > span {
+  display: block;
+  min-height: 46px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 5px 6px 5px 16px;
-  border: 1px solid #e3e8ee;
   border-radius: 999px;
-  background: #f5f7f9;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.post-composer:hover .post-composer__field {
-  border-color: #cbd8e5;
-  background: #ffffff;
-}
-
-.post-composer__field > span {
-  min-width: 0;
-  overflow: hidden;
+  background: #f1f2f3;
   color: #8a8f94;
   font: 400 14px/1 Arial, sans-serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .post-composer__publish {
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 34px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 999px;
-  padding: 0 18px;
+  border-radius: 6px;
   background: #00488d;
   color: #ffffff;
   cursor: pointer;
   font: 800 13px/1 Arial, sans-serif;
-  white-space: nowrap;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-
-.post-composer__publish:hover {
-  background: #003c76;
-  box-shadow: 0 4px 12px rgba(0, 72, 141, 0.24);
 }
 
 @media (max-width: 540px) {
   .post-composer {
     grid-template-columns: 42px minmax(0, 1fr);
-    gap: 12px;
-    padding: 14px;
-  }
-
-  .post-composer__avatar {
-    width: 42px;
-    height: 42px;
-  }
-
-  .post-composer__field {
-    align-items: stretch;
-    border-radius: 18px;
-    flex-direction: column;
-    padding: 12px;
-  }
-
-  .post-composer__field > span {
-    white-space: normal;
   }
 
   .post-composer__publish {
-    width: 100%;
+    grid-column: 2;
+    justify-self: end;
   }
 
 }

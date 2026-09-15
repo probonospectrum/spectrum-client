@@ -71,6 +71,18 @@
                 <span class="comment-section__count">{{ dislikeCount(comment.id) }}</span>
               }
             </button>
+
+            <button
+              type="button"
+              class="comment-section__save"
+              [class.comment-section__action--active]="isSaved(comment.id)"
+              aria-label="Salvar comentario"
+              (click)="toggleSaved(comment.id)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">
+                {{ isSaved(comment.id) ? 'bookmark' : 'bookmark_border' }}
+              </span>
+            </button>
           </div>
         </li>
       }

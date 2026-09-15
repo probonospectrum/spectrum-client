@@ -21,9 +21,8 @@
       {{ userInitial }}
     </div>
 
-    <div class="post-composer__body">
-      <div class="post-composer__field">
-        <span>O que você está pensando?</span>
+    <div class="post-composer__content">
+      <span>O que você está pensando?</span>
 
         <button
           type="button"
@@ -35,6 +34,14 @@
       </div>
 
     </div>
+
+    <button
+      type="button"
+      class="post-composer__publish"
+      (click)="$event.stopPropagation(); openCreatePost()"
+    >
+      Publicar
+    </button>
   </section>
 
   @if (feedLoading()) {

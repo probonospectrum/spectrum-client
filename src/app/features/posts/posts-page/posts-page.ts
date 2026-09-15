@@ -80,7 +80,6 @@ export class PostsPage implements OnInit {
     'Abuso ou assedio',
     'Conteudo sexual',
     'Seguranca infantil',
-    'Parece spam de IA',
   ];
 
   get posts(): SpectrumPost[] {
@@ -138,7 +137,6 @@ export class PostsPage implements OnInit {
     reason = this.reportReasons[0],
   ): void {
     this.reportPost = post;
-    this.selectedReason = reason;
   }
 
   confirmReport(): void {
