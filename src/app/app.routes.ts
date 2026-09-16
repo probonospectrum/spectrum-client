@@ -64,6 +64,12 @@ export const routes: Routes = [
   },
 
   {
+  path: 'auth/callback',
+  loadComponent: () =>
+    import('./features/callback/callback').then((m) => m.CallbackPage),
+  },
+
+  {
     path: 'publicacoes',
     loadComponent: () =>
       import('./features/posts/posts-page/posts-page')
