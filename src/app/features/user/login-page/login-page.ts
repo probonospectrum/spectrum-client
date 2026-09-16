@@ -26,7 +26,6 @@ import {
 
 import { UserService } from '../../../core/services/user/user.service';
 import { GoogleAuthService } from '../../../core/services/user/google-auth.service';
-import { OAuthService } from 'angular-oauth2-oidc';
 import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
 type AuthMode = 'login' | 'register';
 
@@ -55,7 +54,6 @@ export class LoginPage implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly googleAuth = inject(GoogleAuthService);
-  private readonly oauthService = inject(OAuthService);
   private readonly authApiService = inject(AuthApiService);
   readonly isGoogleLoginAvailable = this.googleAuth.isConfigured;
 
@@ -119,47 +117,39 @@ export class LoginPage implements OnInit {
     this.tryGoogleLogin();
   }
 
-  private async tryGoogleLogin(): Promise<void> {
+  private tryGoogleLogin(): void {
     if (!this.googleAuth.isConfigured) {
       return;
     }
 
-    try {
-      await this.oauthService.loadDiscoveryDocumentAndTryLogin();
-    } catch {
-      this.alert.set({
-        type: 'error',
-        title: 'Erro no login',
-        message: 'Não foi possível iniciar o login com o Google.',
-        actionLabel: 'Fechar',
-      });
+    const code = this.googleAuth.getAuthorizationCode();
+
+    if (!code) {
       return;
     }
 
-    if (this.googleAuth.isLoggedIn) {
-      const idToken = this.googleAuth.idToken;
-
-      this.isSubmitting.set(true);
-      this.authApiService
-        .loginWithGoogle(idToken)
-        .pipe(
-          finalize(() => this.isSubmitting.set(false)),
-          takeUntilDestroyed(this.destroyRef),
-        )
-        .subscribe({
-          next: () => {
-            void this.router.navigate(['/publicacoes']);
-          },
-          error: () => {
-            this.alert.set({
-              type: 'error',
-              title: 'Erro no login',
-              message: 'Não foi possível fazer o login com o Google.',
-              actionLabel: 'Fechar',
-            });
-          },
-        });
-    }
+    this.isSubmitting.set(true);
+    this.authApiService
+      .loginWithGoogle(code)
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.googleAuth.clearUrlParams();
+          void this.router.navigate(['/publicacoes']);
+        },
+        error: () => {
+          this.googleAuth.clearUrlParams();
+          this.alert.set({
+            type: 'error',
+            title: 'Erro no login',
+            message: 'Não foi possível fazer o login com o Google.',
+            actionLabel: 'Fechar',
+          });
+        },
+      });
   }
 
   get isRegisterMode(): boolean {

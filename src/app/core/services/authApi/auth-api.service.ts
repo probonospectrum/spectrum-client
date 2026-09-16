@@ -1,14 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
+import { LoginResponse, UserService } from '../user/user.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${API_BASE_URL}/auth`;
+  private readonly userService = inject(UserService);
 
-  loginWithGoogle(idToken: string): Observable<{ token: string }> {
-    return this.http.post<{ token: string }>(`${this.baseUrl}/google`, { idToken });
+  loginWithGoogle(code: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${API_BASE_URL}/auth/google`, { code })
+      .pipe(tap((response) => this.userService.saveSession(response)));
   }
 }
