@@ -9,8 +9,8 @@ const googleClientId =
 
 export const googleAuthConfig: AuthConfig = {
   issuer: 'https://accounts.google.com',
-  redirectUri: `${window.location.origin}/login`,
-  clientId: googleClientId,
+  redirectUri: window.location.origin +  '/auth/callback', //Preciso cadastrar isso aqui  no google cloud console, se n vai dar conflito de segurança com a  google
+  clientId: '184147466803-nm56hqa9rqgov41bv6479qaj9v39fbdt.apps.googleusercontent.com', // vem do backend/Google Console
   scope: 'openid profile email',
   responseType: 'code',
   showDebugInformation: false,
