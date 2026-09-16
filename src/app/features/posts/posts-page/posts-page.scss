@@ -103,7 +103,14 @@
   background: #00488d;
   color: #ffffff;
   cursor: pointer;
-  font: 800 13px/1 Arial, sans-serif;
+  font: 600 13px/1 Arial, sans-serif;
+  white-space: nowrap;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.post-composer__publish:hover {
+  background: #003c76;
+  box-shadow: 0 4px 12px rgba(0, 72, 141, 0.24);
 }
 
 @media (max-width: 540px) {
