@@ -25,7 +25,7 @@ import {
 } from '../../../core/services/city/city.service';
 
 import { UserService } from '../../../core/services/user/user.service';
-import { GoogleAuthService} from '../../../core/services/user/google-auth.service';
+import { GoogleAuthService } from '../../../core/services/user/google-auth.service';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
 type AuthMode = 'login' | 'register';
@@ -57,6 +57,7 @@ export class LoginPage implements OnInit {
   private readonly googleAuth = inject(GoogleAuthService);
   private readonly oauthService = inject(OAuthService);
   private readonly authApiService = inject(AuthApiService);
+  readonly isGoogleLoginAvailable = this.googleAuth.isConfigured;
 
   mode = signal<AuthMode>('login');
 
@@ -119,43 +120,47 @@ export class LoginPage implements OnInit {
   }
 
   private async tryGoogleLogin(): Promise<void> {
-  try {
-    await this.oauthService.loadDiscoveryDocumentAndTryLogin();
-  } catch {
-    this.alert.set({
-      type: 'error',
-      title: 'Erro no login',
-      message: 'Não foi possível iniciar o login com o Google.',
-      actionLabel: 'Fechar',
-    });
-    return;
-  }
+    if (!this.googleAuth.isConfigured) {
+      return;
+    }
 
-  if (this.googleAuth.isLoggedIn) {
-    const idToken = this.googleAuth.idToken;
+    try {
+      await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+    } catch {
+      this.alert.set({
+        type: 'error',
+        title: 'Erro no login',
+        message: 'Não foi possível iniciar o login com o Google.',
+        actionLabel: 'Fechar',
+      });
+      return;
+    }
 
-    this.isSubmitting.set(true);
-    this.authApiService
-      .loginWithGoogle(idToken)
-      .pipe(
-        finalize(() => this.isSubmitting.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({ //isso aqui é um arquivo que vai conectar ao back
-      next: () => {
-        this.router.navigate(['/publicacoes']);
-      },
-      error: (err) => {
-        this.alert.set({
-          type: 'error',
-          title: 'Erro no login',
-          message: 'Não foi possível fazer o login com o Google.',
-          actionLabel: 'Fechar',
+    if (this.googleAuth.isLoggedIn) {
+      const idToken = this.googleAuth.idToken;
+
+      this.isSubmitting.set(true);
+      this.authApiService
+        .loginWithGoogle(idToken)
+        .pipe(
+          finalize(() => this.isSubmitting.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: () => {
+            void this.router.navigate(['/publicacoes']);
+          },
+          error: () => {
+            this.alert.set({
+              type: 'error',
+              title: 'Erro no login',
+              message: 'Não foi possível fazer o login com o Google.',
+              actionLabel: 'Fechar',
+            });
+          },
         });
-      }
-    });
+    }
   }
-}
 
   get isRegisterMode(): boolean {
     return this.mode() === 'register';
@@ -279,8 +284,7 @@ export class LoginPage implements OnInit {
       });
   }
 
-  loginWithGoogle():void {
-    //Chamar provedor OAUTH do google
+  loginWithGoogle(): void {
     this.googleAuth.login();
   }
 

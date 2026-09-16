@@ -7,8 +7,14 @@
   (postUpdated)="onPostUpdated()"
 >
   @if (profileLoading()) {
-    <section class="profile-loading">
-      <app-loading-indicator label="Carregando perfil" />
+    <section class="profile-loading" aria-label="Carregando perfil">
+      <div class="profile-skeleton__cover"></div>
+      <div class="profile-skeleton__body">
+        <span class="profile-skeleton__avatar"></span>
+        <span class="profile-skeleton__line profile-skeleton__line--name"></span>
+        <span class="profile-skeleton__line profile-skeleton__line--handle"></span>
+        <span class="profile-skeleton__line"></span>
+      </div>
     </section>
   } @else {
   <section class="profile-header">

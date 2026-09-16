@@ -9,12 +9,11 @@ import {
 import { PostService } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { NotificationItem } from '../../../shared/components/notification-item/notification-item';
-import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
 @Component({
   selector: 'app-notifications-page',
-  imports: [SocialShell, NotificationItem, LoadingIndicator],
+  imports: [SocialShell, NotificationItem],
   templateUrl: './notifications-page.html',
   styleUrl: './notifications-page.scss',
 })

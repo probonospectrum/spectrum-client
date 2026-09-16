@@ -5,8 +5,16 @@
   (logout)="logout()"
 >
   @if (loading()) {
-    <div class="notifications-loading">
-      <app-loading-indicator label="Carregando notificacoes" />
+    <div class="notifications-loading" aria-label="Carregando notificacoes">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="notification-skeleton">
+          <span></span>
+          <div>
+            <strong></strong>
+            <small></small>
+          </div>
+        </div>
+      }
     </div>
   } @else if (notifications().length) {
     <section class="notifications-list" aria-label="Lista de notificacoes">

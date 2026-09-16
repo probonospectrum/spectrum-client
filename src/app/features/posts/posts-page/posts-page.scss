@@ -6,31 +6,40 @@
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--spectrum-radius-sm);
   padding: 0 16px;
-  background: #00488d;
+  background: var(--spectrum-primary-800);
   color: #ffffff;
   cursor: pointer;
-  font: 800 13px/1 Arial, sans-serif;
+  font: 800 13px/1 var(--spectrum-font);
   text-decoration: none;
   white-space: nowrap;
+  transition:
+    background-color var(--spectrum-transition),
+    transform var(--spectrum-transition);
 }
 
-.posts-empty,
-.posts-loading {
+.posts-primary-action:hover,
+.posts-empty a:hover,
+.posts-empty button:hover {
+  background: var(--spectrum-primary-900);
+  transform: translateY(-1px);
+}
+
+.posts-empty {
   display: grid;
   justify-items: start;
-  gap: 12px;
+  gap: 10px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
   padding: 28px;
-  border-radius: 8px;
-  background: #fcfcfc;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+  background: var(--spectrum-surface);
+  box-shadow: var(--spectrum-shadow-sm);
 }
 
 .posts-loading {
-  justify-items: center;
-  color: #072e5b;
-  font: 800 14px/1.2 Arial, sans-serif;
+  display: grid;
+  gap: 14px;
 }
 
 .posts-empty h2,
@@ -39,18 +48,12 @@
 }
 
 .posts-empty h2 {
-  color: #072e5b;
-  font: 800 22px/1.2 Arial, sans-serif;
+  color: var(--spectrum-text);
+  font: 800 21px/1.2 var(--spectrum-font);
 }
 
 .posts-empty p {
-  color: #536273;
-}
-
-@media (max-width: 540px) {
-  .posts-primary-action {
-    width: 100%;
-  }
+  color: var(--spectrum-text-muted);
 }
 
 .post-composer {
@@ -58,18 +61,23 @@
   grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  min-height: 82px;
+  min-height: 84px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
   padding: 16px 18px;
-  border: 0;
-  border-radius: 8px;
-  background: #fcfcfc;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+  background: var(--spectrum-surface);
+  box-shadow: var(--spectrum-shadow-sm);
   cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color var(--spectrum-transition),
+    box-shadow var(--spectrum-transition),
+    transform var(--spectrum-transition);
 }
 
 .post-composer:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  border-color: var(--spectrum-border-strong);
+  box-shadow: 0 10px 24px rgba(15, 35, 55, 0.08);
+  transform: translateY(-1px);
 }
 
 .post-composer__avatar {
@@ -77,10 +85,13 @@
   height: 46px;
   display: grid;
   place-items: center;
+  border: 1px solid rgba(31, 69, 104, 0.08);
   border-radius: 50%;
-  background: #dbe8f2;
-  color: #072e5b;
-  font: 800 18px/1 Arial, sans-serif;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 149, 0.2), rgba(15, 118, 110, 0.18)),
+    var(--spectrum-surface-muted);
+  color: var(--spectrum-primary-900);
+  font: 800 18px/1 var(--spectrum-font);
 }
 
 .post-composer__body {
@@ -93,23 +104,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 5px 6px 5px 16px;
-  border: 1px solid #e3e8ee;
+  border: 1px solid var(--spectrum-border);
   border-radius: 999px;
-  background: #f5f7f9;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  padding: 5px 6px 5px 16px;
+  background: var(--spectrum-surface-soft);
+  transition:
+    border-color var(--spectrum-transition),
+    background-color var(--spectrum-transition);
 }
 
 .post-composer:hover .post-composer__field {
-  border-color: #cbd8e5;
-  background: #ffffff;
+  border-color: var(--spectrum-primary-600);
+  background: var(--spectrum-surface);
 }
 
 .post-composer__field > span {
   min-width: 0;
   overflow: hidden;
-  color: #8a8f94;
-  font: 400 14px/1 Arial, sans-serif;
+  color: var(--spectrum-text-muted);
+  font: 450 14px/1.2 var(--spectrum-font);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -122,20 +135,103 @@
   border: 0;
   border-radius: 999px;
   padding: 0 18px;
-  background: #00488d;
+  background: var(--spectrum-primary-800);
   color: #ffffff;
   cursor: pointer;
-  font: 800 13px/1 Arial, sans-serif;
+  font: 800 13px/1 var(--spectrum-font);
   white-space: nowrap;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background var(--spectrum-transition),
+    box-shadow var(--spectrum-transition);
 }
 
 .post-composer__publish:hover {
-  background: #003c76;
-  box-shadow: 0 4px 12px rgba(0, 72, 141, 0.24);
+  background: var(--spectrum-primary-900);
+  box-shadow: 0 8px 18px rgba(31, 69, 104, 0.18);
 }
 
-@media (max-width: 540px) {
+.post-skeleton {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
+  padding: 20px;
+  background: var(--spectrum-surface);
+  box-shadow: var(--spectrum-shadow-sm);
+}
+
+.post-skeleton__header {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.post-skeleton__avatar,
+.post-skeleton__line,
+.post-skeleton__media,
+.post-skeleton__actions span {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #edf2f6, #f8fafc, #edf2f6);
+  background-size: 220% 100%;
+  animation: posts-skeleton 1.2s ease-in-out infinite;
+}
+
+.post-skeleton__avatar {
+  grid-row: span 2;
+  width: 46px;
+  height: 46px;
+}
+
+.post-skeleton__line {
+  width: 72%;
+  height: 13px;
+}
+
+.post-skeleton__line--name {
+  width: 34%;
+}
+
+.post-skeleton__line--meta {
+  width: 22%;
+}
+
+.post-skeleton__line--wide {
+  width: 90%;
+}
+
+.post-skeleton__media {
+  height: 210px;
+  border-radius: var(--spectrum-radius-md);
+}
+
+.post-skeleton__actions {
+  display: grid;
+  grid-template-columns: repeat(3, 74px);
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.post-skeleton__actions span {
+  height: 28px;
+}
+
+@keyframes posts-skeleton {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .posts-primary-action,
+  .posts-empty button {
+    width: 100%;
+  }
+
   .post-composer {
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 12px;
@@ -149,7 +245,7 @@
 
   .post-composer__field {
     align-items: stretch;
-    border-radius: 18px;
+    border-radius: var(--spectrum-radius-md);
     flex-direction: column;
     padding: 12px;
   }
@@ -162,4 +258,15 @@
     width: 100%;
   }
 
+  .post-skeleton {
+    padding: 16px;
+  }
+
+  .post-skeleton__media {
+    height: 178px;
+  }
+
+  .post-skeleton__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -68,6 +68,7 @@
           class="create-post-modal__file-input"
           type="file"
           accept="image/*"
+          aria-label="Selecionar imagem"
           (change)="selectAttachment($event, 'image')"
         />
 
@@ -93,6 +94,7 @@
           class="create-post-modal__file-input"
           type="file"
           accept="video/*"
+          aria-label="Selecionar video"
           (change)="selectAttachment($event, 'video')"
         />
       </div>

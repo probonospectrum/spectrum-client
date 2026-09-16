@@ -7,7 +7,6 @@ import { PostService, SpectrumPost } from '../../../core/services/posts/post.ser
 import { UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
 import { PostCard } from '../../../shared/components/post-card/post-card';
-import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
@@ -19,7 +18,7 @@ interface FeedAlert {
 
 @Component({
   selector: 'app-posts-page',
-  imports: [CommonModule, SocialShell, PostCard, ReportModal, AlertPopup, LoadingIndicator],
+  imports: [CommonModule, SocialShell, PostCard, ReportModal, AlertPopup],
   templateUrl: './posts-page.html',
   styleUrl: './posts-page.scss',
 })

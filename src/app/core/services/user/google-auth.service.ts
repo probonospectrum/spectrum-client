@@ -4,15 +4,22 @@ import { googleAuthConfig } from '../../config/auth-config';
 
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
-  private readonly oauthService : OAuthService = inject(OAuthService);
+  private readonly oauthService: OAuthService = inject(OAuthService);
+  readonly isConfigured = Boolean(googleAuthConfig.clientId);
 
   constructor() {
+    if (!this.isConfigured) {
+      return;
+    }
+
     this.oauthService.configure(googleAuthConfig);
-    this.oauthService.loadDiscoveryDocument(); // busca o /.well-known/openid-configuration do Google
+    void this.oauthService.loadDiscoveryDocument();
   }
 
   login(): void {
-    this.oauthService.initLoginFlow(); // redireciona pro Google
+    if (this.isConfigured) {
+      this.oauthService.initLoginFlow();
+    }
   }
 
   get idToken(): string {
