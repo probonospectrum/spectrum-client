@@ -24,8 +24,10 @@ export class SettingsPage {
   readonly user = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
   settings: SettingsData = this.accountService.getSettings();
+  profile = this.accountService.getProfile(this.user);
   currentPassword = '';
   newPassword = '';
+  passwordExpanded = false;
   showSuccess = false;
 
   save(): void {
@@ -42,5 +44,13 @@ export class SettingsPage {
   logout(): void {
     this.userService.logout();
     void this.router.navigateByUrl('/login');
+  }
+
+  goToProfile(): void {
+    void this.router.navigateByUrl('/perfil');
+  }
+
+  togglePasswordForm(): void {
+    this.passwordExpanded = !this.passwordExpanded;
   }
 }

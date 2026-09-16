@@ -30,15 +30,24 @@
         Ainda nao possui cadastro? Cadastre-se aqui
       </button>
 
-      <app-button type="submit" [disabled]="isSubmitting">Entrar</app-button>
-      <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
-        Entrar com o Google
-      </button>
+      <app-button
+        type="submit"
+        [disabled]="isSubmitting()"
+        [loading]="isSubmitting()"
+        loadingLabel="Entrando"
+      >
+        Entrar
+      </app-button>
+      @if (isGoogleLoginAvailable) {
+        <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
+          Entrar com o Google
+        </button>
+      }
     </form>
 
   } @else {
 
-    <app-auth-mode-toggle [registerStep]="registerStep" />
+    <app-auth-mode-toggle [registerStep]="registerStep()" />
 
     <form
       class="auth-form"
@@ -46,7 +55,7 @@
       (ngSubmit)="submitRegister()"
     >
 
-      @if (registerStep === 1) {
+      @if (registerStep() === 1) {
 
         <app-input
           label="Nome de usuario"
@@ -107,7 +116,7 @@
           label="Estado"
           placeholder="Selecione seu estado"
           formControlName="stateId"
-          [loading]="isLoadingStates"
+          [loading]="isLoadingStates()"
           [options]="stateOptions"
           [error]="fieldError('register', 'stateId')"
         />
@@ -116,7 +125,7 @@
           label="Municipio"
           placeholder="Selecione seu municipio"
           formControlName="cityUser"
-          [loading]="isLoadingCities"
+          [loading]="isLoadingCities()"
           [isDisabled]="isCitySelectDisabled"
           [options]="cityOptions"
           [error]="fieldError('register', 'cityUser')"
@@ -134,7 +143,9 @@
 
           <app-button
             type="submit"
-            [disabled]="isSubmitting"
+            [disabled]="isSubmitting()"
+            [loading]="isSubmitting()"
+            loadingLabel="Cadastrando"
           >
             Cadastrar
           </app-button>
@@ -157,13 +168,13 @@
 
 </app-auth-shell>
 
-@if (alert) {
+@if (alert(); as currentAlert) {
 
   <app-alert-popup
-    [type]="alert.type"
-    [title]="alert.title"
-    [message]="alert.message"
-    [actionLabel]="alert.actionLabel"
+    [type]="currentAlert.type"
+    [title]="currentAlert.title"
+    [message]="currentAlert.message"
+    [actionLabel]="currentAlert.actionLabel"
     (dismissed)="dismissAlert()"
   />
 

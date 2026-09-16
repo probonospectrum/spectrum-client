@@ -3,17 +3,20 @@ import {
   Component,
   EventEmitter,
   HostListener,
+  inject,
   Input,
   OnChanges,
   OnDestroy,
   Output,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommentSection } from '../../../features/posts/comment-section/comment-section';
-import { SpectrumPost } from '../../../core/services/posts/post.service';
+import {
+  POST_EDIT_WINDOW_MS,
+  PostService,
+  SpectrumPost,
+} from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
-
-const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
-import { SavedPostsService } from '../../../core/services/posts/savedPost.service';
 
 @Component({
   selector: 'app-post-card',
@@ -22,6 +25,9 @@ import { SavedPostsService } from '../../../core/services/posts/savedPost.servic
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
+  private readonly postService = inject(PostService);
+  private readonly router = inject(Router);
+
   @Input({ required: true }) post!: SpectrumPost;
   @Input() currentUser: LoggedUser | null = null;
   @Output() report = new EventEmitter<SpectrumPost>();
@@ -32,56 +38,43 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() notInterested = new EventEmitter<SpectrumPost>();
   @Output() aiSpam = new EventEmitter<SpectrumPost>();
   @Output() copyLink = new EventEmitter<SpectrumPost>();
-  @Input() showSaveButton = true;
-
-  constructor(private savedPostsService:SavedPostsService){}
 
   commentsOpen = false;
   addedCommentsCount = 0;
   menuOpen = false;
-  now = Date.now(); 
-  liked = false;
-  disliked = false;
-  dislikesCount = 0;
-  isSaved = false;
-
-  ngOnInit(): void {
-    this.isSaved = this.savedPostsService.isSaved(this.post.id);
-  }
+  now = Date.now();
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
-  toggleSaved(): void{
-    this.isSaved = !this.isSaved;
-
-     if (this.isSaved) {
-    this.savedPostsService.save(this.post);
-    } else {
-    this.savedPostsService.unsave(this.post.id);
-      }
-  }
   get likes(): number {
-    return this.post.likes + (this.liked ? 1 : 0);
+    return this.post.likes;
   }
 
   get commentsCount(): number {
     return this.post.comments + this.addedCommentsCount;
   }
 
-  /*get isSaved(): boolean {
+  get reposts(): number {
+    return this.post.reposts;
+  }
+
+  get isSaved(): boolean {
     return this.post.saved;
-  }*/
+  }
 
   get isOwnPost(): boolean {
     if (!this.currentUser) {
       return false;
     }
 
-    return this.post.authorNickname === this.currentUser.nickname;
+    return (
+      this.post.createdBy === this.currentUser._id ||
+      this.post.authorNickname === this.currentUser.nickname
+    );
   }
 
   get canModifyOwnPost(): boolean {
-    const createdAt = new Date(this.post.publishedAt).getTime();
+    const createdAt = new Date(this.post.createdAt || this.post.publishedAt).getTime();
 
     if (!this.isOwnPost || !Number.isFinite(createdAt)) {
       return false;
@@ -108,35 +101,44 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleLike(): void {
-    const willLike = !this.liked;
+    const previousPost = this.post;
+    this.post = {
+      ...this.post,
+      liked: !this.post.liked,
+      likes: Math.max(0, this.post.likes + (this.post.liked ? -1 : 1)),
+    };
 
-    if (willLike && this.disliked) {
-      this.disliked = false;
-      this.dislikesCount = Math.max(0, this.dislikesCount - 1);
-    }
-
-    this.liked = willLike;
-  }
-
-  toggleDislike(): void {
-    const wasLiked = this.liked;
-    this.disliked = !this.disliked;
-    this.dislikesCount = Math.max(0, this.dislikesCount + (this.disliked ? 1 : -1));
-
-    if (this.disliked && wasLiked) {
-      this.toggleLike();
+    try {
+      this.post = this.postService.togglePostLike(previousPost, this.currentUser);
+    } catch {
+      this.post = previousPost;
     }
   }
 
-  /*toggleSaved(): void {
+  toggleSaved(): void {
+    const previousPost = this.post;
     this.post = {
       ...this.post,
       saved: !this.post.saved,
     };
-  }*/
+
+    try {
+      this.post = this.postService.togglePostSaved(previousPost, this.currentUser);
+    } catch {
+      this.post = previousPost;
+    }
+  }
 
   toggleComments(): void {
     this.commentsOpen = !this.commentsOpen;
+  }
+
+  goToAuthorProfile(): void {
+    if (!this.post.authorNickname) {
+      return;
+    }
+
+    void this.router.navigate(['/perfil', this.post.authorNickname]);
   }
 
   onCommentAdded(): void {

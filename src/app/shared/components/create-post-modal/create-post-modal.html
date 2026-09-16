@@ -1,0 +1,179 @@
+<div class="create-post-backdrop" role="presentation" (click)="closeModal()">
+  <section
+    class="create-post-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="isEditing ? 'create-post-modal-title' : null"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="create-post-modal__header">
+      <div class="create-post-modal__author">
+        <div class="create-post-modal__avatar">
+          {{ userInitial }}
+        </div>
+
+        <div>
+          @if (isEditing) {
+            <h2 id="create-post-modal-title">{{ modalTitle }}</h2>
+          }
+          <strong>{{ displayName }}</strong>
+          <span>@{{ nickname }}</span>
+        </div>
+      </div>
+
+      <button class="create-post-modal__close" type="button" aria-label="Fechar" (click)="closeModal()">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <label class="create-post-modal__field">
+      <textarea
+        class="create-post-modal__textarea"
+        [(ngModel)]="newPostContent"
+        placeholder="O que está acontecendo?"
+        maxlength="420"
+        aria-label="Conteúdo da publicação"
+      ></textarea>
+      <span>{{ newPostContent.length }}/420</span>
+    </label>
+
+    @if (errorMessage) {
+      <p class="create-post-modal__error">{{ errorMessage }}</p>
+    }
+
+    @if (selectedLocation || customLocationLabel) {
+      <div class="create-post-modal__location" aria-label="Localizacao selecionada">
+        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+        <strong>{{ locationLabel }}</strong>
+        <button type="button" aria-label="Remover localização" (click)="removeLocation()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+    }
+
+    <div class="create-post-modal__toolbar">
+      <span>Adicionar no post</span>
+      <div class="create-post-modal__actions">
+        <button
+          type="button"
+          aria-label="Adicionar imagem"
+          [class.create-post-modal__action--active]="selectedMediaType === 'image'"
+          (click)="imageInput.value = ''; imageInput.click()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+        </button>
+
+        <input
+          #imageInput
+          class="create-post-modal__file-input"
+          type="file"
+          accept="image/*"
+          aria-label="Selecionar imagem"
+          (change)="selectAttachment($event, 'image')"
+        />
+
+        <button
+          type="button"
+          [attr.aria-label]="selectedLocation ? 'Trocar localização' : 'Adicionar localização'"
+          (click)="openLocationPicker()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+        </button>
+
+        <button
+          type="button"
+          aria-label="Adicionar vídeo"
+          [class.create-post-modal__action--active]="selectedMediaType === 'video'"
+          (click)="videoInput.value = ''; videoInput.click()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
+        </button>
+
+        <input
+          #videoInput
+          class="create-post-modal__file-input"
+          type="file"
+          accept="video/*"
+          aria-label="Selecionar video"
+          (change)="selectAttachment($event, 'video')"
+        />
+      </div>
+    </div>
+
+    @if (hasAttachment) {
+      <div class="create-post-modal__attachment" aria-label="Arquivo anexado">
+        <span class="material-symbols-outlined" aria-hidden="true">{{ attachmentIcon }}</span>
+        <strong>{{ selectedAttachmentName }}</strong>
+        <button type="button" aria-label="Remover anexo" (click)="removeAttachment()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+    }
+
+    <button
+      class="create-post-modal__submit"
+      type="button"
+      [disabled]="!newPostContent.trim() || isPublishing()"
+      (click)="publishPost()"
+    >
+      @if (isPublishing()) {
+        <app-loading-indicator [label]="isEditing ? 'Salvando' : 'Publicando'" />
+      } @else {
+        {{ submitLabel }}
+      }
+    </button>
+  </section>
+
+  @if (showLocationPicker) {
+    <div
+      class="location-modal-backdrop"
+      role="presentation"
+      (click)="$event.stopPropagation(); closeLocationPicker()"
+    >
+      <section
+        class="location-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="location-modal-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="location-modal__header">
+          <div>
+            <p>Localização</p>
+            <h2 id="location-modal-title">Adicionar localização</h2>
+          </div>
+
+          <button
+            class="location-modal__close"
+            type="button"
+            aria-label="Fechar localização"
+            (click)="closeLocationPicker()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          </button>
+        </header>
+
+        <div class="location-modal__list">
+          @for (location of locations; track location.id) {
+            <button
+              type="button"
+              class="location-modal__option"
+              [class.location-modal__option--selected]="selectedLocation?.id === location.id"
+              (click)="selectLocation(location)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+              <span>
+                <strong>{{ location.name }}</strong>
+                <small>{{ location.state }} - {{ location.country }}</small>
+              </span>
+            </button>
+          }
+        </div>
+
+        <footer class="location-modal__footer">
+          <button type="button" (click)="closeLocationPicker()">Cancelar</button>
+        </footer>
+      </section>
+    </div>
+  }
+</div>

@@ -1,13 +1,24 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
+  [showContentHeader]="false"
   (logout)="logout()"
 >
-  @if (loading) {
-    <div class="notifications-loading" aria-label="Carregando notificacoes"></div>
-  } @else if (notifications.length) {
+  @if (loading()) {
+    <div class="notifications-loading" aria-label="Carregando notificacoes">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="notification-skeleton">
+          <span></span>
+          <div>
+            <strong></strong>
+            <small></small>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (notifications().length) {
     <section class="notifications-list" aria-label="Lista de notificacoes">
-      @for (notification of notifications; track trackNotification($index, notification)) {
+      @for (notification of notifications(); track trackNotification($index, notification)) {
         <app-notification-item
           [notification]="notification"
           (markRead)="markRead($event)"
