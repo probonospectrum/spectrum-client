@@ -4,8 +4,8 @@
   justify-content: space-between;
   gap: 16px;
   min-height: 44px;
-  color: #303030;
-  font: 700 14px/1.2 Arial, sans-serif;
+  color: var(--spectrum-text);
+  font: 750 14px/1.2 var(--spectrum-font);
 }
 
 .toggle input {
@@ -19,13 +19,15 @@
   height: 26px;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: #cfd8e1;
+  background: var(--spectrum-border-strong);
   cursor: pointer;
-  transition: background 160ms ease;
+  transition:
+    background-color var(--spectrum-transition),
+    box-shadow var(--spectrum-transition);
 }
 
 .toggle i::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 4px;
   left: 4px;
@@ -33,11 +35,16 @@
   height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  transition: transform 160ms ease;
+  box-shadow: 0 1px 3px rgba(15, 35, 55, 0.24);
+  transition: transform var(--spectrum-transition);
+}
+
+.toggle input:focus-visible + i {
+  box-shadow: 0 0 0 4px var(--spectrum-focus);
 }
 
 .toggle input:checked + i {
-  background: #00488d;
+  background: var(--spectrum-accent);
 }
 
 .toggle input:checked + i::after {

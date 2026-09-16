@@ -10,15 +10,13 @@
   <section class="create-post" aria-labelledby="create-post-title">
     <aside class="create-preview" aria-label="Previa da publicacao">
       <div class="create-preview__author">
-        <div class="create-preview__author">
-          <span class="create-avatar">
-            {{ userInitial }}
-          </span>
+        <span class="create-avatar">
+          {{ userInitial }}
+        </span>
 
-          <div>
-            <strong>{{ displayName }}</strong>
-            <span>@{{ nickname }}</span>
-          </div>
+        <div>
+          <strong>{{ displayName }}</strong>
+          <span>@{{ nickname }}</span>
         </div>
       </div>
 
@@ -27,28 +25,38 @@
 
       <div class="create-preview__media" [class.create-preview__media--text]="mediaType === 'text'">
         @if (mediaType === 'video') {
-        <span class="create-preview__play" aria-hidden="true"></span>
+          <span class="create-preview__play" aria-hidden="true"></span>
         } @else if (mediaType === 'image') {
-        <span>Imagem da publicacao</span>
+          <span>Imagem da publicacao</span>
         } @else {
-        <span>Publicacao sem midia</span>
+          <span>Publicacao sem midia</span>
         }
       </div>
     </aside>
 
-    <form class="create-form" (ngSubmit)="publish()">
+    <form class="create-form" (ngSubmit)="submitPost()">
       <p>Formulario</p>
       <h2 id="create-post-title">Detalhes da publicacao</h2>
 
       <label>
         Conteudo
-        <textarea name="content" rows="7" maxlength="420" [(ngModel)]="content"
-          placeholder="Conte o que aconteceu de forma objetiva"></textarea>
+        <textarea
+          name="content"
+          rows="7"
+          maxlength="420"
+          [(ngModel)]="content"
+          placeholder="Conte o que aconteceu de forma objetiva"
+        ></textarea>
       </label>
 
       <label>
         Localizacao
-        <input name="authorCity" type="text" [(ngModel)]="authorCity" placeholder="Ex: Centro, Salvador - BA" />
+        <input
+          name="authorCity"
+          type="text"
+          [(ngModel)]="authorCity"
+          placeholder="Ex: Centro, Salvador - BA"
+        />
       </label>
 
       <div class="create-form__grid">
@@ -56,7 +64,7 @@
           Tipo de midia
           <select name="mediaType" [(ngModel)]="mediaType">
             @for (type of mediaTypes; track type.value) {
-            <option [value]="type.value">{{ type.label }}</option>
+              <option [value]="type.value">{{ type.label }}</option>
             }
           </select>
         </label>
@@ -74,7 +82,12 @@
   </section>
 
   @if (alert) {
-  <app-alert-popup [type]="alert.type" [title]="alert.title" [message]="alert.message"
-    [actionLabel]="alert.type === 'success' ? 'Ver no feed' : 'Entendi'" (dismissed)="dismissAlert()" />
+    <app-alert-popup
+      [type]="alert.type"
+      [title]="alert.title"
+      [message]="alert.message"
+      [actionLabel]="alert.type === 'success' ? 'Ver no feed' : 'Entendi'"
+      (dismissed)="dismissAlert()"
+    />
   }
 </app-social-shell>

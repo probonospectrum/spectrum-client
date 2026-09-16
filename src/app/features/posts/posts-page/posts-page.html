@@ -21,8 +21,9 @@
       {{ userInitial }}
     </div>
 
-    <div class="post-composer__content">
-      <span>O que você está pensando?</span>
+    <div class="post-composer__body">
+      <div class="post-composer__field">
+        <span>O que você está pensando?</span>
 
         <button
           type="button"
@@ -34,19 +35,27 @@
       </div>
 
     </div>
-
-    <button
-      type="button"
-      class="post-composer__publish"
-      (click)="$event.stopPropagation(); openCreatePost()"
-    >
-      Publicar
-    </button>
   </section>
 
   @if (feedLoading()) {
-    <section class="posts-loading">
-      <app-loading-indicator label="Carregando publicacoes" />
+    <section class="posts-loading" aria-label="Carregando publicacoes">
+      @for (item of [1, 2, 3]; track item) {
+        <article class="post-skeleton">
+          <div class="post-skeleton__header">
+            <span class="post-skeleton__avatar"></span>
+            <span class="post-skeleton__line post-skeleton__line--name"></span>
+            <span class="post-skeleton__line post-skeleton__line--meta"></span>
+          </div>
+          <span class="post-skeleton__line"></span>
+          <span class="post-skeleton__line post-skeleton__line--wide"></span>
+          <div class="post-skeleton__media"></div>
+          <div class="post-skeleton__actions">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </article>
+      }
     </section>
   } @else {
     @for (post of posts; track post.id) {

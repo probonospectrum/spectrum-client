@@ -22,7 +22,6 @@ import {
   AlertPopupType,
 } from '../../../shared/components/alert-popup/alert-popup';
 import { PostCard } from '../../../shared/components/post-card/post-card';
-import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
@@ -42,7 +41,6 @@ interface FeedAlert {
     PostCard,
     ReportModal,
     AlertPopup,
-    LoadingIndicator,
     InterestsPage,
   ],
   templateUrl: './posts-page.html',
@@ -137,6 +135,7 @@ export class PostsPage implements OnInit {
     reason = this.reportReasons[0],
   ): void {
     this.reportPost = post;
+    this.selectedReason = reason;
   }
 
   confirmReport(): void {
@@ -269,22 +268,12 @@ export class PostsPage implements OnInit {
   }
 
   onInteressesEscolhidos(interesses: string[]): void {
-    console.log(
-      '🟠 onInteressesEscolhidos RECEBIDO no pai',
-      interesses,
-    );
-
     this.userService.salvarInteresses(
       this.user,
       interesses,
     );
 
     this.showInterests = false;
-
-    console.log(
-      '🔵 showInterests agora é',
-      this.showInterests,
-    );
   }
 
   private refreshPosts(): void {

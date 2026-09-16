@@ -11,7 +11,7 @@ interface PostAlert {
   type: AlertPopupType;
   title: string;
   message: string;
-  createdPost?: SpectrumPost;
+  resultPost?: SpectrumPost;
 }
 
 @Component({
@@ -77,16 +77,16 @@ export class CreatePostPage {
     this.alert = {
       type: 'success',
       title: 'Publicacao criada',
-      message: 'Sua publicacao foi salva nos mocks e ja aparece no feed.',
-      createdPost,
+      message: 'Sua publicacao foi salva e ja aparece no feed.',
+      resultPost: createdPost,
     };
   }
 
   dismissAlert(): void {
-    const createdPost = this.alert?.createdPost;
+    const resultPost = this.alert?.resultPost;
     this.alert = null;
 
-    if (createdPost) {
+    if (resultPost) {
       void this.router.navigateByUrl('/publicacoes');
     }
   }

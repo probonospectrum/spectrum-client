@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface Interest {
@@ -15,7 +15,7 @@ interface Interest {
   templateUrl: './interests-page.html',
   styleUrl: './interests-page.scss',
 })
-export class InterestsPage implements OnInit, OnDestroy {
+export class InterestsPage {
   @Output() fechou = new EventEmitter<string[]>();
 
   readonly interests: Interest[] = [
@@ -35,12 +35,6 @@ export class InterestsPage implements OnInit, OnDestroy {
 
   private selectedIds = new Set<string>();
 
-  ngOnInit(): void {
-    console.log('🔵 InterestsPage carregado');
-  }
-
-  ngOnDestroy(): void {}
-
   isSelected(interest: Interest): boolean {
     return this.selectedIds.has(interest.id);
   }
@@ -51,7 +45,6 @@ export class InterestsPage implements OnInit, OnDestroy {
     } else {
       this.selectedIds.add(interest.id);
     }
-    console.log('🟡 toggleInterest', interest.id, 'selecionados agora:', this.selectedIds.size);
   }
 
   get selectedInterests(): Interest[] {
@@ -59,14 +52,10 @@ export class InterestsPage implements OnInit, OnDestroy {
   }
 
   continue(): void {
-    console.log('🟢 continue() CHAMADO, selecionados:', this.selectedIds.size);
-
     if (this.selectedIds.size === 0) {
-      console.log('🔴 saindo, nada selecionado');
       return;
     }
 
-    console.log('🟣 emitindo fechou com', Array.from(this.selectedIds));
     this.fechou.emit(Array.from(this.selectedIds));
   }
 }

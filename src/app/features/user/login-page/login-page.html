@@ -38,9 +38,11 @@
       >
         Entrar
       </app-button>
-      <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
-        Entrar com o Google
-      </button>
+      @if (isGoogleLoginAvailable) {
+        <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
+          Entrar com o Google
+        </button>
+      }
     </form>
 
   } @else {

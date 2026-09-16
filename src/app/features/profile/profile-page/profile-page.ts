@@ -11,14 +11,19 @@ import {
 } from '../../../core/services/profile/public-profile-mock.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
-import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
+interface ProfileAlert {
+  type: AlertPopupType;
+  title: string;
+  message: string;
+}
+
 @Component({
   selector: 'app-profile-page',
-  imports: [CommonModule, SocialShell, PostCard, AlertPopup, ReportModal, LoadingIndicator],
+  imports: [CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })

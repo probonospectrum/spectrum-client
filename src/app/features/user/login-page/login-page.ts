@@ -25,8 +25,7 @@ import {
 } from '../../../core/services/city/city.service';
 
 import { UserService } from '../../../core/services/user/user.service';
-import { GoogleAuthService} from '../../../core/services/user/google-auth.service';
-import { OAuthService } from 'angular-oauth2-oidc';
+import { GoogleAuthService } from '../../../core/services/user/google-auth.service';
 import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
 type AuthMode = 'login' | 'register';
 
@@ -55,8 +54,8 @@ export class LoginPage implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly googleAuth = inject(GoogleAuthService);
-  private readonly oauthService = inject(OAuthService);
   private readonly authApiService = inject(AuthApiService);
+  readonly isGoogleLoginAvailable = this.googleAuth.isConfigured;
 
   mode = signal<AuthMode>('login');
 
@@ -118,30 +117,40 @@ export class LoginPage implements OnInit {
     this.tryGoogleLogin();
   }
 
-  private async tryGoogleLogin(): Promise<void> {
-   await this.oauthService.loadDiscoveryDocument();
+  private tryGoogleLogin(): void {
+    if (!this.googleAuth.isConfigured) {
+      return;
+    }
 
-      const code = this.googleAuth.getAuthorizationCode();
-       console.log('CODE:', code); //apagar  essa palhaçada dps
-      if (code) {
-        this.authApiService.loginWithGoogle(code).subscribe({
-          next: (response) => {
-            console.log('SUCESSO:', response);   //apagar isso  tbm
-            this.googleAuth.clearUrlParams();
-            this.router.navigate(['/publicacoes']);
-          },
-          error: (err) => {
-            this.googleAuth.clearUrlParams();
-            this.alert = {
-              type: 'error',
-              title: 'Erro no login',
-              message: 'Não foi possível fazer o login com o Google.',
-              actionLabel: 'Fechar',
-            };
-          }
-        });
-      }
-}
+    const code = this.googleAuth.getAuthorizationCode();
+
+    if (!code) {
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.authApiService
+      .loginWithGoogle(code)
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.googleAuth.clearUrlParams();
+          void this.router.navigate(['/publicacoes']);
+        },
+        error: () => {
+          this.googleAuth.clearUrlParams();
+          this.alert.set({
+            type: 'error',
+            title: 'Erro no login',
+            message: 'Não foi possível fazer o login com o Google.',
+            actionLabel: 'Fechar',
+          });
+        },
+      });
+  }
 
   get isRegisterMode(): boolean {
     return this.mode() === 'register';
@@ -265,8 +274,7 @@ export class LoginPage implements OnInit {
       });
   }
 
-  loginWithGoogle():void {
-    //Chamar provedor OAUTH do google
+  loginWithGoogle(): void {
     this.googleAuth.login();
   }
 

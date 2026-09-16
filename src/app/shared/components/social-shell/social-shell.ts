@@ -87,6 +87,7 @@ export class SocialShell implements OnInit {
   }
 
   // MÉTODO DA PESQUISA
+
   onSearch(): void {
 
     this.cancelSearch();
