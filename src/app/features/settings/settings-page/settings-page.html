@@ -50,13 +50,13 @@
           (ngModelChange)="setSetting('language', $event)"
           name="language"
         >
-          <option value="pt-BR">Portugues - Brasil</option>
+          <option value="pt-BR">Português - Brasil</option>
           <option value="en-US">English</option>
         </select>
       </label>
     </app-settings-section>
 
-    <app-settings-section title="Seguranca">
+    <app-settings-section title="Segurança">
       <button class="settings-row settings-row--button" type="button" (click)="togglePasswordForm()">
         <span class="settings-row__content">
           <strong>Alterar senha</strong>
@@ -80,14 +80,14 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Sessoes ativas</strong>
+          <strong>Sessões ativas</strong>
           <small>{{ settings.activeSessions }} sessoes - {{ settings.trustedDevice }}</small>
         </span>
       </div>
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Autenticacao de dois fatores</strong>
+          <strong>Autenticação de dois fatores</strong>
           <small>Exigir uma etapa extra ao entrar</small>
         </span>
         <app-toggle-switch
@@ -97,11 +97,11 @@
       </div>
     </app-settings-section>
 
-    <app-settings-section title="Preferencias">
+    <app-settings-section title="Preferências">
       <div class="settings-row">
         <span class="settings-row__content">
           <strong>Conta privada</strong>
-          <small>Aprovar seguidores antes de liberar suas publicacoes</small>
+          <small>Aprovar seguidores antes de liberar suas publicações</small>
         </span>
         <app-toggle-switch
           [checked]="settings.privateAccount"
@@ -143,11 +143,11 @@
       </div>
     </app-settings-section>
 
-    <app-settings-section title="Notificacoes">
+    <app-settings-section title="Notificações">
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Notificacoes dentro do app</strong>
-          <small>Alertas enquanto voce usa o Spectrum</small>
+          <strong>Notificações dentro do app</strong>
+          <small>Alertas enquanto você usa o Spectrum</small>
         </span>
         <app-toggle-switch
           [checked]="settings.inAppNotifications"
@@ -158,7 +158,7 @@
       <div class="settings-row">
         <span class="settings-row__content">
           <strong>E-mails</strong>
-          <small>Receber notificacoes no e-mail principal</small>
+          <small>Receber notificacões no e-mail principal</small>
         </span>
         <app-toggle-switch
           [checked]="settings.emailNotifications"
@@ -168,8 +168,8 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Atualizacoes importantes</strong>
-          <small>Priorizar avisos de alta relevancia</small>
+          <strong>Atualizações importantes</strong>
+          <small>Priorizar avisos de alta relevância</small>
         </span>
         <app-toggle-switch
           [checked]="settings.importantUpdates"
@@ -179,8 +179,8 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Alertas de seguranca</strong>
-          <small>Notificar sobre acessos e atividades sensiveis</small>
+          <strong>Alertas de segurança</strong>
+          <small>Notificar sobre acessos e atividades sensíveis</small>
         </span>
         <app-toggle-switch
           [checked]="settings.securityAlerts"
@@ -194,7 +194,7 @@
     <app-alert-popup
       type="success"
       title="Configuracoes salvas"
-      message="As preferencias foram atualizadas."
+      message="As preferências foram atualizadas."
       actionLabel="Ok"
       (dismissed)="showSuccess = false"
     />
