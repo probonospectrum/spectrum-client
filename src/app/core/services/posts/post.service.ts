@@ -3,8 +3,6 @@ import { LoggedUser } from '../user/user.service';
 
 export interface SpectrumPost {
   id: string;
-  createdAt: string;
-  createdBy?: string;
   authorName: string;
   authorNickname: string;
   authorInitial: string;
@@ -15,14 +13,10 @@ export interface SpectrumPost {
   publishedAt: string;
   publishedAtLabel: string;
   likes: number;
-  liked: boolean;
   comments: number;
-  reposts: number;
-  reposted: boolean;
+  shares: number;
   saved: boolean;
   tags: string[];
-  originalPostId?: string;
-  updatedAt?: string;
 }
 
 export interface SpectrumComment {
@@ -31,10 +25,6 @@ export interface SpectrumComment {
   authorInitial: string;
   content: string;
   dateLabel: string;
-  likes: number;
-  dislikes: number;
-  liked: boolean;
-  disliked: boolean;
 }
 
 export interface SuggestedProfile {
@@ -52,50 +42,14 @@ export interface CreatePostPayload {
   tags: string[];
 }
 
-export interface RepostRecord {
-  id: string;
-  userId: string;
-  originalPostId: string;
-  createdAt: string;
-}
-
-export interface RepostToggleResult {
-  post: SpectrumPost;
-  reposted: boolean;
-}
-
-export interface PostInteractionRecord {
-  userId: string;
-  postId: string;
-  liked?: boolean;
-  saved?: boolean;
-}
-
-export interface CommentInteractionRecord {
-  userId: string;
-  commentId: string;
-  liked?: boolean;
-  disliked?: boolean;
-}
-
-export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
-
 @Injectable({
   providedIn: 'root',
 })
 export class PostService {
   private readonly storageKey = 'spectrum-mock-posts';
-  private readonly repostStorageKey = 'spectrum-reposts';
-  private readonly postInteractionStorageKey = 'spectrum-post-interactions';
-  private readonly commentInteractionStorageKey = 'spectrum-comment-interactions';
 
   readonly suggestions: SuggestedProfile[] = [
-    {
-      name: 'Juliana a Banana',
-      nickname: 'juliana.a.banana',
-      initial: 'https://i.pinimg.com/236x/d1/e3/d2/d1e3d2a12bc3d0221898c4391dffcfff.jpg',
-      verified: true,
-    },
+    { name: 'Juliana a Banana', nickname: 'juliana.a.banana', initial: 'https://i.pinimg.com/236x/d1/e3/d2/d1e3d2a12bc3d0221898c4391dffcfff.jpg', verified: true },
     { name: 'Carlao da ZN', nickname: 'carlao.zn', initial: 'C', verified: true },
     { name: 'Luana Prado', nickname: 'luanapradoofc', initial: 'L', verified: true },
     { name: 'Gustavo Lima', nickname: 'gustavolimaevc', initial: 'G', verified: true },
@@ -103,127 +57,28 @@ export class PostService {
 
   private readonly commentsByPost: Record<string, SpectrumComment[]> = {
     'mock-1': [
-      {
-        id: 'c-1-1',
-        authorName: 'Hater da Matisunaga',
-        authorInitial: 'H',
-        content: 'Mentiraaaaa',
-        dateLabel: 'Há 2h',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-1-2',
-        authorName: 'João Pereira',
-        authorInitial: 'J',
-        content: 'Isso já aconteceu comigo também, muito cuidado.',
-        dateLabel: 'Há 3h',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-1-3',
-        authorName: 'Márcia Souza',
-        authorInitial: 'M',
-        content: 'Registrei ocorrência, procurem a delegacia mais próxima.',
-        dateLabel: 'Há 4h',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
+      { id: 'c-1-1', authorName: 'Hater da Matisunaga', authorInitial: 'H', content: 'Mentiraaaaa', dateLabel: 'Há 2h' },
+      { id: 'c-1-2', authorName: 'João Pereira', authorInitial: 'J', content: 'Isso já aconteceu comigo também, muito cuidado.', dateLabel: 'Há 3h' },
+      { id: 'c-1-3', authorName: 'Márcia Souza', authorInitial: 'M', content: 'Registrei ocorrência, procurem a delegacia mais próxima.', dateLabel: 'Há 4h' },
     ],
     'mock-2': [
-      {
-        id: 'c-2-1',
-        authorName: 'Paulo Henrique',
-        authorInitial: 'P',
-        content: 'Vi também, chamei a guarda municipal.',
-        dateLabel: 'Há 1h',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-2-2',
-        authorName: 'Camila Rocha',
-        authorInitial: 'C',
-        content: 'Confirmado, já está tudo resolvido.',
-        dateLabel: 'Há 5h',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
+      { id: 'c-2-1', authorName: 'Paulo Henrique', authorInitial: 'P', content: 'Vi também, chamei a guarda municipal.', dateLabel: 'Há 1h' },
+      { id: 'c-2-2', authorName: 'Camila Rocha', authorInitial: 'C', content: 'Confirmado, já está tudo resolvido.', dateLabel: 'Há 5h' },
     ],
     'mock-3': [
-      {
-        id: 'c-3-1',
-        authorName: 'Bianca Alves',
-        authorInitial: 'B',
-        content: 'Excelente iniciativa, parabéns!',
-        dateLabel: 'Há 1d',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
+      { id: 'c-3-1', authorName: 'Bianca Alves', authorInitial: 'B', content: 'Excelente iniciativa, parabéns!', dateLabel: 'Há 1d' },
     ],
   };
 
-  getPosts(user: LoggedUser | null = null): SpectrumPost[] {
-    return [...this.getUserPosts(), ...this.getDefaultPosts()]
-      .map((post) => this.withPostState(post, user))
-      .sort(
-        (first, second) =>
-          new Date(second.publishedAt).getTime() - new Date(first.publishedAt).getTime(),
-      );
-  }
-
-  getUserReposts(user: LoggedUser | null): SpectrumPost[] {
-    const userId = this.getUserKey(user);
-
-    if (!userId) {
-      return [];
-    }
-
-    const postsById = new Map(
-      [...this.getUserPosts(), ...this.getDefaultPosts()].map((post) => [post.id, post]),
+  getPosts(): SpectrumPost[] {
+    return [...this.getUserPosts(), ...this.getDefaultPosts()].sort(
+      (first, second) =>
+        new Date(second.publishedAt).getTime() - new Date(first.publishedAt).getTime(),
     );
-
-    return this.getRepostRecords()
-      .filter((repost) => repost.userId === userId)
-      .sort(
-        (first, second) =>
-          new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
-      )
-      .map((repost) => postsById.get(repost.originalPostId))
-      .filter((post): post is SpectrumPost => Boolean(post))
-      .map((post) => this.withPostState(post, user));
   }
 
-  getUserSavedPosts(user: LoggedUser | null): SpectrumPost[] {
-    if (!this.getUserKey(user)) {
-      return [];
-    }
-
-    return this.getPosts(user).filter((post) => post.saved);
-  }
-
-  findPostById(id: string, user: LoggedUser | null = null): SpectrumPost | null {
-    const post = [...this.getUserPosts(), ...this.getDefaultPosts()].find((item) => item.id === id);
-    return post ? this.withPostState(post, user) : null;
-  }
-
-  getComments(postId: string, user: LoggedUser | null = null): SpectrumComment[] {
-    return (this.commentsByPost[postId] ?? []).map((comment) =>
-      this.withCommentState(comment, user),
-    );
+  getComments(postId: string): SpectrumComment[] {
+    return (this.commentsByPost[postId] ?? []).map((comment) => ({ ...comment }));
   }
 
   createPost(payload: CreatePostPayload, user: LoggedUser | null): SpectrumPost {
@@ -232,8 +87,6 @@ export class PostService {
     const authorNickname = user?.nickname || 'spectrum';
     const post: SpectrumPost = {
       id: `local-${now.getTime()}`,
-      createdAt: now.toISOString(),
-      createdBy: user?._id,
       authorName,
       authorNickname,
       authorInitial: authorName.charAt(0).toUpperCase(),
@@ -244,10 +97,8 @@ export class PostService {
       publishedAt: now.toISOString(),
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
-      liked: false,
       comments: 0,
-      reposts: 0,
-      reposted: false,
+      shares: 0,
       saved: false,
       tags: payload.tags,
     };
@@ -429,87 +280,17 @@ export class PostService {
     }
 
     try {
-      return (JSON.parse(rawPosts) as SpectrumPost[]).map((post) => this.normalizePost(post));
+      return JSON.parse(rawPosts) as SpectrumPost[];
     } catch {
       localStorage.removeItem(this.storageKey);
       return [];
     }
   }
 
-  private findRawPost(id: string): SpectrumPost | null {
-    return [...this.getUserPosts(), ...this.getDefaultPosts()].find((post) => post.id === id) ?? null;
-  }
-
-  private findRawComment(id: string): SpectrumComment | null {
-    for (const comments of Object.values(this.commentsByPost)) {
-      const comment = comments.find((item) => item.id === id);
-
-      if (comment) {
-        return comment;
-      }
-    }
-
-    return null;
-  }
-
-  private getRepostRecords(): RepostRecord[] {
-    const rawRecords = localStorage.getItem(this.repostStorageKey);
-
-    if (!rawRecords) {
-      return [];
-    }
-
-    try {
-      return JSON.parse(rawRecords) as RepostRecord[];
-    } catch {
-      localStorage.removeItem(this.repostStorageKey);
-      return [];
-    }
-  }
-
-  private getPostInteractionRecords(): PostInteractionRecord[] {
-    const rawRecords = localStorage.getItem(this.postInteractionStorageKey);
-
-    if (!rawRecords) {
-      return [];
-    }
-
-    try {
-      return JSON.parse(rawRecords) as PostInteractionRecord[];
-    } catch {
-      localStorage.removeItem(this.postInteractionStorageKey);
-      return [];
-    }
-  }
-
-  private savePostInteractionRecords(records: PostInteractionRecord[]): void {
-    localStorage.setItem(this.postInteractionStorageKey, JSON.stringify(records));
-  }
-
-  private getCommentInteractionRecords(): CommentInteractionRecord[] {
-    const rawRecords = localStorage.getItem(this.commentInteractionStorageKey);
-
-    if (!rawRecords) {
-      return [];
-    }
-
-    try {
-      return JSON.parse(rawRecords) as CommentInteractionRecord[];
-    } catch {
-      localStorage.removeItem(this.commentInteractionStorageKey);
-      return [];
-    }
-  }
-
-  private saveCommentInteractionRecords(records: CommentInteractionRecord[]): void {
-    localStorage.setItem(this.commentInteractionStorageKey, JSON.stringify(records));
-  }
-
   private getDefaultPosts(): SpectrumPost[] {
     return [
       {
         id: 'mock-gabi-1',
-        createdAt: '2026-04-10T14:30:00.000Z',
         authorName: 'gabi',
         authorNickname: 'gabi',
         authorInitial: 'G',
@@ -530,7 +311,6 @@ export class PostService {
       },
       {
         id: 'mock-1',
-        createdAt: '2026-04-09T10:46:00.000Z',
         authorName: 'Elena Matsunaga',
         authorNickname: 'ElenMatisu04',
         authorInitial: 'E',
@@ -542,16 +322,13 @@ export class PostService {
         publishedAt: '2026-04-09T10:46:00.000Z',
         publishedAtLabel: 'Publicado em 09/04/2026, as 07:46',
         likes: 310,
-        liked: false,
         comments: 3,
-        reposts: 8,
-        reposted: false,
+        shares: 8,
         saved: false,
         tags: ['bairro', 'alerta', 'xique-xique'],
       },
       {
         id: 'mock-2',
-        createdAt: '2026-04-08T19:20:00.000Z',
         authorName: 'Nadia Costa',
         authorNickname: 'nadiacosta',
         authorInitial: 'N',
@@ -563,16 +340,13 @@ export class PostService {
         publishedAt: '2026-04-08T19:20:00.000Z',
         publishedAtLabel: 'Publicado em 08/04/2026, as 16:20',
         likes: 184,
-        liked: false,
         comments: 2,
-        reposts: 5,
-        reposted: false,
+        shares: 5,
         saved: true,
         tags: ['seguranca', 'centro'],
       },
       {
         id: 'mock-3',
-        createdAt: '2026-04-07T12:10:00.000Z',
         authorName: 'Rafael Lima',
         authorNickname: 'rafa.lima',
         authorInitial: 'R',
@@ -584,154 +358,12 @@ export class PostService {
         publishedAt: '2026-04-07T12:10:00.000Z',
         publishedAtLabel: 'Publicado em 07/04/2026, as 09:10',
         likes: 92,
-        liked: false,
         comments: 1,
-        reposts: 3,
-        reposted: false,
+        shares: 3,
         saved: false,
         tags: ['comunidade', 'servico'],
       },
     ];
-  }
-
-  private withPostState(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
-    const normalizedPost = this.normalizePost(post);
-    const userId = this.getUserKey(user);
-    const originalPostId = normalizedPost.originalPostId ?? normalizedPost.id;
-    const reposts = this.getRepostRecords().filter(
-      (repost) => repost.originalPostId === originalPostId,
-    );
-    const postInteractions = this.getPostInteractionRecords().filter(
-      (record) => record.postId === originalPostId,
-    );
-    const currentUserInteraction = userId
-      ? postInteractions.find((record) => record.userId === userId)
-      : undefined;
-
-    return {
-      ...normalizedPost,
-      likes: normalizedPost.likes + postInteractions.filter((record) => record.liked).length,
-      liked: currentUserInteraction?.liked ?? false,
-      saved: currentUserInteraction?.saved ?? normalizedPost.saved,
-      reposts: normalizedPost.reposts + reposts.length,
-      reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
-    };
-  }
-
-  private normalizePost(post: SpectrumPost): SpectrumPost {
-    const postWithLegacyShares = post as SpectrumPost & { shares?: number };
-    const createdAt = post.createdAt || post.publishedAt;
-
-    return {
-      ...post,
-      createdAt,
-      liked: post.liked ?? false,
-      reposts: post.reposts ?? postWithLegacyShares.shares ?? 0,
-      reposted: post.reposted ?? false,
-    };
-  }
-
-  private withoutComputedPostState(post: SpectrumPost): SpectrumPost {
-    const postId = post.originalPostId ?? post.id;
-    const interactionLikes = this.getPostInteractionRecords().filter(
-      (record) => record.postId === postId && record.liked,
-    ).length;
-    const reposts = this.getRepostRecords().filter(
-      (repost) => repost.originalPostId === postId,
-    ).length;
-
-    return {
-      ...post,
-      likes: Math.max(0, post.likes - interactionLikes),
-      liked: false,
-      reposts: Math.max(0, post.reposts - reposts),
-      reposted: false,
-    };
-  }
-
-  private withoutComputedCommentState(comment: SpectrumComment): SpectrumComment {
-    const interactions = this.getCommentInteractionRecords().filter(
-      (record) => record.commentId === comment.id,
-    );
-
-    return {
-      ...comment,
-      likes: Math.max(0, comment.likes - interactions.filter((record) => record.liked).length),
-      dislikes: Math.max(
-        0,
-        comment.dislikes - interactions.filter((record) => record.disliked).length,
-      ),
-      liked: false,
-      disliked: false,
-    };
-  }
-
-  private withCommentState(comment: SpectrumComment, user: LoggedUser | null): SpectrumComment {
-    const userId = this.getUserKey(user);
-    const interactions = this.getCommentInteractionRecords().filter(
-      (record) => record.commentId === comment.id,
-    );
-    const currentUserInteraction = userId
-      ? interactions.find((record) => record.userId === userId)
-      : undefined;
-
-    return {
-      ...comment,
-      likes: comment.likes + interactions.filter((record) => record.liked).length,
-      dislikes: comment.dislikes + interactions.filter((record) => record.disliked).length,
-      liked: currentUserInteraction?.liked ?? false,
-      disliked: currentUserInteraction?.disliked ?? false,
-    };
-  }
-
-  private getOrCreatePostInteractionRecord(
-    records: PostInteractionRecord[],
-    userId: string,
-    postId: string,
-  ): PostInteractionRecord {
-    const existingRecord = records.find(
-      (record) => record.userId === userId && record.postId === postId,
-    );
-
-    if (existingRecord) {
-      return existingRecord;
-    }
-
-    const record: PostInteractionRecord = { userId, postId };
-    records.push(record);
-    return record;
-  }
-
-  private getOrCreateCommentInteractionRecord(
-    records: CommentInteractionRecord[],
-    userId: string,
-    commentId: string,
-  ): CommentInteractionRecord {
-    const existingRecord = records.find(
-      (record) => record.userId === userId && record.commentId === commentId,
-    );
-
-    if (existingRecord) {
-      return existingRecord;
-    }
-
-    const record: CommentInteractionRecord = { userId, commentId };
-    records.push(record);
-    return record;
-  }
-
-  private requireUserKey(user: LoggedUser | null, message: string): string {
-    const userId = this.getUserKey(user);
-
-    if (!userId) {
-      throw new Error(message);
-    }
-
-    return userId;
-  }
-
-  private getUserKey(user: LoggedUser | null): string {
-    return user?._id || user?.nickname || '';
   }
 
   private formatPublishedAt(date: Date): string {

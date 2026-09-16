@@ -8,19 +8,22 @@ export class GoogleAuthService {
 
   constructor() {
     this.oauthService.configure(googleAuthConfig);
-    this.oauthService.loadDiscoveryDocument(); // busca o /.well-known/openid-configuration do Google
+    this.oauthService.loadDiscoveryDocument().catch((err) => {
+    console.error('Erro ao carregar discovery document:', err);
+  });
   }
 
   login(): void {
     this.oauthService.initLoginFlow(); // redireciona pro Google
   }
 
-  get idToken(): string {
-    return this.oauthService.getIdToken();
+  getAuthorizationCode(): string | null {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('code');
   }
 
-  get isLoggedIn(): boolean {
-    return this.oauthService.hasValidIdToken();
+  clearUrlParams(): void {
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   logout(): void {

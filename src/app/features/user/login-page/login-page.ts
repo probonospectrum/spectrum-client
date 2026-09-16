@@ -119,42 +119,28 @@ export class LoginPage implements OnInit {
   }
 
   private async tryGoogleLogin(): Promise<void> {
-  try {
-    await this.oauthService.loadDiscoveryDocumentAndTryLogin();
-  } catch {
-    this.alert.set({
-      type: 'error',
-      title: 'Erro no login',
-      message: 'Não foi possível iniciar o login com o Google.',
-      actionLabel: 'Fechar',
-    });
-    return;
-  }
+   await this.oauthService.loadDiscoveryDocument();
 
-  if (this.googleAuth.isLoggedIn) {
-    const idToken = this.googleAuth.idToken;
-
-    this.isSubmitting.set(true);
-    this.authApiService
-      .loginWithGoogle(idToken)
-      .pipe(
-        finalize(() => this.isSubmitting.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({ //isso aqui é um arquivo que vai conectar ao back
-      next: () => {
-        this.router.navigate(['/publicacoes']);
-      },
-      error: (err) => {
-        this.alert.set({
-          type: 'error',
-          title: 'Erro no login',
-          message: 'Não foi possível fazer o login com o Google.',
-          actionLabel: 'Fechar',
+      const code = this.googleAuth.getAuthorizationCode();
+       console.log('CODE:', code); //apagar  essa palhaçada dps
+      if (code) {
+        this.authApiService.loginWithGoogle(code).subscribe({
+          next: (response) => {
+            console.log('SUCESSO:', response);   //apagar isso  tbm
+            this.googleAuth.clearUrlParams();
+            this.router.navigate(['/publicacoes']);
+          },
+          error: (err) => {
+            this.googleAuth.clearUrlParams();
+            this.alert = {
+              type: 'error',
+              title: 'Erro no login',
+              message: 'Não foi possível fazer o login com o Google.',
+              actionLabel: 'Fechar',
+            };
+          }
         });
       }
-    });
-  }
 }
 
   get isRegisterMode(): boolean {

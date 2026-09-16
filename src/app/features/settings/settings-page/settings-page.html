@@ -187,6 +187,14 @@
           (checkedChange)="setSetting('securityAlerts', $event)"
         />
       </div>
+      <label>
+        Senha atual
+        <input type="password" [(ngModel)]="currentPassword" name="currentPassword" />
+      </label>
+      <label>
+        Nova senha
+        <input type="password" [(ngModel)]="newPassword" name="newPassword" />
+      </label>
     </app-settings-section>
   </div>
 
