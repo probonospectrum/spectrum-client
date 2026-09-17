@@ -3,11 +3,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: var(--spectrum-radius-sm);
   padding: 0 16px;
-  background: #eef5fb;
-  color: #00488d;
-  font: 800 13px/1 Arial, sans-serif;
+  background: var(--spectrum-surface-muted);
+  color: var(--spectrum-primary-800);
+  font: 800 13px/1 var(--spectrum-font);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -20,9 +20,10 @@
 
 .create-preview,
 .create-form {
-  border-radius: 8px;
-  background: #fcfcfc;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
+  background: var(--spectrum-surface);
+  box-shadow: var(--spectrum-shadow-sm);
 }
 
 .create-preview {
@@ -34,7 +35,7 @@
 
 .create-preview__author {
   display: grid;
-  grid-template-columns: 48px 1fr;
+  grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
@@ -45,9 +46,11 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #dbe8f2;
-  color: #072e5b;
-  font: 800 20px/1 Arial, sans-serif;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 149, 0.2), rgba(36, 107, 159, 0.18)),
+    var(--spectrum-surface-muted);
+  color: var(--spectrum-primary-900);
+  font: 800 20px/1 var(--spectrum-font);
 }
 
 .create-preview__author strong,
@@ -60,7 +63,7 @@
 
 .create-preview__author span,
 .create-preview__location {
-  color: #767676;
+  color: var(--spectrum-text-muted);
   font-size: 14px;
 }
 
@@ -70,14 +73,14 @@
 }
 
 .create-preview h2 {
-  color: #072e5b;
-  font: 800 22px/1.2 Arial, sans-serif;
+  color: var(--spectrum-text);
+  font: 850 22px/1.2 var(--spectrum-font);
 }
 
 .create-preview p {
   min-height: 66px;
-  color: #4c4c4c;
-  font: 400 15px/1.45 Arial, sans-serif;
+  color: var(--spectrum-text-secondary);
+  font: 450 15px/1.5 var(--spectrum-font);
 }
 
 .create-preview__media {
@@ -85,18 +88,19 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--spectrum-radius-md);
   background:
-    linear-gradient(140deg, rgba(7, 46, 91, 0.72), rgba(18, 105, 150, 0.36)),
-    url('/Background.png') center / cover;
+    linear-gradient(180deg, rgba(23, 35, 49, 0.06), rgba(23, 35, 49, 0.28)),
+    url("/Background.png") center / cover;
   color: #ffffff;
-  font: 800 14px/1 Arial, sans-serif;
+  font: 800 14px/1 var(--spectrum-font);
 }
 
 .create-preview__media--text {
   min-height: 120px;
-  background: #eef3f7;
-  color: #536273;
+  border: 1px solid var(--spectrum-border);
+  background: var(--spectrum-surface-soft);
+  color: var(--spectrum-text-muted);
 }
 
 .create-preview__play {
@@ -109,7 +113,7 @@
 }
 
 .create-preview__play::before {
-  content: '';
+  content: "";
   width: 0;
   height: 0;
   margin-left: 4px;
@@ -130,32 +134,37 @@
 }
 
 .create-form p {
-  color: #0b63b6;
-  font: 800 12px/1 Arial, sans-serif;
+  color: var(--spectrum-accent);
+  font: 800 12px/1 var(--spectrum-font);
+  text-transform: uppercase;
 }
 
 .create-form h2 {
-  color: #072e5b;
-  font: 800 24px/1.15 Arial, sans-serif;
+  color: var(--spectrum-text);
+  font: 850 24px/1.15 var(--spectrum-font);
 }
 
 .create-form label {
   display: grid;
   gap: 8px;
-  color: #303030;
-  font: 800 14px/1 Arial, sans-serif;
+  color: var(--spectrum-text-secondary);
+  font: 800 14px/1 var(--spectrum-font);
 }
 
 .create-form input,
 .create-form textarea,
 .create-form select {
   width: 100%;
-  border: 1px solid #cfd8e1;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #303030;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-soft);
+  color: var(--spectrum-text);
   outline: 0;
-  font: 400 15px/1.4 Arial, sans-serif;
+  font: 450 15px/1.4 var(--spectrum-font);
+  transition:
+    border-color var(--spectrum-transition),
+    background-color var(--spectrum-transition),
+    box-shadow var(--spectrum-transition);
 }
 
 .create-form input,
@@ -173,8 +182,9 @@
 .create-form input:focus,
 .create-form textarea:focus,
 .create-form select:focus {
-  border-color: #0b63b6;
-  box-shadow: 0 0 0 3px rgba(11, 99, 182, 0.14);
+  border-color: var(--spectrum-primary-600);
+  background: var(--spectrum-surface);
+  box-shadow: 0 0 0 4px var(--spectrum-focus);
 }
 
 .create-form__grid {
@@ -186,11 +196,15 @@
 .create-submit {
   min-height: 48px;
   border: 0;
-  border-radius: 6px;
-  background: #00488d;
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-primary-800);
   color: #ffffff;
   cursor: pointer;
-  font: 800 15px/1 Arial, sans-serif;
+  font: 800 15px/1 var(--spectrum-font);
+}
+
+.create-submit:hover {
+  background: var(--spectrum-primary-900);
 }
 
 @media (max-width: 1180px) {

@@ -1,0 +1,75 @@
+.city-header,
+.city-loading,
+.city-empty {
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
+  background: var(--spectrum-surface);
+  box-shadow: var(--spectrum-shadow-sm);
+}
+
+.city-loading {
+  display: grid;
+  justify-items: center;
+  padding: 28px;
+  color: var(--spectrum-primary-800);
+  font: 800 14px/1.2 var(--spectrum-font);
+}
+
+.city-header {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+}
+
+.city-header > .material-symbols-outlined {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--spectrum-accent-soft);
+  color: var(--spectrum-accent);
+  font-size: 25px;
+}
+
+.city-header p,
+.city-header h2,
+.city-empty h3,
+.city-empty p {
+  margin: 0;
+}
+
+.city-header p {
+  color: var(--spectrum-accent);
+  font: 800 12px/1 var(--spectrum-font);
+  text-transform: uppercase;
+}
+
+.city-header h2 {
+  margin-top: 4px;
+  color: var(--spectrum-text);
+  font: 850 24px/1.15 var(--spectrum-font);
+}
+
+.city-feed {
+  display: grid;
+  gap: 16px;
+}
+
+.city-empty {
+  display: grid;
+  gap: 8px;
+  padding: 26px;
+}
+
+.city-empty h3 {
+  color: var(--spectrum-text);
+  font: 800 20px/1.2 var(--spectrum-font);
+}
+
+.city-empty p {
+  color: var(--spectrum-text-muted);
+  font: 450 14px/1.45 var(--spectrum-font);
+}

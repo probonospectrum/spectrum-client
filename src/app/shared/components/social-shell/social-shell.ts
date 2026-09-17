@@ -1,26 +1,57 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  Component,
+  DestroyRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnInit,
+  Output,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { SuggestedProfile } from '../../../core/services/posts/post.service';
+import { Subscription } from 'rxjs';
+import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
+import { LocationService } from '../../../core/services/location/location.service';
+import { PostService, SpectrumPost, SuggestedProfile } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
+import { CreatePostModal } from '../create-post-modal/create-post-modal';
+import { LogoutConfirm } from '../logout-confirm/logout-confirm';
 
 interface SearchResult {
-  id: number;
+  id: string;
   name: string;
   type: 'Pessoa' | 'Cidade';
   nickname?: string;
   location?: string;
+  slug?: string;
 }
 
 @Component({
   selector: 'app-social-shell',
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    RouterLinkActive,
+    LogoutConfirm,
+    CreatePostModal,
+  ],
   templateUrl: './social-shell.html',
   styleUrl: './social-shell.scss',
 })
-export class SocialShell {
+export class SocialShell implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly mockLoadingService = inject(MockLoadingService);
+  private readonly postService = inject(PostService);
+  private readonly locationService = inject(LocationService);
+
+  readonly suggestedCities = this.locationService.getLocations().slice(0, 4);
 
   @Input() user: LoggedUser | null = null;
   @Input() suggestions: SuggestedProfile[] = [];
@@ -29,89 +60,60 @@ export class SocialShell {
   @Input() showContentHeader = true;
   @Output() logout = new EventEmitter<void>();
   @Output() createPost = new EventEmitter<void>();
+  @Output() postCreated = new EventEmitter<SpectrumPost>();
+  @Output() postUpdated = new EventEmitter<SpectrumPost>();
+
+  // Confirmacao de logout
+  isLogoutConfirmOpen = false;
+  userMenuOpen = false;
+  showCreatePost = false;
+  editingPost: SpectrumPost | null = null;
 
   // PESQUISA 
 
-  searchTerm = '';
-  isSearching = false;
-  searchResults: SearchResult[] = [];
+  searchTerm = signal('');
+  isSearching = signal(false);
+  searchResults = signal<SearchResult[]>([]);
   searchSkeletons = [1, 2, 3, 4, 5];
-  private searchTimeout?: ReturnType<typeof setTimeout>;
+  private searchSubscription?: Subscription;
 
-  // Dados MOCKADOS
-  private mockSearchResults: SearchResult[] = [
-    {
-      id: 1,
-      name: 'Juliana a Banana',
-      type: 'Pessoa',
-      nickname: 'juliana.a.banana'
-    },
-    {
-      id: 2,
-      name: 'Carlão da ZN',
-      type: 'Pessoa',
-      nickname: 'carlao.zn'
-    },
-    {
-      id: 3,
-      name: 'Luana Prado',
-      type: 'Pessoa',
-      nickname: 'luanapradoofc'
-    }, 
-    {
-      id: 4,
-      name: 'Gustavo Lima',
-      type: 'Pessoa',
-      nickname: 'gustavolimaevc'
-    },
-    {
-      id: 5,
-      name: 'Guarulhos',
-      location: 'São Paulo, Brasil',
-      type: 'Cidade'
-    },
-    {
-      id: 6,
-      name: 'São Paulo',
-      location: 'São Paulo, Brasil',
-      type: 'Cidade'
+  ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('criar') === '1') {
+      this.openCreatePost();
     }
-  ];
+  }
+
+  @HostListener('document:click')
+  closeUserMenu(): void {
+    this.userMenuOpen = false;
+  }
 
   // MÉTODO DA PESQUISA
 
   onSearch(): void {
 
-    // Cancela a pesquisa anterior
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout);
-    }
+    this.cancelSearch();
 
-    const term = this.searchTerm.trim().toLowerCase();
+    const term = this.searchTerm().trim();
 
     // Se apagou tudo
     if (!term) {
-      this.isSearching = false;
-      this.searchResults = [];
+      this.isSearching.set(false);
+      this.searchResults.set([]);
       return;
     }
 
     // Mostra os skeletons
-    this.isSearching = true;
-    this.searchResults = [];
+    this.isSearching.set(true);
+    this.searchResults.set([]);
 
-    // Simula o tempo de resposta da pesquisa
-    this.searchTimeout = setTimeout(() => {
-
-      this.searchResults = this.mockSearchResults.filter(result =>
-        result.name.toLowerCase().includes(term) ||
-        result.nickname?.toLowerCase().includes(term) ||
-        result.location?.toLowerCase().includes(term) ||
-        result.type.toLowerCase().includes(term)
-
-      );
-      this.isSearching = false;
-    }, 600);
+    this.searchSubscription = this.mockLoadingService
+      .load(() => this.getSearchResults(term))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((results) => {
+        this.searchResults.set(results);
+        this.isSearching.set(false);
+      });
   }
 
   get displayName(): string {
@@ -126,19 +128,157 @@ export class SocialShell {
     return this.displayName.charAt(0).toUpperCase();
   }
 
-  handleCreatePost(): void {
+  openCreatePost(): void {
+    this.editingPost = null;
+    this.showCreatePost = true;
     this.createPost.emit();
-    void this.router.navigate(['/publicacoes'], { queryParams: { criar: '1' } });
+  }
+
+  openEditPost(post: SpectrumPost): void {
+    this.editingPost = post;
+    this.showCreatePost = true;
+  }
+
+  closeCreatePost(): void {
+    this.showCreatePost = false;
+    this.editingPost = null;
+
+    if (this.route.snapshot.queryParamMap.has('criar')) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { criar: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  handlePostCreated(post: SpectrumPost): void {
+    this.closeCreatePost();
+    this.postCreated.emit(post);
+  }
+
+  handlePostUpdated(post: SpectrumPost): void {
+    this.closeCreatePost();
+    this.postUpdated.emit(post);
+  }
+
+  handleCreatePost(): void {
+    this.openCreatePost();
+  }
+
+  goToProfile(nickname: string): void {
+    const normalizedNickname = nickname.trim();
+
+    if (!normalizedNickname) {
+      return;
+    }
+
+    this.closeSearch();
+    void this.router.navigate(['/perfil', normalizedNickname]);
+  }
+
+  goToCity(slug: string): void {
+    const normalizedSlug = slug.trim();
+
+    if (!normalizedSlug) {
+      return;
+    }
+
+    this.closeSearch();
+    void this.router.navigate(['/cidades', normalizedSlug]);
+  }
+
+  selectSearchResult(result: SearchResult): void {
+    if (result.type === 'Pessoa' && result.nickname) {
+      this.goToProfile(result.nickname);
+      return;
+    }
+
+    if (result.type === 'Cidade' && result.slug) {
+      this.goToCity(result.slug);
+    }
+  }
+
+  openLogoutConfirm(): void {
+    this.userMenuOpen = false;
+    this.isLogoutConfirmOpen = true;
+  }
+
+  toggleUserMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  cancelLogout(): void {
+    this.isLogoutConfirmOpen = false;
+  }
+
+  confirmLogout(): void {
+    this.isLogoutConfirmOpen = false;
+    this.logout.emit();
   }
 
   closeSearch(): void {
-    this.isSearching = false;
-    this.searchResults = [];
+    this.cancelSearch();
+
+    this.searchTerm.set('');
+    this.isSearching.set(false);
+    this.searchResults.set([]);
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       this.closeSearch();
     }
+  }
+
+  private getSearchResults(term: string): SearchResult[] {
+    const normalizedTerm = this.locationService.normalize(term);
+    const profileResults = this.getProfileSearchResults().filter((result) =>
+      [result.name, result.nickname || '', result.type]
+        .map((value) => this.locationService.normalize(value))
+        .some((value) => value.includes(normalizedTerm)),
+    );
+    const cityResults = this.locationService.searchLocations(term).map<SearchResult>((location) => ({
+      id: `city:${location.id}`,
+      name: location.name,
+      type: 'Cidade',
+      location: `${location.state}, ${location.country}`,
+      slug: location.slug,
+    }));
+
+    return [...profileResults, ...cityResults];
+  }
+
+  private cancelSearch(): void {
+    this.searchSubscription?.unsubscribe();
+    this.searchSubscription = undefined;
+  }
+
+  private getProfileSearchResults(): SearchResult[] {
+    const results = new Map<string, SearchResult>();
+
+    for (const profile of this.suggestions) {
+      results.set(profile.nickname, {
+        id: `profile:${profile.nickname}`,
+        name: profile.name,
+        type: 'Pessoa',
+        nickname: profile.nickname,
+      });
+    }
+
+    for (const post of this.postService.getPosts(this.user)) {
+      if (!results.has(post.authorNickname)) {
+        results.set(post.authorNickname, {
+          id: `profile:${post.authorNickname}`,
+          name: post.authorName,
+          type: 'Pessoa',
+          nickname: post.authorNickname,
+        });
+      }
+    }
+
+    return [...results.values()];
   }
 }

@@ -13,7 +13,9 @@
       <option [value]="option.value">{{ option.label }}</option>
     }
   </select>
-  @if (error) {
-    <span class="field__error">{{ error }}</span>
-  }
+  <span
+    class="field__error"
+    [class.field__error--visible]="error"
+    aria-live="polite"
+  >{{ error }}</span>
 </label>

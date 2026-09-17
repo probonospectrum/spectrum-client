@@ -3,63 +3,74 @@
 }
 
 .auth-page {
-  min-height: 100vh;
   width: 100%;
+  min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 34px 18px;
+  padding: 28px 18px;
   background:
-    linear-gradient(180deg, rgba(63, 104, 151, 0.94) 0%, rgba(31, 75, 118, 0.9) 42%, rgba(236, 243, 250, 0.96) 100%),
-    url('/Background.png') center bottom / min(1680px, 154vw) auto no-repeat,
-    #3f6897;
+    linear-gradient(115deg, rgba(12, 25, 40, 0.78), rgba(31, 69, 104, 0.52)),
+    url("/Background.png") center / cover no-repeat,
+    var(--spectrum-primary-900);
 }
 
 .auth-card {
-  width: min(571px, 100%);
-  min-height: 500px;
-  padding: 58px 44px 42px;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 8px;
-  background: rgba(252, 252, 252, 0.95);
+  width: min(520px, 100%);
+  display: grid;
+  gap: 0;
+  padding: 36px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-lg);
+  background: rgb(var(--spectrum-surface-rgb) / 0.94);
   box-shadow:
-    0 26px 70px rgba(0, 22, 54, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    0 28px 78px rgba(7, 22, 36, 0.36),
+    inset 0 1px 0 rgb(var(--spectrum-surface-rgb) / 0.85);
+  backdrop-filter: blur(18px);
 }
 
 .auth-card--compact {
-  min-height: 625px;
-  padding-top: 38px;
+  width: min(520px, 100%);
 }
 
-.auth-logo {
-  margin: 0 0 40px;
-  color: #002d72;
-  font: 800 clamp(2.35rem, 8vw, 3.35rem) / 1 Arial, sans-serif;
-  letter-spacing: 0;
-  text-align: center;
+.auth-brand {
+  display: grid;
+  justify-items: center;
+  margin-bottom: 24px;
 }
 
-.auth-logo::after {
-  content: '';
-  width: 64px;
-  height: 4px;
+.auth-mark {
+  width: 150px;
   display: block;
-  margin: 16px auto 0;
-  border-radius: 999px;
-  background: #0f7a4f;
 }
 
-.auth-card--compact .auth-logo {
-  margin-bottom: 25px;
+.auth-mark img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(20%) saturate(1744%)
+    hue-rotate(165deg) brightness(90%) contrast(91%);
+}
+
+:host-context(html[data-theme="dark"]) .auth-mark img {
+  filter: brightness(0) saturate(100%) invert(80%) sepia(16%) saturate(786%)
+    hue-rotate(164deg) brightness(96%) contrast(91%);
 }
 
 @media (max-width: 620px) {
   .auth-page {
     align-items: start;
-    padding-top: 24px;
+    padding: 16px 12px;
   }
 
   .auth-card {
-    padding: 38px 24px;
+    padding: 26px 20px;
+  }
+
+  .auth-brand {
+    margin-bottom: 20px;
+  }
+
+  .auth-mark {
+    width: 132px;
   }
 }

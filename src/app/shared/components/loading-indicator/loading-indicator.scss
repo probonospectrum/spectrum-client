@@ -1,0 +1,31 @@
+:host {
+  display: inline-flex;
+}
+
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: currentColor;
+  font: inherit;
+}
+
+.loading-indicator__spinner {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: loading-indicator-spin 0.75s linear infinite;
+}
+
+.loading-indicator__label {
+  min-width: 0;
+}
+
+@keyframes loading-indicator-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
