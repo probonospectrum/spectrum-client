@@ -9,13 +9,14 @@
   --spectrum-primary-700: #275b7c;
   --spectrum-primary-600: #2f6f95;
   --spectrum-primary-500: #367fa7;
-  --spectrum-accent: #0f766e;
-  --spectrum-accent-soft: #e7f4f2;
+  --spectrum-accent: #2f6f95;
+  --spectrum-accent-soft: #e8f1f7;
   --spectrum-info: #246b9f;
-  --spectrum-success: #147a55;
+  --spectrum-success: #246b9f;
   --spectrum-warning: #a46413;
   --spectrum-error: #b42318;
   --spectrum-app-bg: #f4f6f8;
+  --spectrum-surface-rgb: 255 255 255;
   --spectrum-surface: #ffffff;
   --spectrum-surface-soft: #f8fafc;
   --spectrum-surface-muted: #eef3f6;
@@ -45,6 +46,35 @@
     sans-serif;
 }
 
+:root[data-theme="dark"] {
+  --spectrum-primary-900: #d7eafb;
+  --spectrum-primary-800: #b6d8f0;
+  --spectrum-primary-700: #8fc1e3;
+  --spectrum-primary-600: #63a4cf;
+  --spectrum-primary-500: #4b91bd;
+  --spectrum-accent: #63a4cf;
+  --spectrum-accent-soft: #17364c;
+  --spectrum-info: #78b7df;
+  --spectrum-success: #78b7df;
+  --spectrum-warning: #e5ad5c;
+  --spectrum-error: #ff8b82;
+  --spectrum-app-bg: #0d1620;
+  --spectrum-surface-rgb: 21 33 44;
+  --spectrum-surface: #15212c;
+  --spectrum-surface-soft: #192733;
+  --spectrum-surface-muted: #223341;
+  --spectrum-border: #2d4050;
+  --spectrum-border-strong: #405768;
+  --spectrum-text: #edf5fb;
+  --spectrum-text-secondary: #c1d0dc;
+  --spectrum-text-muted: #93a8b9;
+  --spectrum-text-subtle: #71899b;
+  --spectrum-focus: rgba(99, 164, 207, 0.34);
+  --spectrum-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --spectrum-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.34);
+  --spectrum-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.46);
+}
+
 html,
 body {
   width: 100%;
@@ -57,10 +87,10 @@ html {
 }
 
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 12% 0%, rgba(47, 111, 149, 0.08), transparent 28rem),
-    linear-gradient(180deg, #f8fafc 0%, var(--spectrum-app-bg) 36rem);
+    linear-gradient(180deg, var(--spectrum-surface-soft) 0%, var(--spectrum-app-bg) 36rem);
   color: var(--spectrum-text);
   font-family: var(--spectrum-font);
   font-size: 15px;

@@ -89,7 +89,6 @@
     (confirm)="confirmReport()"
   />
 }
-
 @if (feedAlert(); as currentFeedAlert) {
   <app-alert-popup
     [type]="currentFeedAlert.type"
@@ -97,11 +96,5 @@
     [message]="currentFeedAlert.message"
     actionLabel="Ok"
     (dismissed)="feedAlert.set(null)"
-  />
-}
-
-@if (showInterests) {
-  <app-interests-page
-    (fechou)="onInteressesEscolhidos($event)"
   />
 }

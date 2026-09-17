@@ -5,25 +5,36 @@
 
 .auth-form {
   display: grid;
-  gap: 16px;
+  gap: 3px;
   width: 100%;
 }
 
 .auth-form--login {
-  gap: 18px;
+  gap: 6px;
+}
+
+.auth-form--register {
+  gap: 6px;
 }
 
 .auth-link {
-  width: 100%;
   border: 0;
+  padding: 0;
   background: transparent;
   color: var(--spectrum-text-secondary);
   cursor: pointer;
   font: 750 13px/1.35 var(--spectrum-font);
   text-align: center;
+  text-decoration: none;
   transition:
     color var(--spectrum-transition),
     text-decoration-color var(--spectrum-transition);
+}
+
+.auth-link--forgot {
+  justify-self: center;
+  color: var(--spectrum-primary-800);
+  font-weight: 700;
 }
 
 .auth-link:hover {
@@ -33,6 +44,7 @@
 }
 
 .auth-link--google {
+  width: 100%;
   min-height: 46px;
   display: flex;
   align-items: center;
@@ -71,14 +83,49 @@
   background-color: var(--spectrum-surface-muted);
 }
 
-.auth-link--footer {
-  margin-top: 16px;
+.auth-link--inline {
+  color: var(--spectrum-primary-800);
+  font-weight: 800;
+}
+
+.auth-submit {
+  margin-top: 6px;
+}
+
+.auth-divider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  color: var(--spectrum-text-subtle);
+  font: 650 12px/1 var(--spectrum-font);
+  text-transform: lowercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  background: var(--spectrum-border);
+}
+
+.auth-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 14px 0 0;
+  color: var(--spectrum-text-muted);
+  font: 600 13px/1.35 var(--spectrum-font);
+  text-align: center;
 }
 
 .auth-actions {
   display: grid;
-  gap: 14px;
-  margin-top: 6px;
+  justify-items: center;
+  gap: 10px;
+  margin-top: 2px;
 }
 
 .auth-avatar {
@@ -92,7 +139,7 @@
   border: 4px solid var(--spectrum-surface);
   border-radius: 50%;
   background:
-    linear-gradient(135deg, rgba(47, 111, 149, 0.2), rgba(15, 118, 110, 0.18)),
+    linear-gradient(135deg, rgba(47, 111, 149, 0.2), rgba(36, 107, 159, 0.18)),
     var(--spectrum-surface-muted);
   box-shadow: 0 14px 34px rgba(15, 35, 55, 0.14);
 }
@@ -120,4 +167,10 @@
   color: var(--spectrum-primary-800);
   font: 750 13px/1.3 var(--spectrum-font);
   text-align: center;
+}
+
+@media (max-width: 420px) {
+  .auth-switch {
+    flex-wrap: wrap;
+  }
 }

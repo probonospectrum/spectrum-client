@@ -5,7 +5,6 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
-import { AuthModeToggle } from '../../../shared/components/auth-mode-toggle/auth-mode-toggle';
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
 
@@ -36,7 +35,6 @@ type AuthMode = 'login' | 'register';
     ReactiveFormsModule,
     AlertPopup,
     AuthShell,
-    AuthModeToggle,
     Button,
     SpectrumInput,
     SpectrumSelect,

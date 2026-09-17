@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AccountMockService, SettingsData } from '../../../core/services/account/account-mock.service';
 import { PostService } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
+import { ThemeService } from '../../../core/services/theme/theme.service';
 import { AlertPopup } from '../../../shared/components/alert-popup/alert-popup';
 import { SettingsSection } from '../../../shared/components/settings-section/settings-section';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
@@ -20,10 +21,14 @@ export class SettingsPage {
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
 
   readonly user = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
-  settings: SettingsData = this.accountService.getSettings();
+  settings: SettingsData = {
+    ...this.accountService.getSettings(),
+    darkTheme: this.themeService.darkMode(),
+  };
   profile = this.accountService.getProfile(this.user);
   currentPassword = '';
   newPassword = '';
@@ -39,6 +44,10 @@ export class SettingsPage {
 
   setSetting<K extends keyof SettingsData>(key: K, value: SettingsData[K]): void {
     this.settings = { ...this.settings, [key]: value };
+
+    if (key === 'darkTheme') {
+      this.themeService.setDarkMode(Boolean(value));
+    }
   }
 
   logout(): void {
