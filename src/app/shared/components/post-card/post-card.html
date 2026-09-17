@@ -137,7 +137,7 @@
     <div class="post-card__actions" aria-label="Interacoes">
       <button
         type="button"
-        [class.post-card__action--active]="post.liked"
+        [class.post-card__action--liked]="post.liked"
         aria-label="Curtir publicacao"
         (click)="toggleLike()"
       >
@@ -146,10 +146,10 @@
           <span class="post-card__count">{{ likes }}</span>
         }
       </button>
-
+      
       <button
         type="button"
-        [class.post-card__action--active]="post.disliked"
+        [class.post-card__action--disliked]="post.disliked"
         aria-label="Descurtir publicacao"
         (click)="toggleDislike()"
       >
