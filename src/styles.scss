@@ -47,32 +47,49 @@
 }
 
 :root[data-theme="dark"] {
-  --spectrum-primary-900: #d7eafb;
-  --spectrum-primary-800: #b6d8f0;
-  --spectrum-primary-700: #8fc1e3;
-  --spectrum-primary-600: #63a4cf;
-  --spectrum-primary-500: #4b91bd;
-  --spectrum-accent: #63a4cf;
-  --spectrum-accent-soft: #17364c;
-  --spectrum-info: #78b7df;
-  --spectrum-success: #78b7df;
+  /* Primary */
+  --spectrum-primary-900: #e8f2ff;
+  --spectrum-primary-800: #c9e1ff;
+  --spectrum-primary-700: #a5ccf5;
+  --spectrum-primary-600: #7db3e8;
+  --spectrum-primary-500: #5b9bd5;
+
+  /* Accent */
+  --spectrum-accent: #6aa8e8;
+  --spectrum-accent-soft: #1b3047;
+
+  /* Status */
+  --spectrum-info: #6aa8e8;
+  --spectrum-success: #69c39a;
   --spectrum-warning: #e5ad5c;
-  --spectrum-error: #ff8b82;
-  --spectrum-app-bg: #0d1620;
-  --spectrum-surface-rgb: 21 33 44;
-  --spectrum-surface: #15212c;
-  --spectrum-surface-soft: #192733;
-  --spectrum-surface-muted: #223341;
-  --spectrum-border: #2d4050;
-  --spectrum-border-strong: #405768;
-  --spectrum-text: #edf5fb;
-  --spectrum-text-secondary: #c1d0dc;
-  --spectrum-text-muted: #93a8b9;
-  --spectrum-text-subtle: #71899b;
-  --spectrum-focus: rgba(99, 164, 207, 0.34);
-  --spectrum-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
-  --spectrum-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.34);
-  --spectrum-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.46);
+  --spectrum-error: #ef7777;
+
+  /* Background */
+  --spectrum-app-bg: #0f1115;
+
+  /* Surfaces */
+  --spectrum-surface-rgb: 24 27 33;
+  --spectrum-surface: #181b21;
+  --spectrum-surface-soft: #1e222a;
+  --spectrum-surface-muted: #262b34;
+
+  /* Borders */
+  --spectrum-border: #303640;
+  --spectrum-border-strong: #414957;
+
+  /* Text */
+  --spectrum-text: #f2f4f7;
+  --spectrum-text-secondary: #c5cad3;
+  --spectrum-text-muted: #9299a6;
+  --spectrum-text-subtle: #6f7785;
+
+  /* Focus */
+  --spectrum-focus: rgba(106, 168, 232, 0.32);
+
+  /* Shadows */
+  --spectrum-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --spectrum-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --spectrum-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.5);
 }
 
 html,
