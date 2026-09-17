@@ -126,12 +126,12 @@ export class ProfilePage implements OnInit {
   get coverUrl(): string {
     return (
       this.publicProfile()?.coverUrl ||
-      'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800&q=80'
+      '/Background.png'
     );
   }
 
   get joinedDate(): string {
-    return this.publicProfile()?.joinedDate || 'Janeiro de 2027';
+    return this.publicProfile()?.joinedDate || 'Janeiro de 2026';
   }
 
   get followingCount(): number {
@@ -140,14 +140,14 @@ export class ProfilePage implements OnInit {
     if (publicProfile) {
       return publicProfile.followingCount;
     }
-    return this.user?.following?.length ?? 250;
+    return this.user?.following?.length ?? 48;
   }
 
   get followersCount(): number {
     if (this.publicProfile()) {
       return this.followersBase() + (this.isFollowing() ? 1 : 0);
     }
-    return 350;
+    return 72;
   }
 
   get userPosts(): SpectrumPost[] {

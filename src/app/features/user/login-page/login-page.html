@@ -25,12 +25,12 @@
         [error]="fieldError('login', 'password')"
       />
 
-      <button class="auth-link" type="button" routerLink="/forgot-password"> Esqueceu sua senha? Clique aqui para redefini-la</button>
-      <button class="auth-link" type="button" (click)="goToRegister()">
-        Ainda nao possui cadastro? Cadastre-se aqui
-      </button>
+      <a class="auth-link auth-link--forgot" routerLink="/forgot-password">
+        Esqueceu a senha?
+      </a>
 
       <app-button
+        class="auth-submit"
         type="submit"
         [disabled]="isSubmitting()"
         [loading]="isSubmitting()"
@@ -38,19 +38,28 @@
       >
         Entrar
       </app-button>
+
       @if (isGoogleLoginAvailable) {
+        <div class="auth-divider" aria-hidden="true">
+          <span>ou</span>
+        </div>
+
         <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
           Entrar com o Google
         </button>
       }
     </form>
 
+    <p class="auth-switch">
+      <span>Não possui uma conta?</span>
+      <button class="auth-link auth-link--inline" type="button" (click)="goToRegister()">
+        Criar conta
+      </button>
+    </p>
+
   } @else {
-
-    <app-auth-mode-toggle [registerStep]="registerStep()" />
-
     <form
-      class="auth-form"
+      class="auth-form auth-form--register"
       [formGroup]="registerForm"
       (ngSubmit)="submitRegister()"
     >
@@ -156,13 +165,12 @@
 
     </form>
 
-    <button
-      class="auth-link auth-link--footer"
-      type="button"
-      (click)="goToLogin()"
-    >
-      Ja possui cadastro? Entrar
-    </button>
+    <p class="auth-switch">
+      <span>Já possui uma conta?</span>
+      <button class="auth-link auth-link--inline" type="button" (click)="goToLogin()">
+        Entrar
+      </button>
+    </p>
 
   }
 

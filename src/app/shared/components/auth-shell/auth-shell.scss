@@ -7,7 +7,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 34px 18px;
+  padding: 28px 18px;
   background:
     linear-gradient(115deg, rgba(12, 25, 40, 0.78), rgba(31, 69, 104, 0.52)),
     url("/Background.png") center / cover no-repeat,
@@ -18,50 +18,59 @@
   width: min(520px, 100%);
   display: grid;
   gap: 0;
-  padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  padding: 36px;
+  border: 1px solid var(--spectrum-border);
   border-radius: var(--spectrum-radius-lg);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgb(var(--spectrum-surface-rgb) / 0.94);
   box-shadow:
     0 28px 78px rgba(7, 22, 36, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    inset 0 1px 0 rgb(var(--spectrum-surface-rgb) / 0.85);
   backdrop-filter: blur(18px);
 }
 
 .auth-card--compact {
-  width: min(560px, 100%);
-  padding-top: 32px;
+  width: min(520px, 100%);
 }
 
-.auth-logo {
-  margin: 0 0 30px;
-  color: var(--spectrum-primary-900);
-  font: 900 clamp(2rem, 8vw, 3.1rem) / 1 var(--spectrum-font);
-  letter-spacing: 0;
-  text-align: center;
+.auth-brand {
+  display: grid;
+  justify-items: center;
+  margin-bottom: 24px;
 }
 
-.auth-logo::after {
-  content: "";
-  width: 58px;
-  height: 4px;
+.auth-mark {
+  width: 150px;
   display: block;
-  margin: 14px auto 0;
-  border-radius: 999px;
-  background: var(--spectrum-accent);
 }
 
-.auth-card--compact .auth-logo {
-  margin-bottom: 22px;
+.auth-mark img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(20%) saturate(1744%)
+    hue-rotate(165deg) brightness(90%) contrast(91%);
+}
+
+:host-context(html[data-theme="dark"]) .auth-mark img {
+  filter: brightness(0) saturate(100%) invert(80%) sepia(16%) saturate(786%)
+    hue-rotate(164deg) brightness(96%) contrast(91%);
 }
 
 @media (max-width: 620px) {
   .auth-page {
     align-items: start;
-    padding: 18px 12px;
+    padding: 16px 12px;
   }
 
   .auth-card {
-    padding: 30px 20px;
+    padding: 26px 20px;
+  }
+
+  .auth-brand {
+    margin-bottom: 20px;
+  }
+
+  .auth-mark {
+    width: 132px;
   }
 }
