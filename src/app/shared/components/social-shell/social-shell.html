@@ -72,6 +72,11 @@
                       @if (result.type === 'Pessoa') {
                         {{ result.name.charAt(0).toUpperCase() }}
                       }
+                      @if (result.type === 'Cidade') {
+                        <span class="material-symbols-outlined">
+                          location_city
+                        </span>
+                      }
                     </span>
 
                       <span class="search-result__content">
