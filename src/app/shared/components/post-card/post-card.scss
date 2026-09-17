@@ -256,9 +256,13 @@
   flex: 0 0 auto;
 }
 
+.post-card__count {
+  font: 750 12px/1 var(--spectrum-font);
+}
+
 .post-card__actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   border-top: 1px solid var(--spectrum-border);
   padding-top: 10px;

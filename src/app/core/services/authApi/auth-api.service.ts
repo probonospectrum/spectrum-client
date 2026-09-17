@@ -10,11 +10,11 @@ export class AuthApiService {
   private readonly userService = inject(UserService);
 
   loginWithGoogle(code: string): Observable<LoginResponse> {
-  return this.http
-    .post<LoginResponse>(`${API_BASE_URL}/auth/google`, {
-      code,
-      redirectUri: window.location.origin + '/auth/callback',
-    })
-    .pipe(tap((response) => this.userService.saveSession(response)));
-}
+    return this.http
+      .post<LoginResponse>(`${API_BASE_URL}/auth/google`, {
+        code,
+        redirectUri: window.location.origin + '/auth/callback',
+      })
+      .pipe(tap((response) => this.userService.saveSession(response)));
+  }
 }

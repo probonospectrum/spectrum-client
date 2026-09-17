@@ -141,10 +141,22 @@
         aria-label="Curtir publicacao"
         (click)="toggleLike()"
       >
-        <span class="material-symbols-outlined" aria-hidden="true">
-          {{ post.liked ? 'favorite' : 'favorite_border' }}
-        </span>
-        {{ likes }}
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+        @if (likes > 0) {
+          <span class="post-card__count">{{ likes }}</span>
+        }
+      </button>
+
+      <button
+        type="button"
+        [class.post-card__action--active]="post.disliked"
+        aria-label="Descurtir publicacao"
+        (click)="toggleDislike()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
+        @if (post.dislikes > 0) {
+          <span class="post-card__count">{{ post.dislikes }}</span>
+        }
       </button>
       <button type="button" aria-label="Comentar publicacao" (click)="toggleComments()">
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
