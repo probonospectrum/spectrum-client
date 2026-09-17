@@ -15,7 +15,9 @@ export interface SpectrumPost {
   publishedAt: string;
   publishedAtLabel: string;
   likes: number;
+  dislikes: number;
   liked: boolean;
+  disliked: boolean;
   comments: number;
   reposts: number;
   reposted: boolean;
@@ -68,6 +70,7 @@ export interface PostInteractionRecord {
   userId: string;
   postId: string;
   liked?: boolean;
+  disliked?: boolean;
   saved?: boolean;
 }
 
@@ -297,7 +300,9 @@ export class PostService {
       publishedAt: now.toISOString(),
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
+      dislikes: 0,
       liked: false,
+      disliked: false,
       comments: 0,
       reposts: 0,
       reposted: false,
@@ -318,6 +323,30 @@ export class PostService {
     const currentPost = this.withPostState(basePost, user);
 
     record.liked = !currentPost.liked;
+
+    if (record.liked) {
+      record.disliked = false;
+    }
+
+    this.savePostInteractionRecords(records);
+
+    return this.withPostState(basePost, user);
+  }
+
+  togglePostDislike(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para descurtir.');
+    const postId = post.originalPostId ?? post.id;
+    const basePost = this.findRawPost(postId) ?? this.withoutComputedPostState({ ...post, id: postId });
+    const records = this.getPostInteractionRecords();
+    const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
+    const currentPost = this.withPostState(basePost, user);
+
+    record.disliked = !currentPost.disliked;
+
+    if (record.disliked) {
+      record.liked = false;
+    }
+
     this.savePostInteractionRecords(records);
 
     return this.withPostState(basePost, user);
@@ -574,7 +603,9 @@ export class PostService {
         publishedAt: '2026-09-16T17:42:00.000Z',
         publishedAtLabel: 'Publicado em 16/09/2026, às 14:42',
         likes: 38,
+        dislikes: 4,
         liked: false,
+        disliked: false,
         comments: 11,
         reposts: 4,
         reposted: false,
@@ -594,8 +625,10 @@ export class PostService {
         mediaType: 'image',
         publishedAt: '2026-09-15T21:18:00.000Z',
         publishedAtLabel: 'Publicado em 15/09/2026, às 18:18',
-        likes: 64,
+        likes: 67,
+        dislikes: 14,
         liked: false,
+        disliked: false,
         comments: 19,
         reposts: 7,
         reposted: false,
@@ -616,7 +649,9 @@ export class PostService {
         publishedAt: '2026-09-14T23:07:00.000Z',
         publishedAtLabel: 'Publicado em 14/09/2026, às 20:07',
         likes: 51,
+        dislikes: 0,
         liked: false,
+        disliked: false,
         comments: 8,
         reposts: 3,
         reposted: false,
@@ -637,7 +672,9 @@ export class PostService {
         publishedAt: '2026-09-13T15:26:00.000Z',
         publishedAtLabel: 'Publicado em 13/09/2026, às 12:26',
         likes: 72,
+        dislikes: 23,
         liked: false,
+        disliked: false,
         comments: 24,
         reposts: 9,
         reposted: false,
@@ -658,7 +695,9 @@ export class PostService {
         publishedAt: '2026-09-11T19:53:00.000Z',
         publishedAtLabel: 'Publicado em 11/09/2026, às 16:53',
         likes: 43,
+        dislikes: 8,
         liked: false,
+        disliked: false,
         comments: 9,
         reposts: 4,
         reposted: false,
@@ -685,7 +724,9 @@ export class PostService {
     return {
       ...normalizedPost,
       likes: normalizedPost.likes + postInteractions.filter((record) => record.liked).length,
+      dislikes: normalizedPost.dislikes + postInteractions.filter((record) => record.disliked).length,
       liked: currentUserInteraction?.liked ?? false,
+      disliked: currentUserInteraction?.disliked ?? false,
       saved: currentUserInteraction?.saved ?? normalizedPost.saved,
       reposts: normalizedPost.reposts + reposts.length,
       reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
@@ -700,6 +741,8 @@ export class PostService {
       ...post,
       createdAt,
       liked: post.liked ?? false,
+      disliked: post.disliked ?? false,
+      dislikes: post.dislikes ?? 0,
       reposts: post.reposts ?? postWithLegacyShares.shares ?? 0,
       reposted: post.reposted ?? false,
     };
@@ -707,9 +750,15 @@ export class PostService {
 
   private withoutComputedPostState(post: SpectrumPost): SpectrumPost {
     const postId = post.originalPostId ?? post.id;
+
     const interactionLikes = this.getPostInteractionRecords().filter(
       (record) => record.postId === postId && record.liked,
     ).length;
+
+    const interactionDislikes = this.getPostInteractionRecords().filter(
+      (record) => record.postId === postId && record.disliked,
+    ).length;
+
     const reposts = this.getRepostRecords().filter(
       (repost) => repost.originalPostId === postId,
     ).length;
@@ -717,7 +766,9 @@ export class PostService {
     return {
       ...post,
       likes: Math.max(0, post.likes - interactionLikes),
+      dislikes: Math.max(0, post.dislikes - interactionDislikes),
       liked: false,
+      disliked: false,
       reposts: Math.max(0, post.reposts - reposts),
       reposted: false,
     };
