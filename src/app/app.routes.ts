@@ -52,17 +52,6 @@ export const routes: Routes = [
       import('./features/user/verify-email-page/verify-email-page')
         .then((m) => m.VerifyEmailPage),
   },
-
-  {
-    path: 'interesses',
-    outlet: 'modal',
-    loadComponent: () =>
-      import('./features/interests/interests-page/interests-page')
-        .then((m) => m.InterestsPage),
-
-    canActivate: [authGuard],
-  },
-
   {
   path: 'auth/callback',
   loadComponent: () =>
