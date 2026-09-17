@@ -51,6 +51,8 @@ export class SocialShell implements OnInit {
   private readonly postService = inject(PostService);
   private readonly locationService = inject(LocationService);
 
+  readonly suggestedCities = this.locationService.getLocations().slice(0, 4);
+
   @Input() user: LoggedUser | null = null;
   @Input() suggestions: SuggestedProfile[] = [];
   @Input() title = 'Publicacoes';

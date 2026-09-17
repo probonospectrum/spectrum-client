@@ -25,8 +25,6 @@ import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
-import { InterestsPage } from '../../../features/interests/interests-page/interests-page';
-
 interface FeedAlert {
   type: AlertPopupType;
   title: string;
@@ -41,7 +39,6 @@ interface FeedAlert {
     PostCard,
     ReportModal,
     AlertPopup,
-    InterestsPage,
   ],
   templateUrl: './posts-page.html',
   styleUrl: './posts-page.scss',
@@ -64,11 +61,6 @@ export class PostsPage implements OnInit {
   selectedReason = 'Discurso de odio';
 
   feedAlert = signal<FeedAlert | null>(null);
-
-  /**
-   * Controla a exibição da tela de interesses.
-   */
-  showInterests = false;
 
   private readonly hiddenPostIds = new Set<string>();
   private readonly hiddenAuthorNicknames = new Set<string>();
@@ -107,8 +99,6 @@ export class PostsPage implements OnInit {
 
     this.refreshPosts();
 
-    this.showInterests =
-      !this.userService.getInteresses(this.user)?.length;
   }
 
   @HostListener('document:keydown.escape')
@@ -265,15 +255,6 @@ export class PostsPage implements OnInit {
       title: 'Publicacao atualizada',
       message: 'As alteracoes ja aparecem no feed.',
     });
-  }
-
-  onInteressesEscolhidos(interesses: string[]): void {
-    this.userService.salvarInteresses(
-      this.user,
-      interesses,
-    );
-
-    this.showInterests = false;
   }
 
   private refreshPosts(): void {

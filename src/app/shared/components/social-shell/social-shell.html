@@ -272,44 +272,31 @@
     <!-- SUGESTÕES -->
     <aside
       class="social-suggestions"
-      aria-label="Sugestoes para voce"
+      aria-label="Cidades sugeridas"
     >
 
-      <h2> Sugestões para você </h2>
+      <h2>Cidades para explorar</h2>
 
-      @for (profile of suggestions; track profile.nickname) {
+      @for (city of suggestedCities; track city.id) {
 
         <button
           type="button"
           class="social-suggestion"
-          (click)="goToProfile(profile.nickname)"
+          (click)="goToCity(city.slug)"
         >
 
-          <span class="social-avatar social-avatar--small">
-
-            <img
-              class="social-avatar"
-              src="https://img.magnific.com/vetores-premium/icone-de-perfil-de-avatar-em-estilo-plano-ilustracao-vetorial-de-perfil-de-usuario-feminino-em-fundo-isolado-perfil-de-mulheres-sinal-conceito-de-negocio_157943-38866.jpg?semt=ais_hybrid&w=740&q=80"
-              alt="Foto de perfil"
-            />
-
+          <span class="social-suggestion__city-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">location_on</span>
           </span>
 
           <div>
-            <strong>{{ profile.name }}</strong>
-            <span>@{{ profile.nickname }}</span>
+            <strong>{{ city.name }}</strong>
+            <span>{{ city.state }} · {{ city.country }}</span>
           </div>
 
-          @if (profile.verified) {
-
-            <span
-              class="material-symbols-outlined social-suggestion__verified"
-              aria-label="Perfil verificado"
-            >
-              verified
-            </span>
-
-          }
+          <span class="material-symbols-outlined social-suggestion__arrow" aria-hidden="true">
+            chevron_right
+          </span>
 
         </button>
 
