@@ -3,21 +3,15 @@
     class="create-post-modal"
     role="dialog"
     aria-modal="true"
-    [attr.aria-labelledby]="isEditing ? 'create-post-modal-title' : null"
+    aria-labelledby="create-post-modal-title"
     (click)="$event.stopPropagation()"
   >
     <header class="create-post-modal__header">
       <div class="create-post-modal__author">
-        <div class="create-post-modal__avatar">
-          {{ userInitial }}
-        </div>
-
+        <div class="create-post-modal__avatar">{{ userInitial }}</div>
         <div>
-          @if (isEditing) {
-            <h2 id="create-post-modal-title">{{ modalTitle }}</h2>
-          }
-          <strong>{{ displayName }}</strong>
-          <span>@{{ nickname }}</span>
+          <h2 id="create-post-modal-title">{{ modalTitle }}</h2>
+          <p><strong>{{ displayName }}</strong> <span>@{{ nickname }}</span></p>
         </div>
       </div>
 
@@ -27,153 +21,203 @@
     </header>
 
     <label class="create-post-modal__field">
+      <span class="create-post-modal__label">Problema</span>
+      <input
+        class="create-post-modal__input"
+        [(ngModel)]="problemTitle"
+        placeholder="Poste de iluminação apagado"
+        maxlength="140"
+        aria-label="Título curto da ocorrência"
+      />
+      <small>{{ problemTitle.length }}/140</small>
+    </label>
+
+    <label class="create-post-modal__field">
+      <span class="create-post-modal__label">Descrição detalhada</span>
       <textarea
         class="create-post-modal__textarea"
         [(ngModel)]="newPostContent"
-        placeholder="O que está acontecendo?"
-        maxlength="420"
-        aria-label="Conteúdo da publicação"
+        placeholder="O poste está apagado há aproximadamente duas semanas e deixa a rua completamente escura durante a noite."
+        maxlength="1200"
+        aria-label="Descrição detalhada da ocorrência"
       ></textarea>
-      <span>{{ newPostContent.length }}/420</span>
+      <small>{{ newPostContent.length }}/1200</small>
     </label>
 
-    @if (errorMessage) {
-      <p class="create-post-modal__error">{{ errorMessage }}</p>
-    }
+    <div class="create-post-modal__classification">
+      <label class="create-post-modal__select-field">
+        <span class="create-post-modal__label">Categoria</span>
+        <select [(ngModel)]="selectedCategory" aria-label="Categoria da ocorrência">
+          <option value="" disabled>Selecione uma categoria</option>
+          @for (category of categories; track category.value) {
+            <option [value]="category.value">{{ category.label }}</option>
+          }
+        </select>
+      </label>
 
-    @if (selectedLocation || customLocationLabel) {
-      <div class="create-post-modal__location" aria-label="Localizacao selecionada">
-        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-        <strong>{{ locationLabel }}</strong>
-        <button type="button" aria-label="Remover localização" (click)="removeLocation()">
-          <span class="material-symbols-outlined" aria-hidden="true">close</span>
-        </button>
-      </div>
-    }
-
-    <div class="create-post-modal__toolbar">
-      <span>Adicionar no post</span>
-      <div class="create-post-modal__actions">
-        <button
-          type="button"
-          aria-label="Adicionar imagem"
-          [class.create-post-modal__action--active]="selectedMediaType === 'image'"
-          (click)="imageInput.value = ''; imageInput.click()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
-        </button>
-
-        <input
-          #imageInput
-          class="create-post-modal__file-input"
-          type="file"
-          accept="image/*"
-          aria-label="Selecionar imagem"
-          (change)="selectAttachment($event, 'image')"
-        />
-
-        <button
-          type="button"
-          [attr.aria-label]="selectedLocation ? 'Trocar localização' : 'Adicionar localização'"
-          (click)="openLocationPicker()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-        </button>
-
-        <button
-          type="button"
-          aria-label="Adicionar vídeo"
-          [class.create-post-modal__action--active]="selectedMediaType === 'video'"
-          (click)="videoInput.value = ''; videoInput.click()"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
-        </button>
-
-        <input
-          #videoInput
-          class="create-post-modal__file-input"
-          type="file"
-          accept="video/*"
-          aria-label="Selecionar video"
-          (change)="selectAttachment($event, 'video')"
-        />
-      </div>
+      <fieldset class="create-post-modal__importance">
+        <legend class="create-post-modal__label">Gravidade</legend>
+        <div class="create-post-modal__importance-options">
+          @for (option of importanceOptions; track option.value) {
+            <label [class.create-post-modal__importance-option--selected]="selectedImportance === option.value">
+              <input
+                type="radio"
+                name="occurrenceImportance"
+                [value]="option.value"
+                [(ngModel)]="selectedImportance"
+              />
+              <span>{{ option.label }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
     </div>
 
-    @if (hasAttachment) {
-      <div class="create-post-modal__attachment" aria-label="Arquivo anexado">
-        <span class="material-symbols-outlined" aria-hidden="true">{{ attachmentIcon }}</span>
-        <strong>{{ selectedAttachmentName }}</strong>
-        <button type="button" aria-label="Remover anexo" (click)="removeAttachment()">
-          <span class="material-symbols-outlined" aria-hidden="true">close</span>
-        </button>
+    <section class="create-post-modal__section" aria-labelledby="occurrence-location-label">
+      <div class="create-post-modal__section-heading">
+        <span id="occurrence-location-label" class="create-post-modal__label">Localização</span>
+        @if (selectedStateId || selectedCityId || selectedNeighborhoodName) {
+          <button type="button" (click)="removeLocation()">Limpar</button>
+        }
       </div>
+
+      <div class="create-post-modal__location-grid">
+        <label class="create-post-modal__select-field">
+          <span class="create-post-modal__label">Estado*</span>
+          <select
+            [(ngModel)]="selectedStateId"
+            (ngModelChange)="onStateChanged()"
+            [disabled]="isLoadingStates()"
+            aria-label="Estado da ocorrência"
+          >
+            <option value="">
+              {{ isLoadingStates() ? 'Carregando estados...' : 'Selecione o estado' }}
+            </option>
+            @for (state of states(); track state.id) {
+              <option [value]="state.id">{{ state.nome }} - {{ state.sigla }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="create-post-modal__select-field">
+          <span class="create-post-modal__label">Cidade*</span>
+          <select
+            [(ngModel)]="selectedCityId"
+            (ngModelChange)="onCityChanged()"
+            [disabled]="!selectedStateId || isLoadingCities()"
+            aria-label="Cidade da ocorrência"
+          >
+            <option value="">
+              {{ isLoadingCities() ? 'Carregando cidades...' : 'Selecione a cidade' }}
+            </option>
+            @for (city of cities(); track city.id) {
+              <option [value]="city.id">{{ city.nome }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="create-post-modal__select-field">
+          <span class="create-post-modal__label">Bairro*</span>
+          <select
+            [(ngModel)]="selectedNeighborhoodName"
+            [disabled]="!selectedCityId || isLoadingNeighborhoods() || !neighborhoods().length"
+            aria-label="Bairro da ocorrência"
+          >
+            <option value="">
+              {{ isLoadingNeighborhoods() ? 'Carregando bairros...' : 'Selecione o bairro' }}
+            </option>
+            @for (neighborhood of neighborhoods(); track neighborhood.name) {
+              <option [value]="neighborhood.name">{{ neighborhood.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      @if (locationErrorMessage) {
+        <div class="create-post-modal__location-warning" role="alert">
+          <span>{{ locationErrorMessage }}</span>
+          <button type="button" (click)="retryLocationLoad()">Tentar novamente</button>
+        </div>
+      }
+
+      @if (selectedNeighborhoodName) {
+        <div class="create-post-modal__location" aria-label="Localização selecionada">
+          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+          <strong>{{ locationLabel }}</strong>
+          <button type="button" aria-label="Remover localização" (click)="removeLocation()">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          </button>
+        </div>
+      }
+    </section>
+
+    <section class="create-post-modal__section" aria-labelledby="occurrence-evidence-label">
+      <div class="create-post-modal__toolbar">
+        <div>
+          <span id="occurrence-evidence-label" class="create-post-modal__label">Adicionar evidências</span>
+          <small>Até 4 arquivos, 25 MB cada</small>
+        </div>
+        <div class="create-post-modal__actions">
+          <button type="button" aria-label="Adicionar imagens" (click)="imageInput.click()">
+            <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+          </button>
+          <input
+            #imageInput
+            class="create-post-modal__file-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            aria-label="Selecionar imagens"
+            (change)="selectAttachments($event, 'IMAGE')"
+          />
+          <button type="button" aria-label="Adicionar vídeos" (click)="videoInput.click()">
+            <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
+          </button>
+          <input
+            #videoInput
+            class="create-post-modal__file-input"
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            multiple
+            aria-label="Selecionar vídeos"
+            (change)="selectAttachments($event, 'VIDEO')"
+          />
+        </div>
+      </div>
+
+      @if (selectedEvidences.length) {
+        <div class="create-post-modal__attachments" aria-label="Evidências adicionadas">
+          @for (evidence of selectedEvidences; track evidence.file.name + $index) {
+            <div class="create-post-modal__attachment">
+              <span class="material-symbols-outlined" aria-hidden="true">
+                {{ evidence.type === 'VIDEO' ? 'videocam' : 'image' }}
+              </span>
+              <strong>{{ evidence.file.name }}</strong>
+              <button type="button" [attr.aria-label]="'Remover ' + evidence.file.name" (click)="removeAttachment($index)">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    @if (errorMessage) {
+      <p class="create-post-modal__error" role="alert">{{ errorMessage }}</p>
     }
 
     <button
       class="create-post-modal__submit"
       type="button"
-      [disabled]="!newPostContent.trim() || isPublishing()"
+      [disabled]="!canSubmit"
       (click)="publishPost()"
     >
       @if (isPublishing()) {
-        <app-loading-indicator [label]="isEditing ? 'Salvando' : 'Publicando'" />
+        <app-loading-indicator [label]="isEditing ? 'Salvando' : 'Publicando ocorrência'" />
       } @else {
         {{ submitLabel }}
       }
     </button>
   </section>
 
-  @if (showLocationPicker) {
-    <div
-      class="location-modal-backdrop"
-      role="presentation"
-      (click)="$event.stopPropagation(); closeLocationPicker()"
-    >
-      <section
-        class="location-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="location-modal-title"
-        (click)="$event.stopPropagation()"
-      >
-        <header class="location-modal__header">
-          <div>
-            <p>Localização</p>
-            <h2 id="location-modal-title">Adicionar localização</h2>
-          </div>
-
-          <button
-            class="location-modal__close"
-            type="button"
-            aria-label="Fechar localização"
-            (click)="closeLocationPicker()"
-          >
-            <span class="material-symbols-outlined" aria-hidden="true">close</span>
-          </button>
-        </header>
-
-        <div class="location-modal__list">
-          @for (location of locations; track location.id) {
-            <button
-              type="button"
-              class="location-modal__option"
-              [class.location-modal__option--selected]="selectedLocation?.id === location.id"
-              (click)="selectLocation(location)"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-              <span>
-                <strong>{{ location.name }}</strong>
-                <small>{{ location.state }} - {{ location.country }}</small>
-              </span>
-            </button>
-          }
-        </div>
-
-        <footer class="location-modal__footer">
-          <button type="button" (click)="closeLocationPicker()">Cancelar</button>
-        </footer>
-      </section>
-    </div>
-  }
 </div>

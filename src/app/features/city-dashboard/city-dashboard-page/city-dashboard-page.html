@@ -1,0 +1,367 @@
+<app-social-shell
+  [user]="user"
+  [suggestions]="suggestions"
+  [showContentHeader]="false"
+  [wideContent]="true"
+  (logout)="logout()"
+>
+  <header class="dashboard-heading">
+    <div>
+      <p>Indicadores públicos</p>
+      <h1>Dashboard de cidades</h1>
+      <span>{{ selectedCityLabel }}</span>
+    </div>
+    <span class="material-symbols-outlined" aria-hidden="true">location_city</span>
+  </header>
+
+  <section class="dashboard-filters" aria-labelledby="dashboard-filters-title">
+    <div class="dashboard-section-heading">
+      <div>
+        <p>Recorte dos dados</p>
+        <h2 id="dashboard-filters-title">Filtros</h2>
+      </div>
+      <button type="button" class="dashboard-link-button" (click)="clearFilters()">
+        Limpar filtros
+      </button>
+    </div>
+
+    <div class="dashboard-filters__grid">
+      <label>
+        Estado
+        <select [(ngModel)]="selectedState" (ngModelChange)="onStateChanged()">
+          <option value="">Todos</option>
+          @for (state of options()?.states ?? []; track state.code) {
+            <option [value]="state.code">{{ state.name }} - {{ state.code }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Cidade
+        <select [(ngModel)]="selectedCityId" (ngModelChange)="onCityChanged()">
+          <option value="">Todas</option>
+          @for (city of availableCities; track city.id) {
+            <option [value]="city.id">
+              {{ city.name }} - {{ city.stateCode }} ({{ city.occurrenceCount }})
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Bairro
+        <select [(ngModel)]="selectedNeighborhoodName" [disabled]="!availableNeighborhoods.length">
+          <option value="">Todos</option>
+          @for (neighborhood of availableNeighborhoods; track neighborhood.cityId + neighborhood.name) {
+            <option [value]="neighborhood.name">
+              {{ neighborhood.name }} ({{ neighborhood.occurrenceCount }})
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Período
+        <select [(ngModel)]="selectedPeriod">
+          @for (period of periodOptions; track period.value) {
+            @if (period.value !== 'custom' || selectedPeriod === 'custom') {
+              <option [value]="period.value">{{ period.label }}</option>
+            }
+          }
+        </select>
+      </label>
+
+      <label>
+        Categoria
+        <select [(ngModel)]="selectedCategory">
+          <option value="">Todas</option>
+          @for (category of options()?.categories ?? []; track category) {
+            <option [value]="category">{{ categoryLabel(category) }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Gravidade
+        <select [(ngModel)]="selectedImportance">
+          <option value="">Todas</option>
+          @for (importance of options()?.importanceLevels ?? []; track importance) {
+            <option [value]="importance">{{ importanceLabel(importance) }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Status
+        <select [(ngModel)]="selectedStatus">
+          <option value="">Todos</option>
+          @for (status of options()?.statuses ?? []; track status) {
+            <option [value]="status">{{ statusLabel(status) }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <button type="button" class="dashboard-filter-submit" (click)="applyFilters()">
+      <span class="material-symbols-outlined" aria-hidden="true">filter_alt</span>
+      Aplicar filtros
+    </button>
+  </section>
+
+  @if (loading()) {
+    <section class="dashboard-state" aria-label="Carregando indicadores">
+      <app-loading-indicator label="Calculando indicadores" />
+    </section>
+  } @else if (errorMessage()) {
+    <section class="dashboard-state dashboard-state--error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <h2>Indicadores indisponíveis</h2>
+      <p>{{ errorMessage() }}</p>
+      <button type="button" (click)="applyFilters()">Tentar novamente</button>
+    </section>
+  } @else if (dashboard(); as data) {
+    <section class="dashboard-summary" aria-labelledby="dashboard-summary-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p>Visão geral</p>
+          <h2 id="dashboard-summary-title">Ocorrências no período</h2>
+        </div>
+        <span>{{ date(data.period.from) }} a {{ date(data.period.to) }}</span>
+      </div>
+
+      <div class="dashboard-metrics">
+        <button type="button" class="metric-card" (click)="selectedStatus = ''; applyFilters()">
+          <span class="material-symbols-outlined" aria-hidden="true">description</span>
+          <strong>{{ data.summary.total }}</strong>
+          <small>Total de ocorrências</small>
+        </button>
+        <button type="button" class="metric-card" (click)="selectStatus('ABERTA')">
+          <span class="material-symbols-outlined" aria-hidden="true">radio_button_checked</span>
+          <strong>{{ data.summary.open }}</strong>
+          <small>Abertas</small>
+        </button>
+        <button type="button" class="metric-card" (click)="selectStatus('EM_ANALISE')">
+          <span class="material-symbols-outlined" aria-hidden="true">manage_search</span>
+          <strong>{{ data.summary.inAnalysis }}</strong>
+          <small>Em análise</small>
+        </button>
+        <button type="button" class="metric-card" (click)="selectStatus('RESOLVIDA')">
+          <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+          <strong>{{ data.summary.resolved }}</strong>
+          <small>Resolvidas</small>
+        </button>
+        <button type="button" class="metric-card" (click)="selectStatus('CONTESTADA')">
+          <span class="material-symbols-outlined" aria-hidden="true">gavel</span>
+          <strong>{{ data.summary.contested }}</strong>
+          <small>Contestadas</small>
+        </button>
+        <button type="button" class="metric-card" (click)="selectStatus('REABERTA')">
+          <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+          <strong>{{ data.summary.reopened }}</strong>
+          <small>Reabertas</small>
+        </button>
+        <article class="metric-card metric-card--static">
+          <span class="material-symbols-outlined" aria-hidden="true">fact_check</span>
+          <strong>{{ number(data.summary.resolutionRecordedPercentage) }}%</strong>
+          <small>Com resolução registrada</small>
+        </article>
+        <article class="metric-card metric-card--static">
+          <span class="material-symbols-outlined" aria-hidden="true">pending_actions</span>
+          <strong>{{ number(data.summary.unresolvedPercentage) }}%</strong>
+          <small>Ainda sem resolução</small>
+        </article>
+        <article class="metric-card metric-card--static">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_view_day</span>
+          <strong>{{ number(data.summary.averageOccurrencesPerDay) }}</strong>
+          <small>Média diária no período</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="dashboard-averages" aria-label="Médias agregadas">
+      <div>
+        <small>Por cidade</small>
+        <strong>{{ number(data.averages.occurrencesPerCity) }}</strong>
+        <span>ocorrências</span>
+      </div>
+      <div>
+        <small>Por dia</small>
+        <strong>{{ number(data.averages.occurrencesPerDay) }}</strong>
+        <span>ocorrências</span>
+      </div>
+      <div>
+        <small>Resolvidas por cidade</small>
+        <strong>{{ number(data.averages.resolvedPerCity) }}</strong>
+        <span>em média</span>
+      </div>
+      <div>
+        <small>Abertas por cidade</small>
+        <strong>{{ number(data.averages.openPerCity) }}</strong>
+        <span>em média</span>
+      </div>
+      <div>
+        <small>Tempo até resolução</small>
+        <strong>
+          {{ data.averages.resolutionTimeDays === null ? '—' : number(data.averages.resolutionTimeDays) }}
+        </strong>
+        <span>{{ data.averages.resolutionTimeDays === null ? 'sem dados' : 'dias' }}</span>
+      </div>
+    </section>
+
+    @if (selectedCityId && data.cities[0]; as city) {
+      <section class="city-focus" aria-labelledby="city-focus-title">
+        <div class="city-focus__heading">
+          <span class="material-symbols-outlined" aria-hidden="true">location_city</span>
+          <div>
+            <p>{{ city.state }}</p>
+            <h2 id="city-focus-title">{{ city.city }}</h2>
+            <span>{{ city.total }} ocorrências registradas no período</span>
+          </div>
+        </div>
+        <dl>
+          <div><dt>Abertas</dt><dd>{{ city.open }}</dd></div>
+          <div><dt>Em análise</dt><dd>{{ city.inAnalysis }}</dd></div>
+          <div><dt>Resolvidas</dt><dd>{{ city.resolved }}</dd></div>
+          <div><dt>Contestadas</dt><dd>{{ city.contested }}</dd></div>
+          <div><dt>Reabertas</dt><dd>{{ city.reopened }}</dd></div>
+          <div>
+            <dt>Tempo médio</dt>
+            <dd>{{ city.averageResolutionDays === null ? '—' : number(city.averageResolutionDays) + ' dias' }}</dd>
+          </div>
+          <div>
+            <dt>Categoria principal</dt>
+            <dd>{{ categoryLabel(city.topCategory) }}</dd>
+          </div>
+        </dl>
+      </section>
+    }
+
+    <section class="dashboard-charts" aria-label="Gráficos das ocorrências">
+      <article class="chart-panel">
+        <div class="chart-panel__heading">
+          <div><p>Andamento</p><h2>Ocorrências por status</h2></div>
+          <span class="material-symbols-outlined" aria-hidden="true">donut_large</span>
+        </div>
+        <app-dashboard-bar-chart [items]="statusChartItems" (itemSelected)="selectStatus($event)" />
+      </article>
+
+      <article class="chart-panel">
+        <div class="chart-panel__heading">
+          <div><p>Tipos de problema</p><h2>Ocorrências por categoria</h2></div>
+          <span class="material-symbols-outlined" aria-hidden="true">category</span>
+        </div>
+        <app-dashboard-bar-chart [items]="categoryChartItems" (itemSelected)="selectCategory($event)" />
+      </article>
+
+      <article class="chart-panel chart-panel--wide">
+        <div class="chart-panel__heading">
+          <div><p>Série histórica</p><h2>Evolução das ocorrências</h2></div>
+          <span class="material-symbols-outlined" aria-hidden="true">timeline</span>
+        </div>
+        <app-dashboard-line-chart [points]="data.timeline" (pointSelected)="selectDate($event)" />
+      </article>
+
+      <article class="chart-panel">
+        <div class="chart-panel__heading">
+          <div><p>Comparação objetiva</p><h2>Ocorrências por cidade</h2></div>
+          <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
+        </div>
+        <app-dashboard-bar-chart [items]="cityChartItems" (itemSelected)="selectCity($event)" />
+      </article>
+
+      <article class="chart-panel">
+        <div class="chart-panel__heading">
+          <div><p>Prioridade declarada</p><h2>Distribuição por gravidade</h2></div>
+          <span class="material-symbols-outlined" aria-hidden="true">priority_high</span>
+        </div>
+        <app-dashboard-bar-chart [items]="importanceChartItems" (itemSelected)="selectImportance($event)" />
+      </article>
+    </section>
+
+    <section class="city-comparison" aria-labelledby="city-comparison-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p>Sem nota arbitrária</p>
+          <h2 id="city-comparison-title">Comparação entre cidades</h2>
+        </div>
+      </div>
+      <p class="city-comparison__context">
+        Os totais refletem registros na plataforma e não representam, isoladamente, qualidade urbana.
+      </p>
+
+      @if (data.cities.length) {
+        <div class="city-comparison__table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cidade</th><th>Total</th><th>Abertas</th><th>Em análise</th><th>Resolvidas</th>
+                <th>Contestadas</th><th>Reabertas</th><th>Resolução registrada</th>
+                <th>Tempo médio</th><th>Categoria frequente</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (city of data.cities; track city.cityId) {
+                <tr>
+                  <td><button type="button" (click)="selectCity(city.cityId)">{{ city.city }} - {{ city.state }}</button></td>
+                  <td>{{ city.total }}</td><td>{{ city.open }}</td><td>{{ city.inAnalysis }}</td>
+                  <td>{{ city.resolved }}</td><td>{{ city.contested }}</td><td>{{ city.reopened }}</td>
+                  <td>{{ number(city.resolutionRecordedPercentage) }}%</td>
+                  <td>{{ city.averageResolutionDays === null ? '—' : number(city.averageResolutionDays) + ' dias' }}</td>
+                  <td>{{ categoryLabel(city.topCategory) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="dashboard-empty">Nenhuma cidade possui ocorrências para este recorte.</div>
+      }
+    </section>
+
+    <section id="ocorrencias-recentes" class="recent-occurrences" aria-labelledby="recent-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p>Registros públicos</p>
+          <h2 id="recent-title">Ocorrências recentes</h2>
+        </div>
+        <span>{{ occurrences()?.pagination?.total ?? 0 }} resultados</span>
+      </div>
+
+      @for (occurrence of occurrences()?.data ?? []; track occurrence.id) {
+        <article class="occurrence-row">
+          <div class="occurrence-row__main">
+            <span class="occurrence-row__status" [attr.data-status]="occurrence.status">
+              {{ statusLabel(occurrence.status) }}
+            </span>
+            <h3>{{ occurrence.title }}</h3>
+            <p>{{ occurrence.description }}</p>
+          </div>
+          <dl>
+            <div><dt>Cidade</dt><dd>{{ occurrence.city }} - {{ occurrence.state }}</dd></div>
+            <div><dt>Bairro</dt><dd>{{ occurrence.neighborhoodName || 'Não informado' }}</dd></div>
+            <div><dt>Categoria</dt><dd>{{ categoryLabel(occurrence.category) }}</dd></div>
+            <div><dt>Gravidade</dt><dd>{{ importanceLabel(occurrence.importance) }}</dd></div>
+            <div><dt>Registrada em</dt><dd>{{ date(occurrence.createdAt) }}</dd></div>
+          </dl>
+          <a [routerLink]="['/ocorrencias', occurrence.id]" aria-label="Abrir ocorrência">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+          </a>
+        </article>
+      } @empty {
+        <div class="dashboard-empty">Nenhuma ocorrência encontrada para os filtros selecionados.</div>
+      }
+
+      @if ((occurrences()?.pagination?.totalPages ?? 0) > 1) {
+        <nav class="dashboard-pagination" aria-label="Paginação das ocorrências">
+          <button type="button" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" aria-label="Página anterior">
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+          </button>
+          <span>Página {{ currentPage }} de {{ occurrences()?.pagination?.totalPages }}</span>
+          <button type="button" [disabled]="currentPage === occurrences()?.pagination?.totalPages" (click)="goToPage(currentPage + 1)" aria-label="Próxima página">
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </button>
+        </nav>
+      }
+    </section>
+  }
+</app-social-shell>

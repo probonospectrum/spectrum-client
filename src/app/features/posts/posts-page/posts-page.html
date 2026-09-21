@@ -23,14 +23,14 @@
 
     <div class="post-composer__body">
       <div class="post-composer__field">
-        <span>O que você está pensando?</span>
+        <span>Registre um problema na sua cidade</span>
 
         <button
           type="button"
           class="post-composer__publish"
           (click)="$event.stopPropagation(); socialShell.openCreatePost()"
         >
-          Publicar
+          Publicar ocorrência
         </button>
       </div>
 
@@ -73,9 +73,9 @@
       />
     } @empty {
       <section class="posts-empty">
-        <h2>Nenhuma publicacao por aqui</h2>
-        <p>Crie a primeira publicacao para movimentar sua comunidade.</p>
-        <button type="button" (click)="socialShell.openCreatePost()">Criar publicacao</button>
+        <h2>Nenhuma ocorrência por aqui</h2>
+        <p>Registre a primeira ocorrência da sua comunidade.</p>
+        <button type="button" (click)="socialShell.openCreatePost()">Criar ocorrência</button>
       </section>
     }
   }

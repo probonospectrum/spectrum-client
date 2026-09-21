@@ -1,5 +1,126 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map, of, tap } from 'rxjs';
+import { API_BASE_URL } from '../../constants/api-routes';
 import { LoggedUser } from '../user/user.service';
+
+export type OccurrenceStatus =
+  | 'ABERTA'
+  | 'ENCAMINHADA'
+  | 'EM_ANALISE'
+  | 'RESOLUCAO_INFORMADA'
+  | 'RESOLVIDA'
+  | 'CONTESTADA'
+  | 'REABERTA'
+  | 'SEM_ORGAO_IDENTIFICADO';
+
+export type OccurrenceImportance = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
+
+export type OccurrenceCategory =
+  | 'INFRAESTRUTURA'
+  | 'ILUMINACAO_PUBLICA'
+  | 'TRANSITO'
+  | 'LIMPEZA_URBANA'
+  | 'SEGURANCA'
+  | 'MEIO_AMBIENTE'
+  | 'ACESSIBILIDADE'
+  | 'OUTROS';
+
+export type OccurrenceActorType = 'USER' | 'COMMUNITY' | 'RESPONSIBLE_AGENCY' | 'MODERATOR' | 'SYSTEM';
+
+export type OccurrenceEventType =
+  | 'OCORRENCIA_CRIADA'
+  | 'OCCURRENCE_UPDATED'
+  | 'COMMENT_ADDED'
+  | 'COMMENT_EDITED'
+  | 'COMMENT_REMOVED'
+  | 'EVIDENCIA_ADICIONADA'
+  | 'OCORRENCIA_CONFIRMADA'
+  | 'ORGAO_RESPONSAVEL_IDENTIFICADO'
+  | 'AGENCY_NOT_IDENTIFIED'
+  | 'OCORRENCIA_ENCAMINHADA'
+  | 'ENCAMINHAMENTO_FALHOU'
+  | 'FORWARDING_RESPONSE_REGISTERED'
+  | 'PROTOCOL_REGISTERED'
+  | 'ANALISE_INICIADA'
+  | 'RESOLUCAO_INFORMADA'
+  | 'OCORRENCIA_RESOLVIDA'
+  | 'RESOLUCAO_CONTESTADA'
+  | 'OCORRENCIA_REABERTA'
+  | 'MODERATION_APPLIED';
+
+export interface OccurrenceEvidence {
+  id: string;
+  type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'TEXT' | 'LINK' | 'OTHER';
+  url?: string;
+  description?: string;
+  addedBy?: string;
+  actorType?: OccurrenceActorType;
+  addedAt: string;
+  sourceInteractionId?: string;
+}
+
+export interface OccurrenceLocation {
+  label: string;
+  city?: string;
+  state?: string;
+  stateCode?: string;
+  stateName?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  cityId?: string;
+  cityName?: string;
+  neighborhoodId?: string;
+  neighborhoodName?: string;
+}
+
+export interface OccurrenceAgency {
+  id?: string;
+  name: string;
+  hasIntegration?: boolean;
+  email?: string;
+  phone?: string;
+  website?: string;
+}
+
+export interface OccurrenceHistoryEvent {
+  id: string;
+  occurrenceId: string;
+  eventType: OccurrenceEventType;
+  actorId?: string;
+  actorName?: string;
+  actorType: OccurrenceActorType;
+  actorOrigin?: string;
+  occurredAt: string;
+  createdAt?: string;
+  description?: string;
+  previousStatus?: OccurrenceStatus;
+  newStatus?: OccurrenceStatus;
+  metadata?: Record<string, unknown>;
+  evidenceIds?: string[];
+}
+
+export type OccurrenceForwardingChannel =
+  | 'INTEGRATION'
+  | 'EMAIL'
+  | 'PHONE'
+  | 'WEBSITE'
+  | 'IN_PERSON'
+  | 'OTHER';
+
+export interface OccurrenceForwarding {
+  id: string;
+  agency?: OccurrenceAgency;
+  channel: OccurrenceForwardingChannel;
+  sentAt: string;
+  sentContent?: string;
+  protocol?: string;
+  responseReceived?: string;
+  responsibleUserId?: string;
+  success: boolean;
+  failureReason?: string;
+}
 
 export interface SpectrumPost {
   id: string;
@@ -23,6 +144,15 @@ export interface SpectrumPost {
   tags: string[];
   originalPostId?: string;
   updatedAt?: string;
+  status: OccurrenceStatus;
+  importance: OccurrenceImportance;
+  category?: OccurrenceCategory;
+  location?: OccurrenceLocation;
+  responsibleAgency?: OccurrenceAgency | null;
+  evidences: OccurrenceEvidence[];
+  forwardingHistory: OccurrenceForwarding[];
+  confirmedByIds: string[];
+  history: OccurrenceHistoryEvent[];
 }
 
 export interface SpectrumComment {
@@ -50,6 +180,56 @@ export interface CreatePostPayload {
   authorCity: string;
   mediaType: SpectrumPost['mediaType'];
   tags: string[];
+  category?: OccurrenceCategory;
+  importance?: OccurrenceImportance;
+  location?: OccurrenceLocation;
+}
+
+export interface CreateOccurrenceEvidencePayload {
+  type: OccurrenceEvidence['type'];
+  url: string;
+  description?: string;
+}
+
+export interface CreateOccurrencePayload {
+  text: string;
+  title: string;
+  description: string;
+  category: OccurrenceCategory;
+  importance: OccurrenceImportance;
+  location: OccurrenceLocation;
+  evidences: CreateOccurrenceEvidencePayload[];
+  createdBy: string;
+  cityId: string;
+}
+
+export interface UploadedEvidenceResponse {
+  url: string;
+  type: 'IMAGE' | 'VIDEO';
+  fileName: string;
+  mimeType: string;
+  size: number;
+}
+
+interface OccurrenceApiResponse {
+  _id: string;
+  text: string;
+  title?: string;
+  description?: string;
+  category: OccurrenceCategory;
+  importance: OccurrenceImportance;
+  status: OccurrenceStatus;
+  location: OccurrenceLocation;
+  responsibleAgency?: OccurrenceAgency | null;
+  evidences: OccurrenceEvidence[];
+  forwardingHistory?: OccurrenceForwarding[];
+  confirmedByIds?: string[];
+  history: OccurrenceHistoryEvent[];
+  createdBy: string;
+  originalPostId?: string;
+  createdAt: string;
+  updatedAt: string;
+  likeCount?: number;
 }
 
 export interface RepostRecord {
@@ -84,10 +264,313 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${API_BASE_URL}/post`;
   private readonly storageKey = 'spectrum-mock-posts';
   private readonly repostStorageKey = 'spectrum-reposts';
   private readonly postInteractionStorageKey = 'spectrum-post-interactions';
   private readonly commentInteractionStorageKey = 'spectrum-comment-interactions';
+
+  createOccurrence(
+    payload: CreateOccurrencePayload,
+    user: LoggedUser,
+  ): Observable<SpectrumPost> {
+    return this.http.post<OccurrenceApiResponse>(this.apiUrl, payload).pipe(
+      map((occurrence) => this.toSpectrumPost(occurrence, user)),
+      tap((occurrence) => {
+        const remainingPosts = this.getUserPosts().filter((post) => post.id !== occurrence.id);
+        localStorage.setItem(this.storageKey, JSON.stringify([occurrence, ...remainingPosts]));
+      }),
+    );
+  }
+
+  uploadEvidence(file: File): Observable<UploadedEvidenceResponse> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<UploadedEvidenceResponse>(`${this.apiUrl}/evidence/upload`, formData);
+  }
+
+  getOccurrence(id: string, user: LoggedUser | null): Observable<SpectrumPost> {
+    if (!this.isApiId(id)) {
+      throw new Error('O histórico está disponível apenas para ocorrências salvas no servidor.');
+    }
+
+    return this.http
+      .get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  getOccurrenceHistory(id: string): Observable<OccurrenceHistoryEvent[]> {
+    if (!this.isApiId(id)) {
+      throw new Error('O histórico está disponível apenas para ocorrências salvas no servidor.');
+    }
+    return this.http.get<OccurrenceHistoryEvent[]>(`${this.apiUrl}/${id}/history`, {
+      params: { _: Date.now().toString() },
+    });
+  }
+
+  confirmOccurrence(post: SpectrumPost, user: LoggedUser | null): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para confirmar a ocorrência.');
+    const payload = { actorId: userId, actorType: 'USER' as OccurrenceActorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          eventType: 'OCORRENCIA_CONFIRMADA',
+          metadata: { note: 'Também identifiquei este problema.' },
+          confirmedById: userId,
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, payload)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  addOccurrenceEvidence(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    evidence: Pick<OccurrenceEvidence, 'type' | 'url' | 'description'>,
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para adicionar evidências.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY'
+      ? 'RESPONSIBLE_AGENCY'
+      : user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
+    const payload = { ...evidence, actorId: userId, actorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(this.addEvidence(post, user, evidence));
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, payload)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  identifyResponsibleAgency(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    agency: OccurrenceAgency,
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para associar o órgão.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
+    const payload = { agency, actorId: userId, actorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO',
+          metadata: { agency },
+          responsibleAgency: agency,
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, payload)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  forwardOccurrence(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    payload: {
+      agency: OccurrenceAgency;
+      channel: OccurrenceForwardingChannel;
+      sentContent: string;
+      protocol?: string;
+      deliveryConfirmed?: boolean;
+    },
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para encaminhar.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
+    const body = { ...payload, actorId: userId, actorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          status: 'ENCAMINHADA',
+          eventType: 'OCORRENCIA_ENCAMINHADA',
+          metadata: { forwarding: body },
+          responsibleAgency: payload.agency,
+          forwarding: {
+            id: this.createLocalId('forwarding'),
+            agency: payload.agency,
+            channel: payload.channel,
+            sentAt: new Date().toISOString(),
+            sentContent: payload.sentContent,
+            protocol: payload.protocol,
+            responsibleUserId: userId,
+            success: true,
+          },
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  registerForwardingFailure(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    payload: {
+      agency?: OccurrenceAgency;
+      channel: OccurrenceForwardingChannel;
+      sentContent?: string;
+      failureReason: string;
+    },
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para registrar a tentativa.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
+    const body = { ...payload, actorId: userId, actorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          eventType: 'ENCAMINHAMENTO_FALHOU',
+          metadata: { failureReason: payload.failureReason },
+          forwarding: {
+            id: this.createLocalId('forwarding'),
+            agency: payload.agency ?? post.responsibleAgency ?? undefined,
+            channel: payload.channel,
+            sentAt: new Date().toISOString(),
+            sentContent: payload.sentContent,
+            responsibleUserId: userId,
+            success: false,
+            failureReason: payload.failureReason,
+          },
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  startOccurrenceAnalysis(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    note: string,
+    reference?: string,
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para iniciar análise.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY' ? 'RESPONSIBLE_AGENCY' : 'MODERATOR';
+    const body = { note, reference, actorId: userId, actorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          status: 'EM_ANALISE',
+          eventType: 'ANALISE_INICIADA',
+          actorType,
+          metadata: { note },
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  informOccurrenceResolution(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    statement: string,
+    evidenceIds: string[] = [],
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY' ? 'RESPONSIBLE_AGENCY' : 'USER';
+    const body = {
+      statement,
+      evidenceIds,
+      actorId: userId,
+      actorType,
+    };
+
+    if (!this.isApiId(post.id)) {
+      return of(this.informResolution(post, user, statement));
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  resolveOccurrence(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    note: string,
+    evidenceIds: string[] = [],
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para resolver.');
+    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY' ? 'RESPONSIBLE_AGENCY' : 'MODERATOR';
+    const body = {
+      note,
+      evidenceIds,
+      actorId: userId,
+      actorType,
+    };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          status: 'RESOLVIDA',
+          eventType: 'OCORRENCIA_RESOLVIDA',
+          actorType,
+          metadata: { note, source: 'authorized_review' },
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  contestOccurrenceResolution(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    reason: string,
+    evidenceIds: string[] = [],
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para contestar.');
+    const body = {
+      reason,
+      evidenceIds,
+      actorId: userId,
+      actorType: 'USER' as OccurrenceActorType,
+    };
+
+    if (!this.isApiId(post.id)) {
+      return of(this.contestResolution(post, user, reason));
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
+
+  reopenOccurrenceFlow(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    reason: string,
+  ): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para reabrir.');
+    const body = { reason, actorId: userId, actorType: 'USER' as OccurrenceActorType };
+
+    if (!this.isApiId(post.id)) {
+      return of(this.reopenOccurrence(post, user, reason));
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, body)
+      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+  }
 
   readonly suggestions: SuggestedProfile[] = [
     { name: 'Ana Martins', nickname: 'ana.martins', initial: 'A', verified: false },
@@ -303,7 +786,34 @@ export class PostService {
       reposted: false,
       saved: false,
       tags: payload.tags,
+      status: 'ABERTA',
+      category: payload.category ?? 'OUTROS',
+      importance: payload.importance ?? 'MEDIA',
+      location: payload.location ?? { label: payload.authorCity.trim() },
+      evidences: this.createInitialEvidence(payload, user, now),
+      forwardingHistory: [],
+      confirmedByIds: [],
+      history: [
+        this.createHistoryEvent({
+          occurrenceId: `local-${now.getTime()}`,
+          eventType: 'OCORRENCIA_CRIADA',
+          actorId: user?._id,
+          actorType: 'USER',
+          occurredAt: now.toISOString(),
+          newStatus: 'ABERTA',
+          metadata: {
+            title: payload.title.trim(),
+            location: payload.authorCity.trim(),
+            source: 'community_claim',
+          },
+        }),
+      ],
     };
+
+    post.history = post.history.map((event) => ({
+      ...event,
+      occurrenceId: post.id,
+    }));
 
     localStorage.setItem(this.storageKey, JSON.stringify([post, ...this.getUserPosts()]));
     return post;
@@ -394,7 +904,33 @@ export class PostService {
       content: payload.content.trim(),
       mediaType: payload.mediaType,
       tags: payload.tags,
+      category: payload.category ?? posts[index].category,
+      importance: payload.importance ?? posts[index].importance,
+      location: payload.location ?? posts[index].location,
       updatedAt: new Date().toISOString(),
+      history: [
+        ...(posts[index].history ?? []),
+        this.createHistoryEvent({
+          occurrenceId: posts[index].id,
+          eventType: 'OCCURRENCE_UPDATED',
+          actorId: user?._id,
+          actorType: 'USER',
+          previousStatus: posts[index].status,
+          newStatus: posts[index].status,
+          metadata: {
+            changedFields: [
+              'title',
+              'content',
+              'authorCity',
+              'mediaType',
+              'tags',
+              'category',
+              'importance',
+              'location',
+            ],
+          },
+        }),
+      ],
     };
 
     posts[index] = this.withoutComputedPostState(updatedPost);
@@ -456,6 +992,58 @@ export class PostService {
     };
   }
 
+  addEvidence(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    evidence: Pick<OccurrenceEvidence, 'type' | 'url' | 'description'>,
+  ): SpectrumPost {
+    return this.updateLocalOccurrence(post.id, user, {
+      eventType: 'EVIDENCIA_ADICIONADA',
+      metadata: {
+        evidence,
+      },
+      evidence: {
+        ...evidence,
+        id: this.createLocalId('evidence'),
+        addedBy: this.getUserKey(user) || undefined,
+        actorType: 'USER',
+        addedAt: new Date().toISOString(),
+      },
+    });
+  }
+
+  informResolution(post: SpectrumPost, user: LoggedUser | null, statement: string): SpectrumPost {
+    return this.updateLocalOccurrence(post.id, user, {
+      status: 'RESOLUCAO_INFORMADA',
+      eventType: 'RESOLUCAO_INFORMADA',
+      metadata: {
+        statement,
+        source: 'community_claim',
+      },
+    });
+  }
+
+  contestResolution(post: SpectrumPost, user: LoggedUser | null, reason: string): SpectrumPost {
+    return this.updateLocalOccurrence(post.id, user, {
+      status: 'CONTESTADA',
+      eventType: 'RESOLUCAO_CONTESTADA',
+      metadata: {
+        reason,
+      },
+    });
+  }
+
+  reopenOccurrence(post: SpectrumPost, user: LoggedUser | null, reason: string): SpectrumPost {
+    return this.updateLocalOccurrence(post.id, user, {
+      status: 'REABERTA',
+      eventType: 'OCORRENCIA_REABERTA',
+      actorType: 'MODERATOR',
+      metadata: {
+        reason,
+      },
+    });
+  }
+
   canModifyPost(post: SpectrumPost, user: LoggedUser | null, now = Date.now()): boolean {
     const createdAt = new Date(post.createdAt || post.publishedAt).getTime();
 
@@ -472,6 +1060,109 @@ export class PostService {
     }
 
     return post.createdBy === user._id || post.authorNickname === user.nickname;
+  }
+
+  getStatusLabel(status: OccurrenceStatus): string {
+    const labels: Record<OccurrenceStatus, string> = {
+      ABERTA: 'Aberta',
+      ENCAMINHADA: 'Encaminhada',
+      EM_ANALISE: 'Em análise',
+      RESOLUCAO_INFORMADA: 'Resolução informada',
+      RESOLVIDA: 'Resolvida',
+      CONTESTADA: 'Contestada',
+      REABERTA: 'Reaberta',
+      SEM_ORGAO_IDENTIFICADO: 'Sem órgão identificado',
+    };
+
+    return labels[status];
+  }
+
+  getImportanceLabel(importance: OccurrenceImportance): string {
+    const labels: Record<OccurrenceImportance, string> = {
+      BAIXA: 'Baixa',
+      MEDIA: 'Média',
+      ALTA: 'Alta',
+      CRITICA: 'Crítica',
+    };
+
+    return labels[importance];
+  }
+
+  getCategoryLabel(category?: OccurrenceCategory): string {
+    const labels: Record<OccurrenceCategory, string> = {
+      INFRAESTRUTURA: 'Infraestrutura',
+      ILUMINACAO_PUBLICA: 'Iluminação pública',
+      TRANSITO: 'Trânsito',
+      LIMPEZA_URBANA: 'Limpeza urbana',
+      SEGURANCA: 'Segurança',
+      MEIO_AMBIENTE: 'Meio ambiente',
+      ACESSIBILIDADE: 'Acessibilidade',
+      OUTROS: 'Outros',
+    };
+
+    return category ? labels[category] : labels.OUTROS;
+  }
+
+  private updateLocalOccurrence(
+    id: string,
+    user: LoggedUser | null,
+    update: {
+      status?: OccurrenceStatus;
+      eventType: OccurrenceEventType;
+      actorType?: OccurrenceActorType;
+      metadata?: Record<string, unknown>;
+      evidence?: OccurrenceEvidence;
+      confirmedById?: string;
+      responsibleAgency?: OccurrenceAgency | null;
+      forwarding?: OccurrenceForwarding;
+    },
+  ): SpectrumPost {
+    const posts = this.getUserPosts();
+    const index = posts.findIndex((item) => item.id === id);
+
+    if (index < 0) {
+      throw new Error('Somente ocorrencias locais podem ser atualizadas neste modo.');
+    }
+
+    const currentPost = this.normalizePost(posts[index]);
+    const nextStatus = update.status ?? currentPost.status;
+    const confirmedByIds = update.confirmedById
+      ? [...new Set([...currentPost.confirmedByIds, update.confirmedById])]
+      : currentPost.confirmedByIds;
+
+    const updatedPost: SpectrumPost = {
+      ...currentPost,
+      status: nextStatus,
+      responsibleAgency:
+        update.responsibleAgency !== undefined
+          ? update.responsibleAgency
+          : currentPost.responsibleAgency,
+      evidences: update.evidence
+        ? [...currentPost.evidences, update.evidence]
+        : currentPost.evidences,
+      forwardingHistory: update.forwarding
+        ? [...currentPost.forwardingHistory, update.forwarding]
+        : currentPost.forwardingHistory,
+      confirmedByIds,
+      history: [
+        ...currentPost.history,
+        this.createHistoryEvent({
+          occurrenceId: currentPost.id,
+          eventType: update.eventType,
+          actorId: this.getUserKey(user) || undefined,
+          actorType: update.actorType ?? 'USER',
+          previousStatus: currentPost.status,
+          newStatus: nextStatus,
+          metadata: update.metadata,
+          evidenceIds: update.evidence ? [update.evidence.id] : undefined,
+        }),
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+
+    posts[index] = this.withoutComputedPostState(updatedPost);
+    localStorage.setItem(this.storageKey, JSON.stringify(posts));
+    return this.withPostState(updatedPost, user);
   }
 
   private getUserPosts(): SpectrumPost[] {
@@ -580,6 +1271,18 @@ export class PostService {
         reposted: false,
         saved: false,
         tags: ['iluminação', 'segurança', 'infraestrutura'],
+        status: 'ENCAMINHADA',
+        category: 'ILUMINACAO_PUBLICA',
+        importance: 'ALTA',
+        responsibleAgency: {
+          name: 'Secretaria Municipal de Iluminacao Publica',
+          hasIntegration: false,
+          email: 'atendimento@prefeitura.example',
+        },
+        evidences: [],
+        forwardingHistory: [],
+        confirmedByIds: [],
+        history: [],
       },
       {
         id: 'mock-lucas-1',
@@ -601,6 +1304,13 @@ export class PostService {
         reposted: false,
         saved: false,
         tags: ['acessibilidade', 'calçada', 'mobilidade'],
+        status: 'ABERTA',
+        category: 'ACESSIBILIDADE',
+        importance: 'ALTA',
+        evidences: [],
+        forwardingHistory: [],
+        confirmedByIds: [],
+        history: [],
       },
       {
         id: 'mock-marina-1',
@@ -622,6 +1332,17 @@ export class PostService {
         reposted: false,
         saved: true,
         tags: ['iluminação', 'resultado', 'melhoria'],
+        status: 'RESOLUCAO_INFORMADA',
+        category: 'ILUMINACAO_PUBLICA',
+        importance: 'MEDIA',
+        responsibleAgency: {
+          name: 'Departamento de Iluminacao Publica',
+          hasIntegration: true,
+        },
+        evidences: [],
+        forwardingHistory: [],
+        confirmedByIds: [],
+        history: [],
       },
       {
         id: 'mock-gabriel-1',
@@ -643,6 +1364,17 @@ export class PostService {
         reposted: false,
         saved: false,
         tags: ['alagamento', 'drenagem', 'infraestrutura'],
+        status: 'REABERTA',
+        category: 'INFRAESTRUTURA',
+        importance: 'CRITICA',
+        responsibleAgency: {
+          name: 'Secretaria de Obras e Drenagem',
+          hasIntegration: false,
+        },
+        evidences: [],
+        forwardingHistory: [],
+        confirmedByIds: [],
+        history: [],
       },
       {
         id: 'mock-beatriz-1',
@@ -664,6 +1396,13 @@ export class PostService {
         reposted: false,
         saved: false,
         tags: ['trânsito', 'pedestres', 'sinalização'],
+        status: 'SEM_ORGAO_IDENTIFICADO',
+        category: 'TRANSITO',
+        importance: 'MEDIA',
+        evidences: [],
+        forwardingHistory: [],
+        confirmedByIds: [],
+        history: [],
       },
     ];
   }
@@ -695,6 +1434,7 @@ export class PostService {
   private normalizePost(post: SpectrumPost): SpectrumPost {
     const postWithLegacyShares = post as SpectrumPost & { shares?: number };
     const createdAt = post.createdAt || post.publishedAt;
+    const normalizedStatus = post.status ?? 'ABERTA';
 
     return {
       ...post,
@@ -702,6 +1442,31 @@ export class PostService {
       liked: post.liked ?? false,
       reposts: post.reposts ?? postWithLegacyShares.shares ?? 0,
       reposted: post.reposted ?? false,
+      status: normalizedStatus,
+      category: post.category ?? 'OUTROS',
+      importance: post.importance ?? 'MEDIA',
+      location: post.location ?? { label: post.authorCity },
+      evidences: post.evidences ?? [],
+      forwardingHistory: post.forwardingHistory ?? [],
+      confirmedByIds: post.confirmedByIds ?? [],
+      history:
+        post.history?.length
+          ? post.history
+          : [
+              this.createHistoryEvent({
+                occurrenceId: post.id,
+                eventType: 'OCORRENCIA_CRIADA',
+                actorId: post.createdBy,
+                actorType: 'USER',
+                occurredAt: createdAt,
+                newStatus: normalizedStatus,
+                metadata: {
+                  title: post.title,
+                  location: post.authorCity,
+                  source: 'legacy_post',
+                },
+              }),
+            ],
     };
   }
 
@@ -792,6 +1557,95 @@ export class PostService {
     const record: CommentInteractionRecord = { userId, commentId };
     records.push(record);
     return record;
+  }
+
+  private createInitialEvidence(
+    payload: CreatePostPayload,
+    user: LoggedUser | null,
+    now: Date,
+  ): OccurrenceEvidence[] {
+    if (payload.mediaType === 'text') {
+      return [];
+    }
+
+    return [
+      {
+        id: this.createLocalId('evidence'),
+        type: payload.mediaType === 'video' ? 'VIDEO' : 'IMAGE',
+        description: payload.mediaType === 'video' ? 'Video anexado' : 'Imagem anexada',
+        addedBy: this.getUserKey(user) || undefined,
+        actorType: 'USER',
+        addedAt: now.toISOString(),
+      },
+    ];
+  }
+
+  private toSpectrumPost(
+    occurrence: OccurrenceApiResponse,
+    user: LoggedUser | null,
+  ): SpectrumPost {
+    const createdAt = occurrence.createdAt || new Date().toISOString();
+    const primaryEvidence = occurrence.evidences?.[0];
+    const mediaType: SpectrumPost['mediaType'] =
+      primaryEvidence?.type === 'VIDEO'
+        ? 'video'
+        : primaryEvidence?.type === 'IMAGE'
+          ? 'image'
+          : 'text';
+    const authorName = user?.name || 'Usuario Spectrum';
+
+    return {
+      id: occurrence._id,
+      createdAt,
+      createdBy: occurrence.createdBy,
+      originalPostId: occurrence.originalPostId,
+      authorName,
+      authorNickname: user?.nickname || 'spectrum',
+      authorInitial: authorName.charAt(0).toUpperCase(),
+      authorCity: occurrence.location.label,
+      title: occurrence.title || occurrence.text,
+      content: occurrence.description || occurrence.text,
+      mediaType,
+      publishedAt: createdAt,
+      publishedAtLabel: this.formatPublishedAt(new Date(createdAt)),
+      likes: occurrence.likeCount ?? 0,
+      liked: false,
+      comments: 0,
+      reposts: 0,
+      reposted: false,
+      saved: false,
+      tags: [],
+      status: occurrence.status,
+      category: occurrence.category,
+      importance: occurrence.importance,
+      location: occurrence.location,
+      responsibleAgency: occurrence.responsibleAgency,
+      evidences: occurrence.evidences ?? [],
+      forwardingHistory: occurrence.forwardingHistory ?? [],
+      confirmedByIds: occurrence.confirmedByIds ?? [],
+      history: occurrence.history ?? [],
+      updatedAt: occurrence.updatedAt,
+    };
+  }
+
+  private createHistoryEvent(
+    event: Omit<OccurrenceHistoryEvent, 'id' | 'occurredAt'> & {
+      occurredAt?: string;
+    },
+  ): OccurrenceHistoryEvent {
+    return {
+      ...event,
+      id: this.createLocalId('event'),
+      occurredAt: event.occurredAt ?? new Date().toISOString(),
+    };
+  }
+
+  private createLocalId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  private isApiId(id: string): boolean {
+    return /^[a-f\d]{24}$/i.test(id);
   }
 
   private requireUserKey(user: LoggedUser | null, message: string): string {

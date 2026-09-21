@@ -33,6 +33,8 @@ export interface LoggedUser {
   avatarUrl?: string;
   cityUser?: string;
   following?: string[];
+  occurrenceRole?: 'USER' | 'RESPONSIBLE_AGENCY' | 'MODERATOR';
+  occurrenceAgencyId?: string;
 }
 
 export interface LoginResponse extends MessageResponse {

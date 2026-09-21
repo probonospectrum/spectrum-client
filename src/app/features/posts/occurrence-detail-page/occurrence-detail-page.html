@@ -1,0 +1,312 @@
+<main class="occurrence-detail">
+  <a class="occurrence-detail__back" routerLink="/publicacoes">
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+    Voltar
+  </a>
+
+  @if (isLoading()) {
+    <section class="occurrence-detail__loading">
+      <app-loading-indicator label="Carregando ocorrência" />
+    </section>
+  } @else if (occurrence) {
+    <article class="occurrence-detail__hero">
+      <div>
+        <span class="occurrence-detail__status" [attr.data-status]="occurrence.status">
+          {{ formatStatus() }}
+        </span>
+        <h1>{{ occurrence.title }}</h1>
+        <p>{{ occurrence.content }}</p>
+      </div>
+
+      <aside class="occurrence-detail__summary" aria-label="Resumo da ocorrência">
+        <div><span>Categoria</span><strong>{{ formatCategory() }}</strong></div>
+        <div><span>Gravidade</span><strong>{{ formatImportance() }}</strong></div>
+        <div><span>Autor</span><strong>{{ occurrence.authorName }}</strong></div>
+        <div><span>Criada em</span><strong>{{ formatDate(occurrence.createdAt) }}</strong></div>
+      </aside>
+    </article>
+
+    @if (successMessage) {
+      <p class="occurrence-detail__notice occurrence-detail__notice--success">{{ successMessage }}</p>
+    }
+    @if (errorMessage) {
+      <p class="occurrence-detail__notice occurrence-detail__notice--error">{{ errorMessage }}</p>
+    }
+
+    <section class="occurrence-detail__grid">
+      <section class="occurrence-detail__section">
+        <h2>Localização</h2>
+        <dl class="occurrence-detail__facts">
+          <div><dt>Cidade</dt><dd>{{ occurrence.location?.city || occurrence.authorCity }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ occurrence.location?.state || 'Não informado' }}</dd></div>
+          <div><dt>Endereço/local</dt><dd>{{ occurrence.location?.address || occurrence.location?.label }}</dd></div>
+          @if (occurrence.location?.latitude && occurrence.location?.longitude) {
+            <div><dt>Coordenadas</dt><dd>{{ occurrence.location?.latitude }}, {{ occurrence.location?.longitude }}</dd></div>
+          }
+        </dl>
+      </section>
+
+      <section class="occurrence-detail__section">
+        <h2>Órgão Responsável</h2>
+        <p class="occurrence-detail__agency">{{ responsibleAgencyLabel }}</p>
+        @if (occurrence.responsibleAgency?.email) {
+          <small>{{ occurrence.responsibleAgency?.email }}</small>
+        }
+      </section>
+    </section>
+
+    <section class="occurrence-detail__section">
+      <div class="occurrence-detail__section-head">
+        <h2>Evidências</h2>
+        <button type="button" (click)="openPanel('evidence')">
+          <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+          Adicionar evidência
+        </button>
+      </div>
+
+      @if (occurrence.evidences.length) {
+        <div class="occurrence-detail__evidence-list">
+          @for (evidence of occurrence.evidences; track evidence.id) {
+            <a class="occurrence-detail__evidence" [href]="evidence.url" target="_blank" rel="noreferrer">
+              <span class="material-symbols-outlined" aria-hidden="true">
+                {{ evidence.type === 'VIDEO' ? 'videocam' : evidence.type === 'IMAGE' ? 'image' : 'attach_file' }}
+              </span>
+              <strong>{{ evidence.description || evidence.type }}</strong>
+              <small>{{ formatDate(evidence.addedAt) }} · {{ evidence.actorType === 'RESPONSIBLE_AGENCY' ? 'Órgão responsável' : 'Comunidade' }}</small>
+            </a>
+          }
+        </div>
+      } @else {
+        <p class="occurrence-detail__empty">Nenhuma evidência anexada ainda.</p>
+      }
+    </section>
+
+    <section class="occurrence-detail__section">
+      <div class="occurrence-detail__section-head">
+        <h2>Ações Disponíveis</h2>
+        <span>{{ confirmationCount }} confirmações comunitárias</span>
+      </div>
+
+      <div class="occurrence-detail__actions">
+        <button type="button" [disabled]="userAlreadyConfirmed || isSubmitting()" (click)="confirmOccurrence()">
+          <span class="material-symbols-outlined" aria-hidden="true">verified</span>
+          {{ userAlreadyConfirmed ? 'Você já confirmou' : 'Também identifiquei este problema' }}
+        </button>
+        <button type="button" (click)="openPanel('agency')">
+          <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+          Associar órgão
+        </button>
+        @if (canForward) {
+          <button type="button" (click)="openPanel('forward')">
+            <span class="material-symbols-outlined" aria-hidden="true">send</span>
+            Encaminhar ocorrência
+          </button>
+          <button type="button" (click)="openPanel('forwardFailure')">
+            <span class="material-symbols-outlined" aria-hidden="true">error</span>
+            Registrar falha
+          </button>
+        }
+        @if (canInformResolution) {
+          <button type="button" (click)="openPanel('resolution')">
+            <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+            Informar resolução
+          </button>
+        }
+        @if (canStartAnalysis) {
+          <button type="button" [disabled]="isSubmitting()" (click)="openPanel('analysis')">
+            <span class="material-symbols-outlined" aria-hidden="true">manage_search</span>
+            Iniciar análise
+          </button>
+        }
+        @if (canResolve) {
+          <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
+            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+            Confirmar resolução
+          </button>
+        }
+        @if (canContest) {
+          <button type="button" class="occurrence-detail__danger" (click)="openPanel('contest')">
+            <span class="material-symbols-outlined" aria-hidden="true">report</span>
+            Contestar resolução
+          </button>
+        }
+        @if (canReopen) {
+          <button type="button" (click)="openPanel('reopen')">
+            <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+            Reabrir ocorrência
+          </button>
+        }
+      </div>
+
+      @if (actionPanel) {
+        <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
+          @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest') {
+            <label>
+              <span>Evidência</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" (change)="onEvidenceSelected($event)" />
+            </label>
+            <label>
+              <span>Descrição da evidência</span>
+              <input type="text" [(ngModel)]="evidenceDescription" name="evidenceDescription" />
+            </label>
+          }
+
+          @if (actionPanel === 'agency' || actionPanel === 'forward' || actionPanel === 'forwardFailure') {
+            <label>
+              <span>Identificador do órgão, se existir</span>
+              <input type="text" [(ngModel)]="agencyId" name="agencyId" />
+            </label>
+            <label>
+              <span>Órgão responsável</span>
+              <input type="text" [(ngModel)]="agencyName" name="agencyName" placeholder="Secretaria Municipal responsável" />
+            </label>
+            <label>
+              <span>Email/canal</span>
+              <input type="email" [(ngModel)]="agencyEmail" name="agencyEmail" placeholder="atendimento@prefeitura.gov.br" />
+            </label>
+          }
+
+          @if (actionPanel === 'forward' || actionPanel === 'forwardFailure') {
+            <label>
+              <span>Canal</span>
+              <select [(ngModel)]="forwardingChannel" name="forwardingChannel">
+                @if (user?.occurrenceRole === 'MODERATOR') {
+                  <option value="EMAIL">Email</option>
+                }
+                <option value="WEBSITE">Site</option>
+                <option value="PHONE">Telefone</option>
+                <option value="INTEGRATION">Integração</option>
+                <option value="OTHER">Outro</option>
+              </select>
+            </label>
+            <label>
+              <span>Conteúdo enviado</span>
+              <textarea [(ngModel)]="forwardingContent" name="forwardingContent"></textarea>
+            </label>
+          }
+
+          @if (actionPanel === 'forward') {
+            @if (forwardingChannel !== 'EMAIL') {
+              <label class="occurrence-detail__confirmation">
+                <input type="checkbox" [(ngModel)]="forwardingDeliveryConfirmed" name="forwardingDeliveryConfirmed" />
+                <span>O encaminhamento por este canal foi realizado</span>
+              </label>
+            }
+            <label>
+              <span>Protocolo, se existir</span>
+              <input type="text" [(ngModel)]="forwardingProtocol" name="forwardingProtocol" />
+            </label>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitForwarding()">Encaminhar</button>
+          }
+
+          @if (actionPanel === 'forwardFailure') {
+            <label>
+              <span>Motivo da falha</span>
+              <textarea [(ngModel)]="forwardingFailureReason" name="forwardingFailureReason"></textarea>
+            </label>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitForwardingFailure()">Registrar falha</button>
+          }
+
+          @if (actionPanel === 'agency') {
+            <button type="button" [disabled]="isSubmitting()" (click)="submitAgency()">Salvar órgão</button>
+          }
+
+          @if (actionPanel === 'evidence') {
+            <button type="button" [disabled]="isSubmitting()" (click)="submitEvidence()">Adicionar evidência</button>
+          }
+
+          @if (actionPanel === 'resolution') {
+            <label>
+              <span>Descrição da resolução</span>
+              <textarea [(ngModel)]="resolutionStatement" name="resolutionStatement" placeholder="A lâmpada do poste foi substituída."></textarea>
+            </label>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitResolution()">Informar resolução</button>
+          }
+
+          @if (actionPanel === 'analysis') {
+            @if (user?.occurrenceRole === 'MODERATOR') {
+              <label>
+                <span>Referência da resposta do órgão</span>
+                <input type="text" [(ngModel)]="analysisReference" name="analysisReference" />
+              </label>
+            }
+            <button type="button" [disabled]="isSubmitting()" (click)="submitAnalysis()">Registrar início da análise</button>
+          }
+
+          @if (actionPanel === 'resolve') {
+            <label>
+              <span>Verificação da resolução</span>
+              <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote"></textarea>
+            </label>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitResolve()">Confirmar resolução</button>
+          }
+
+          @if (actionPanel === 'contest') {
+            <label>
+              <span>Por que você está contestando?</span>
+              <textarea [(ngModel)]="contestReason" name="contestReason" placeholder="A prefeitura informou que o buraco foi consertado, mas ele continua aberto."></textarea>
+            </label>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitContest()">Contestar resolução</button>
+          }
+
+          @if (actionPanel === 'reopen') {
+            <label>
+              <span>Motivo da reabertura</span>
+              <textarea [(ngModel)]="reopenReason" name="reopenReason"></textarea>
+            </label>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitReopen()">Reabrir ocorrência</button>
+          }
+        </form>
+      }
+    </section>
+
+    <section class="occurrence-detail__section">
+      <h2>Encaminhamentos</h2>
+      @if (occurrence.forwardingHistory.length) {
+        <div class="occurrence-detail__forwarding-list">
+          @for (forwarding of occurrence.forwardingHistory; track forwarding.id) {
+            <div class="occurrence-detail__forwarding" [class.occurrence-detail__forwarding--failed]="!forwarding.success">
+              <strong>{{ forwarding.agency?.name || 'Órgão não informado' }}</strong>
+              <span>{{ forwarding.channel }} · {{ formatDate(forwarding.sentAt) }}</span>
+              @if (forwarding.protocol) {
+                <small>Protocolo: {{ forwarding.protocol }}</small>
+              }
+              @if (!forwarding.success) {
+                <small>Falha registrada. O encaminhamento pode ser tentado novamente.</small>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="occurrence-detail__empty">A ocorrência ainda não foi encaminhada.</p>
+      }
+    </section>
+
+    <section class="occurrence-detail__section">
+      <h2>Histórico da ocorrência</h2>
+      <ol class="occurrence-detail__timeline">
+        @for (event of timeline; track event.id) {
+          <li>
+            <time>{{ formatDate(event.createdAt || event.occurredAt) }}</time>
+            <strong>{{ formatEvent(event.eventType) }}</strong>
+            <small>{{ eventOrigin(event) }}</small>
+            <p>{{ eventDescription(event) }}</p>
+            @if (event.previousStatus || event.newStatus) {
+              <small>{{ event.previousStatus || 'Início' }} → {{ event.newStatus || event.previousStatus }}</small>
+            }
+          </li>
+        }
+      </ol>
+      @if (!timeline.length) {
+        <p class="occurrence-detail__empty">Nenhum evento registrado para esta ocorrência.</p>
+      }
+    </section>
+
+    <section class="occurrence-detail__section">
+      <h2>Discussão/Comentários</h2>
+      <app-comment-section [postId]="occurrence.id" [currentUser]="user" />
+    </section>
+  } @else {
+    <p class="occurrence-detail__notice occurrence-detail__notice--error">{{ errorMessage }}</p>
+  }
+</main>

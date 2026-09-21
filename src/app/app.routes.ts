@@ -90,6 +90,22 @@ export const routes: Routes = [
   },
 
   {
+    path: 'ocorrencias/:id',
+    loadComponent: () =>
+      import('./features/posts/occurrence-detail-page/occurrence-detail-page')
+        .then((m) => m.OccurrenceDetailPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'dashboard/cidades',
+    loadComponent: () =>
+      import('./features/city-dashboard/city-dashboard-page/city-dashboard-page')
+        .then((m) => m.CityDashboardPage),
+  },
+
+  {
     path: 'perfil',
     loadComponent: () =>
       import('./features/profile/profile-page/profile-page')

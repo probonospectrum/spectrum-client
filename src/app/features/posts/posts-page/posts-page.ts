@@ -242,8 +242,8 @@ export class PostsPage implements OnInit {
 
     this.feedAlert.set({
       type: 'success',
-      title: 'Publicacao criada',
-      message: 'Sua publicacao ja aparece no feed.',
+      title: 'Ocorrência criada',
+      message: 'Sua ocorrência já aparece no feed com o status Aberta.',
     });
   }
 

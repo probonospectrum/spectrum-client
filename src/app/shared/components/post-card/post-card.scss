@@ -163,6 +163,95 @@
   font: 450 12px/1.2 var(--spectrum-font);
 }
 
+.post-card__occurrence {
+  display: grid;
+  gap: 8px;
+}
+
+.post-card__status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.post-card__status,
+.post-card__importance {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--spectrum-radius-xs);
+  padding: 0 9px;
+  font: 800 12px/1 var(--spectrum-font);
+}
+
+.post-card__status {
+  background: rgba(41, 117, 76, 0.1);
+  color: #21623f;
+}
+
+.post-card__status[data-status="ENCAMINHADA"],
+.post-card__status[data-status="EM_ANALISE"] {
+  background: rgba(47, 111, 149, 0.12);
+  color: var(--spectrum-primary-900);
+}
+
+.post-card__status[data-status="RESOLUCAO_INFORMADA"],
+.post-card__status[data-status="RESOLVIDA"] {
+  background: rgba(43, 128, 99, 0.14);
+  color: #1e664b;
+}
+
+.post-card__status[data-status="CONTESTADA"],
+.post-card__status[data-status="REABERTA"] {
+  background: rgba(190, 84, 55, 0.13);
+  color: #99402a;
+}
+
+.post-card__status[data-status="SEM_ORGAO_IDENTIFICADO"] {
+  background: rgba(92, 101, 112, 0.13);
+  color: #4c5661;
+}
+
+.post-card__importance {
+  border: 1px solid var(--spectrum-border);
+  color: var(--spectrum-text-muted);
+}
+
+.post-card__title {
+  margin: 0;
+  color: var(--spectrum-text);
+  font: 850 17px/1.3 var(--spectrum-font);
+}
+
+.post-card__title-button {
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.post-card__title-button:hover .post-card__title {
+  color: var(--spectrum-primary-800);
+  text-decoration: underline;
+}
+
+.post-card__agency {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--spectrum-text-secondary);
+  font: 700 13px/1.3 var(--spectrum-font);
+}
+
+.post-card__agency .material-symbols-outlined {
+  color: var(--spectrum-text-muted);
+  font-size: 18px;
+}
+
 .post-card__copy {
   margin: 0;
   color: var(--spectrum-text-secondary);
@@ -213,6 +302,48 @@
   background: var(--spectrum-accent-soft);
   color: var(--spectrum-accent);
   font: 800 12px/1 var(--spectrum-font);
+}
+
+.post-card__history {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--spectrum-border);
+  padding-top: 12px;
+}
+
+.post-card__history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--spectrum-text);
+  font: 850 13px/1.2 var(--spectrum-font);
+}
+
+.post-card__history-head small {
+  color: var(--spectrum-text-muted);
+  font: 700 12px/1.2 var(--spectrum-font);
+}
+
+.post-card__history ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-card__history li {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 8px;
+  color: var(--spectrum-text-secondary);
+  font: 600 12px/1.35 var(--spectrum-font);
+}
+
+.post-card__history time {
+  color: var(--spectrum-text-muted);
+  white-space: nowrap;
 }
 
 .post-card__footer {

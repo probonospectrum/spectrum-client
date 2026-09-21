@@ -58,6 +58,7 @@ export class SocialShell implements OnInit {
   @Input() title = 'Publicacoes';
   @Input() subtitle = 'Atualizacoes da comunidade';
   @Input() showContentHeader = true;
+  @Input() wideContent = false;
   @Output() logout = new EventEmitter<void>();
   @Output() createPost = new EventEmitter<void>();
   @Output() postCreated = new EventEmitter<SpectrumPost>();
