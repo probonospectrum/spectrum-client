@@ -8,6 +8,7 @@ import { Observable, finalize, forkJoin, switchMap } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
   OccurrenceAgency,
+  OccurrenceEvidence,
   OccurrenceEventType,
   OccurrenceForwardingChannel,
   OccurrenceHistoryEvent,
@@ -50,6 +51,8 @@ export class OccurrenceDetailPage implements OnInit {
   actionPanel: ActionPanel = null;
   errorMessage = '';
   successMessage = '';
+  notFound = false;
+  private currentOccurrenceId = '';
 
   evidenceFile: File | null = null;
   evidenceDescription = '';
@@ -69,12 +72,24 @@ export class OccurrenceDetailPage implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
+    this.currentOccurrenceId = id ?? '';
+
+    this.loadOccurrence();
+  }
+
+  loadOccurrence(): void {
+    const id = this.currentOccurrenceId;
 
     if (!id) {
       this.errorMessage = 'Ocorrência não informada.';
       this.isLoading.set(false);
       return;
     }
+
+    this.isLoading.set(true);
+    this.notFound = false;
+    this.errorMessage = '';
+    this.successMessage = '';
 
     forkJoin({
       occurrence: this.postService.getOccurrence(id, this.user),
@@ -91,7 +106,10 @@ export class OccurrenceDetailPage implements OnInit {
           this.prefillAgency(occurrence.responsibleAgency ?? undefined);
         },
         error: (error: unknown) => {
-          this.errorMessage = this.getErrorMessage(error);
+          this.notFound = this.isNotFound(error);
+          this.errorMessage = this.notFound
+            ? 'Ocorrência não encontrada.'
+            : this.getErrorMessage(error);
         },
       });
   }
@@ -148,6 +166,48 @@ export class OccurrenceDetailPage implements OnInit {
 
   get responsibleAgencyLabel(): string {
     return this.occurrence?.responsibleAgency?.name || 'Órgão responsável ainda não identificado';
+  }
+
+  get latestUpdateDate(): string {
+    const eventDate = this.timeline.at(-1)?.createdAt ?? this.timeline.at(-1)?.occurredAt;
+    return this.occurrence?.updatedAt ?? eventDate ?? this.occurrence?.createdAt ?? '';
+  }
+
+  get latestForwardingDate(): string {
+    return this.latestForwarding?.sentAt ?? this.forwardingEventDate;
+  }
+
+  get currentProtocol(): string {
+    const forwardingProtocol = this.latestForwarding?.protocol;
+
+    if (forwardingProtocol) {
+      return forwardingProtocol;
+    }
+
+    const protocolEvent = [...this.timeline]
+      .reverse()
+      .find((event) => event.metadata?.['protocol']);
+
+    return protocolEvent?.metadata?.['protocol']
+      ? String(protocolEvent.metadata['protocol'])
+      : '';
+  }
+
+  private get latestForwarding() {
+    return [...(this.occurrence?.forwardingHistory ?? [])]
+      .filter((forwarding) => forwarding.success)
+      .sort(
+        (first, second) =>
+          new Date(second.sentAt).getTime() - new Date(first.sentAt).getTime(),
+      )[0];
+  }
+
+  private get forwardingEventDate(): string {
+    const forwardingEvent = [...this.timeline]
+      .reverse()
+      .find((event) => event.eventType === 'OCORRENCIA_ENCAMINHADA');
+
+    return forwardingEvent?.createdAt ?? forwardingEvent?.occurredAt ?? '';
   }
 
   openPanel(panel: ActionPanel): void {
@@ -371,7 +431,15 @@ export class OccurrenceDetailPage implements OnInit {
     return labels[eventType];
   }
 
+  statusLabel(status = this.occurrence?.status): string {
+    return status ? this.postService.getStatusLabel(status) : 'Não informado';
+  }
+
   formatDate(date: string): string {
+    if (!date) {
+      return 'Não informado';
+    }
+
     return new Intl.DateTimeFormat('pt-BR', {
       dateStyle: 'short',
       timeStyle: 'short',
@@ -433,6 +501,61 @@ export class OccurrenceDetailPage implements OnInit {
     if (event.actorType === 'SYSTEM') return 'Sistema';
     if (event.actorType === 'MODERATOR') return 'Moderação';
     return 'Comunidade';
+  }
+
+  eventOriginClass(event: OccurrenceHistoryEvent): string {
+    if (event.actorType === 'RESPONSIBLE_AGENCY') return 'agency';
+    if (event.actorType === 'SYSTEM') return 'system';
+    if (event.actorType === 'MODERATOR') return 'moderation';
+    return 'community';
+  }
+
+  eventActorLine(event: OccurrenceHistoryEvent): string {
+    if (event.actorType === 'SYSTEM') {
+      return 'Sistema';
+    }
+
+    const actorName =
+      event.actorName ||
+      (event.actorType === 'RESPONSIBLE_AGENCY' ? this.occurrence?.responsibleAgency?.name : '') ||
+      (event.eventType === 'OCORRENCIA_CRIADA' ? this.occurrence?.authorName : '');
+
+    return actorName ? `${actorName} · ${this.eventOrigin(event)}` : this.eventOrigin(event);
+  }
+
+  eventEvidences(event: OccurrenceHistoryEvent): OccurrenceEvidence[] {
+    const evidenceIds = event.evidenceIds ?? [];
+
+    if (!evidenceIds.length || !this.occurrence?.evidences.length) {
+      return [];
+    }
+
+    return this.occurrence.evidences.filter((evidence) => evidenceIds.includes(evidence.id));
+  }
+
+  shareOccurrence(): void {
+    if (!this.occurrence) {
+      return;
+    }
+
+    const link = `${window.location.origin}/occurrences/${encodeURIComponent(this.occurrence.id)}`;
+
+    if (navigator.share) {
+      void navigator
+        .share({
+          title: this.occurrence.title,
+          text: this.occurrence.content,
+          url: link,
+        })
+        .then(() => {
+          this.successMessage = 'Link da ocorrência compartilhado.';
+          this.errorMessage = '';
+        })
+        .catch(() => this.copyOccurrenceLink(link));
+      return;
+    }
+
+    this.copyOccurrenceLink(link);
   }
 
   private runWithOptionalEvidence(
@@ -543,5 +666,21 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     return error instanceof Error ? error.message : 'Não foi possível executar a ação.';
+  }
+
+  private isNotFound(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 404;
+  }
+
+  private copyOccurrenceLink(link: string): void {
+    void navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        this.successMessage = 'Link da ocorrência copiado.';
+        this.errorMessage = '';
+      })
+      .catch(() => {
+        this.errorMessage = link;
+      });
   }
 }

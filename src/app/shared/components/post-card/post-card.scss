@@ -16,6 +16,28 @@
   box-shadow: 0 10px 24px rgba(15, 35, 55, 0.08);
 }
 
+.post-card__main {
+  display: grid;
+  gap: 12px;
+  border-radius: var(--spectrum-radius-sm);
+  outline: 0;
+}
+
+.post-card__main--clickable {
+  cursor: pointer;
+}
+
+.post-card__main--clickable:hover .post-card__title,
+.post-card__main--clickable:focus-visible .post-card__title {
+  color: var(--spectrum-primary-800);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.post-card__main--clickable:focus-visible {
+  box-shadow: 0 0 0 3px rgba(47, 111, 149, 0.22);
+}
+
 .post-card__header {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) 36px;
@@ -224,20 +246,6 @@
   font: 850 17px/1.3 var(--spectrum-font);
 }
 
-.post-card__title-button {
-  width: fit-content;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-}
-
-.post-card__title-button:hover .post-card__title {
-  color: var(--spectrum-primary-800);
-  text-decoration: underline;
-}
-
 .post-card__agency {
   min-width: 0;
   display: inline-flex;
@@ -250,6 +258,15 @@
 .post-card__agency .material-symbols-outlined {
   color: var(--spectrum-text-muted);
   font-size: 18px;
+}
+
+.post-card__summary {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--spectrum-border);
+  padding-top: 12px;
+  color: var(--spectrum-text-muted);
+  font: 700 12px/1.35 var(--spectrum-font);
 }
 
 .post-card__copy {
@@ -302,48 +319,6 @@
   background: var(--spectrum-accent-soft);
   color: var(--spectrum-accent);
   font: 800 12px/1 var(--spectrum-font);
-}
-
-.post-card__history {
-  display: grid;
-  gap: 8px;
-  border-top: 1px solid var(--spectrum-border);
-  padding-top: 12px;
-}
-
-.post-card__history-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--spectrum-text);
-  font: 850 13px/1.2 var(--spectrum-font);
-}
-
-.post-card__history-head small {
-  color: var(--spectrum-text-muted);
-  font: 700 12px/1.2 var(--spectrum-font);
-}
-
-.post-card__history ol {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.post-card__history li {
-  display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 8px;
-  color: var(--spectrum-text-secondary);
-  font: 600 12px/1.35 var(--spectrum-font);
-}
-
-.post-card__history time {
-  color: var(--spectrum-text-muted);
-  white-space: nowrap;
 }
 
 .post-card__footer {

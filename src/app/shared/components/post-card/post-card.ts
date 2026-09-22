@@ -83,12 +83,32 @@ export class PostCard implements OnChanges, OnDestroy {
       .slice(0, 3);
   }
 
+  get latestHistoryEvent() {
+    return this.latestHistory[0] ?? null;
+  }
+
   get historyCount(): number {
     return this.post.history.length;
   }
 
+  get historySummary(): string {
+    if (!this.historyCount) {
+      return 'Ocorrência criada em ' + this.formatHistoryDate(this.post.createdAt);
+    }
+
+    const latest = this.latestHistoryEvent;
+
+    if (!latest) {
+      return `${this.historyCount} eventos no histórico`;
+    }
+
+    return `Última atualização: ${this.formatHistoryEvent(latest.eventType)} em ${this.formatHistoryDate(
+      latest.occurredAt,
+    )}`;
+  }
+
   get responsibleAgencyLabel(): string {
-    return this.post.responsibleAgency?.name || 'Orgao ainda nao identificado';
+    return this.post.responsibleAgency?.name || 'Órgão ainda não identificado';
   }
 
   get isOwnPost(): boolean {
@@ -203,7 +223,7 @@ export class PostCard implements OnChanges, OnDestroy {
 
   goToOccurrence(): void {
     if (!this.canOpenOccurrence) return;
-    void this.router.navigate(['/ocorrencias', this.post.originalPostId ?? this.post.id]);
+    void this.router.navigate(['/occurrences', this.post.originalPostId ?? this.post.id]);
   }
 
   get canOpenOccurrence(): boolean {
@@ -217,23 +237,34 @@ export class PostCard implements OnChanges, OnDestroy {
   formatHistoryEvent(eventType: string): string {
     const labels: Record<string, string> = {
       OCORRENCIA_CRIADA: 'Ocorrencia criada',
+      OCCURRENCE_CREATED: 'Ocorrencia criada',
       OCCURRENCE_UPDATED: 'Ocorrencia atualizada',
       COMMENT_ADDED: 'Comentario adicionado',
       COMMENT_EDITED: 'Comentario editado',
       COMMENT_REMOVED: 'Comentario removido',
       EVIDENCIA_ADICIONADA: 'Evidencia adicionada',
+      EVIDENCE_ADDED: 'Evidencia adicionada',
       OCORRENCIA_CONFIRMADA: 'Tambem identificado',
+      OCCURRENCE_CONFIRMED: 'Tambem identificado',
       ORGAO_RESPONSAVEL_IDENTIFICADO: 'Orgao identificado',
+      AGENCY_IDENTIFIED: 'Orgao identificado',
       AGENCY_NOT_IDENTIFIED: 'Sem orgao identificado',
       OCORRENCIA_ENCAMINHADA: 'Encaminhamento registrado',
+      FORWARDING_REGISTERED: 'Encaminhamento registrado',
       ENCAMINHAMENTO_FALHOU: 'Encaminhamento falhou',
+      FORWARDING_FAILED: 'Encaminhamento falhou',
       FORWARDING_RESPONSE_REGISTERED: 'Resposta registrada',
       PROTOCOL_REGISTERED: 'Protocolo recebido',
       ANALISE_INICIADA: 'Analise iniciada',
+      ANALYSIS_STARTED: 'Analise iniciada',
       RESOLUCAO_INFORMADA: 'Resolucao informada',
+      RESOLUTION_INFORMED: 'Resolucao informada',
       OCORRENCIA_RESOLVIDA: 'Resolucao confirmada',
+      RESOLUTION_CONFIRMED: 'Resolucao confirmada',
       RESOLUCAO_CONTESTADA: 'Resolucao contestada',
+      RESOLUTION_CONTESTED: 'Resolucao contestada',
       OCORRENCIA_REABERTA: 'Ocorrencia reaberta',
+      OCCURRENCE_REOPENED: 'Ocorrencia reaberta',
       MODERATION_APPLIED: 'Moderacao registrada',
     };
 

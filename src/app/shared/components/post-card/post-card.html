@@ -106,58 +106,52 @@
     </div>
   </header>
 
-  <section class="post-card__occurrence" aria-label="Situacao da ocorrencia">
-    <div class="post-card__status-row">
-      <span class="post-card__status" [attr.data-status]="post.status">{{ statusLabel }}</span>
-      <span class="post-card__importance">{{ categoryLabel }}</span>
-      <span class="post-card__importance">Importancia {{ importanceLabel }}</span>
-    </div>
-    @if (canOpenOccurrence) {
-      <button class="post-card__title-button" type="button" (click)="goToOccurrence()">
-        <h3 class="post-card__title">{{ post.title }}</h3>
-      </button>
-    } @else {
+  <section
+    class="post-card__main"
+    [class.post-card__main--clickable]="canOpenOccurrence"
+    [attr.role]="canOpenOccurrence ? 'link' : null"
+    [attr.tabindex]="canOpenOccurrence ? '0' : null"
+    [attr.aria-label]="canOpenOccurrence ? 'Abrir ocorrência ' + post.title : null"
+    (click)="goToOccurrence()"
+    (keydown.enter)="goToOccurrence()"
+    (keydown.space)="$event.preventDefault(); goToOccurrence()"
+  >
+    <div class="post-card__occurrence" aria-label="Situacao da ocorrencia">
+      <div class="post-card__status-row">
+        <span class="post-card__status" [attr.data-status]="post.status">{{ statusLabel }}</span>
+        <span class="post-card__importance">{{ categoryLabel }}</span>
+        <span class="post-card__importance">Importancia {{ importanceLabel }}</span>
+      </div>
       <h3 class="post-card__title">{{ post.title }}</h3>
+    </div>
+
+    <p class="post-card__copy">{{ post.content }}</p>
+
+    @if (post.mediaType !== 'text') {
+      <div class="post-card__media" [class.post-card__media--image]="post.mediaType === 'image'">
+        @if (post.mediaType === 'video') {
+          <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>
+        } @else {
+          <span>Registro da comunidade</span>
+        }
+      </div>
     }
-    <div class="post-card__agency">
-      <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-      <span>{{ responsibleAgencyLabel }}</span>
-    </div>
-  </section>
 
-  <p class="post-card__copy">{{ post.content }}</p>
+    @if (post.tags.length) {
+      <div class="post-card__tags" aria-label="Tags">
+        @for (tag of post.tags; track tag) {
+          <span>#{{ tag }}</span>
+        }
+      </div>
+    }
 
-  @if (post.mediaType !== 'text') {
-    <div class="post-card__media" [class.post-card__media--image]="post.mediaType === 'image'">
-      @if (post.mediaType === 'video') {
-        <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>
-      } @else {
-        <span>Registro da comunidade</span>
-      }
+    <div class="post-card__summary">
+      <div class="post-card__agency">
+        <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+        <span>{{ responsibleAgencyLabel }}</span>
+      </div>
+      <span>{{ historySummary }}</span>
     </div>
-  }
-
-  @if (post.tags.length) {
-    <div class="post-card__tags" aria-label="Tags">
-      @for (tag of post.tags; track tag) {
-        <span>#{{ tag }}</span>
-      }
-    </div>
-  }
-
-  <section class="post-card__history" aria-label="Historico da ocorrencia">
-    <div class="post-card__history-head">
-      <span>Historico</span>
-      <small>{{ historyCount }} eventos</small>
-    </div>
-    <ol>
-      @for (event of latestHistory; track event.id) {
-        <li>
-          <time>{{ formatHistoryDate(event.occurredAt) }}</time>
-          <span>{{ formatHistoryEvent(event.eventType) }}</span>
-        </li>
-      }
-    </ol>
   </section>
 
   <footer class="post-card__footer">

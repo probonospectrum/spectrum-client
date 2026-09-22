@@ -11,9 +11,15 @@
   } @else if (occurrence) {
     <article class="occurrence-detail__hero">
       <div>
-        <span class="occurrence-detail__status" [attr.data-status]="occurrence.status">
-          {{ formatStatus() }}
-        </span>
+        <div class="occurrence-detail__hero-actions">
+          <span class="occurrence-detail__status" [attr.data-status]="occurrence.status">
+            {{ formatStatus() }}
+          </span>
+          <button type="button" (click)="shareOccurrence()">
+            <span class="material-symbols-outlined" aria-hidden="true">ios_share</span>
+            Compartilhar
+          </button>
+        </div>
         <h1>{{ occurrence.title }}</h1>
         <p>{{ occurrence.content }}</p>
       </div>
@@ -23,6 +29,8 @@
         <div><span>Gravidade</span><strong>{{ formatImportance() }}</strong></div>
         <div><span>Autor</span><strong>{{ occurrence.authorName }}</strong></div>
         <div><span>Criada em</span><strong>{{ formatDate(occurrence.createdAt) }}</strong></div>
+        <div><span>Localização</span><strong>{{ occurrence.location?.label || occurrence.authorCity }}</strong></div>
+        <div><span>Órgão</span><strong>{{ responsibleAgencyLabel }}</strong></div>
       </aside>
     </article>
 
@@ -34,6 +42,17 @@
     }
 
     <section class="occurrence-detail__grid">
+      <section class="occurrence-detail__section">
+        <h2>Situação atual</h2>
+        <dl class="occurrence-detail__facts">
+          <div><dt>Status</dt><dd>{{ statusLabel() }}</dd></div>
+          <div><dt>Órgão responsável</dt><dd>{{ responsibleAgencyLabel }}</dd></div>
+          <div><dt>Última atualização</dt><dd>{{ formatDate(latestUpdateDate) }}</dd></div>
+          <div><dt>Encaminhada em</dt><dd>{{ latestForwardingDate ? formatDate(latestForwardingDate) : 'Ainda não encaminhada' }}</dd></div>
+          <div><dt>Protocolo</dt><dd>{{ currentProtocol || 'Não informado' }}</dd></div>
+        </dl>
+      </section>
+
       <section class="occurrence-detail__section">
         <h2>Localização</h2>
         <dl class="occurrence-detail__facts">
@@ -286,13 +305,25 @@
       <h2>Histórico da ocorrência</h2>
       <ol class="occurrence-detail__timeline">
         @for (event of timeline; track event.id) {
-          <li>
+          <li [attr.data-origin]="eventOriginClass(event)">
             <time>{{ formatDate(event.createdAt || event.occurredAt) }}</time>
             <strong>{{ formatEvent(event.eventType) }}</strong>
-            <small>{{ eventOrigin(event) }}</small>
+            <small class="occurrence-detail__actor">{{ eventActorLine(event) }}</small>
             <p>{{ eventDescription(event) }}</p>
             @if (event.previousStatus || event.newStatus) {
-              <small>{{ event.previousStatus || 'Início' }} → {{ event.newStatus || event.previousStatus }}</small>
+              <small>{{ statusLabel(event.previousStatus) }} → {{ statusLabel(event.newStatus) }}</small>
+            }
+            @if (eventEvidences(event); as evidences) {
+              @if (evidences.length) {
+                <div class="occurrence-detail__timeline-evidences">
+                  @for (evidence of evidences; track evidence.id) {
+                    <a [href]="evidence.url" target="_blank" rel="noreferrer">
+                      <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+                      {{ evidence.description || 'Evidência anexada' }}
+                    </a>
+                  }
+                </div>
+              }
             }
           </li>
         }
@@ -303,10 +334,22 @@
     </section>
 
     <section class="occurrence-detail__section">
-      <h2>Discussão/Comentários</h2>
+      <h2>Discussão</h2>
       <app-comment-section [postId]="occurrence.id" [currentUser]="user" />
     </section>
+  } @else if (notFound) {
+    <section class="occurrence-detail__state">
+      <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
+      <h1>Ocorrência não encontrada</h1>
+      <p>Essa ocorrência não existe ou não está mais disponível.</p>
+      <button type="button" (click)="loadOccurrence()">Tentar novamente</button>
+    </section>
   } @else {
-    <p class="occurrence-detail__notice occurrence-detail__notice--error">{{ errorMessage }}</p>
+    <section class="occurrence-detail__state occurrence-detail__state--error">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <h1>Não foi possível carregar a ocorrência</h1>
+      <p>{{ errorMessage }}</p>
+      <button type="button" (click)="loadOccurrence()">Tentar novamente</button>
+    </section>
   }
 </main>
