@@ -123,6 +123,8 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  dislikes: number;
+  disliked: boolean;
   id: string;
   createdAt: string;
   createdBy?: string;
@@ -781,6 +783,8 @@ export class PostService {
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
       liked: false,
+      dislikes: 0,
+      disliked: false,
       comments: 0,
       reposts: 0,
       reposted: false,
@@ -1266,6 +1270,8 @@ export class PostService {
         publishedAtLabel: 'Publicado em 16/09/2026, às 14:42',
         likes: 38,
         liked: false,
+        dislikes: 0,
+        disliked: false,
         comments: 11,
         reposts: 4,
         reposted: false,
@@ -1299,6 +1305,8 @@ export class PostService {
         publishedAtLabel: 'Publicado em 15/09/2026, às 18:18',
         likes: 64,
         liked: false,
+        dislikes: 0,
+        disliked: false,
         comments: 19,
         reposts: 7,
         reposted: false,
@@ -1327,6 +1335,8 @@ export class PostService {
         publishedAtLabel: 'Publicado em 14/09/2026, às 20:07',
         likes: 51,
         liked: false,
+        dislikes: 0,
+        disliked: false,
         comments: 8,
         reposts: 3,
         reposted: false,
@@ -1359,6 +1369,8 @@ export class PostService {
         publishedAtLabel: 'Publicado em 13/09/2026, às 12:26',
         likes: 72,
         liked: false,
+        dislikes: 0,
+        disliked: false,
         comments: 24,
         reposts: 9,
         reposted: false,
@@ -1391,6 +1403,8 @@ export class PostService {
         publishedAtLabel: 'Publicado em 11/09/2026, às 16:53',
         likes: 43,
         liked: false,
+        dislikes: 0,
+        disliked: false,
         comments: 9,
         reposts: 4,
         reposted: false,
@@ -1453,20 +1467,20 @@ export class PostService {
         post.history?.length
           ? post.history
           : [
-              this.createHistoryEvent({
-                occurrenceId: post.id,
-                eventType: 'OCORRENCIA_CRIADA',
-                actorId: post.createdBy,
-                actorType: 'USER',
-                occurredAt: createdAt,
-                newStatus: normalizedStatus,
-                metadata: {
-                  title: post.title,
-                  location: post.authorCity,
-                  source: 'legacy_post',
-                },
-              }),
-            ],
+            this.createHistoryEvent({
+              occurrenceId: post.id,
+              eventType: 'OCORRENCIA_CRIADA',
+              actorId: post.createdBy,
+              actorType: 'USER',
+              occurredAt: createdAt,
+              newStatus: normalizedStatus,
+              metadata: {
+                title: post.title,
+                location: post.authorCity,
+                source: 'legacy_post',
+              },
+            }),
+          ],
     };
   }
 
@@ -1595,6 +1609,8 @@ export class PostService {
     const authorName = user?.name || 'Usuario Spectrum';
 
     return {
+      dislikes: 1,
+      disliked: false,
       id: occurrence._id,
       createdAt,
       createdBy: occurrence.createdBy,
