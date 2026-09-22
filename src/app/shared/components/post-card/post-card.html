@@ -1,4 +1,8 @@
-<article class="post-card">
+<article
+  class="post-card"
+  [class.post-card--clickable]="canOpenOccurrence"
+  (click)="openOccurrenceFromCard($event)"
+>
   <header class="post-card__header">
     <button
       type="button"
@@ -112,7 +116,6 @@
     [attr.role]="canOpenOccurrence ? 'link' : null"
     [attr.tabindex]="canOpenOccurrence ? '0' : null"
     [attr.aria-label]="canOpenOccurrence ? 'Abrir ocorrência ' + post.title : null"
-    (click)="goToOccurrence()"
     (keydown.enter)="goToOccurrence()"
     (keydown.space)="$event.preventDefault(); goToOccurrence()"
   >

@@ -76,7 +76,7 @@
     <section class="create-post-modal__section" aria-labelledby="occurrence-location-label">
       <div class="create-post-modal__section-heading">
         <span id="occurrence-location-label" class="create-post-modal__label">Localização</span>
-        @if (selectedStateId || selectedCityId || selectedNeighborhoodName) {
+        @if (selectedStateId || selectedCityId) {
           <button type="button" (click)="removeLocation()">Limpar</button>
         }
       </div>
@@ -116,21 +116,6 @@
           </select>
         </label>
 
-        <label class="create-post-modal__select-field">
-          <span class="create-post-modal__label">Bairro*</span>
-          <select
-            [(ngModel)]="selectedNeighborhoodName"
-            [disabled]="!selectedCityId || isLoadingNeighborhoods() || !neighborhoods().length"
-            aria-label="Bairro da ocorrência"
-          >
-            <option value="">
-              {{ isLoadingNeighborhoods() ? 'Carregando bairros...' : 'Selecione o bairro' }}
-            </option>
-            @for (neighborhood of neighborhoods(); track neighborhood.name) {
-              <option [value]="neighborhood.name">{{ neighborhood.name }}</option>
-            }
-          </select>
-        </label>
       </div>
 
       @if (locationErrorMessage) {
@@ -140,7 +125,7 @@
         </div>
       }
 
-      @if (selectedNeighborhoodName) {
+      @if (selectedCity) {
         <div class="create-post-modal__location" aria-label="Localização selecionada">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
           <strong>{{ locationLabel }}</strong>

@@ -8,12 +8,30 @@
   box-shadow: var(--spectrum-shadow-sm);
   transition:
     border-color var(--spectrum-transition),
-    box-shadow var(--spectrum-transition);
+    box-shadow var(--spectrum-transition),
+    transform var(--spectrum-transition);
 }
 
-.post-card:hover {
+.post-card--clickable {
+  cursor: pointer;
+}
+
+.post-card--clickable:hover {
   border-color: var(--spectrum-border-strong);
-  box-shadow: 0 10px 24px rgba(15, 35, 55, 0.08);
+  box-shadow: 0 14px 30px rgba(15, 35, 55, 0.12);
+  transform: translateY(-3px);
+}
+
+:host-context(html[data-theme="dark"]) .post-card--clickable:hover {
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.post-card--clickable:active {
+  transform: translateY(-1px);
+}
+
+.post-card--clickable app-comment-section {
+  cursor: auto;
 }
 
 .post-card__main {
@@ -67,6 +85,12 @@
 .post-card__avatar:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(31, 69, 104, 0.14);
+}
+
+:host-context(html[data-theme="dark"]) .post-card__avatar {
+  border-color: rgba(122, 186, 240, 0.12);
+  background: #19324a;
+  color: #d8ecff;
 }
 
 .post-card__author {
@@ -212,10 +236,21 @@
   color: #21623f;
 }
 
+:host-context(html[data-theme="dark"]) .post-card__status {
+  background: rgba(105, 195, 154, 0.14);
+  color: #8de0b6;
+}
+
 .post-card__status[data-status="ENCAMINHADA"],
 .post-card__status[data-status="EM_ANALISE"] {
   background: rgba(47, 111, 149, 0.12);
   color: var(--spectrum-primary-900);
+}
+
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="ENCAMINHADA"],
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="EM_ANALISE"] {
+  background: rgba(122, 186, 240, 0.16);
+  color: #bfe0ff;
 }
 
 .post-card__status[data-status="RESOLUCAO_INFORMADA"],
@@ -224,15 +259,32 @@
   color: #1e664b;
 }
 
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="RESOLUCAO_INFORMADA"],
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="RESOLVIDA"] {
+  background: rgba(105, 195, 154, 0.16);
+  color: #98e6c0;
+}
+
 .post-card__status[data-status="CONTESTADA"],
 .post-card__status[data-status="REABERTA"] {
   background: rgba(190, 84, 55, 0.13);
   color: #99402a;
 }
 
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="CONTESTADA"],
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="REABERTA"] {
+  background: rgba(239, 119, 119, 0.16);
+  color: #ffb0aa;
+}
+
 .post-card__status[data-status="SEM_ORGAO_IDENTIFICADO"] {
   background: rgba(92, 101, 112, 0.13);
   color: #4c5661;
+}
+
+:host-context(html[data-theme="dark"]) .post-card__status[data-status="SEM_ORGAO_IDENTIFICADO"] {
+  background: rgba(152, 164, 179, 0.14);
+  color: #c7d0dc;
 }
 
 .post-card__importance {
@@ -288,6 +340,11 @@
     #d9e3ea;
   color: var(--spectrum-text-muted);
   font: 800 14px/1 var(--spectrum-font);
+}
+
+:host-context(html[data-theme="dark"]) .post-card__media {
+  border-color: var(--spectrum-border);
+  background: #111923;
 }
 
 .post-card__media--image {
@@ -424,6 +481,13 @@
   from {
     opacity: 0;
     transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-card--clickable:hover,
+  .post-card--clickable:active {
+    transform: none;
   }
 }
 

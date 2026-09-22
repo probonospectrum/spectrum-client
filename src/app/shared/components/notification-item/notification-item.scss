@@ -22,7 +22,12 @@
 
 .notification--unread {
   border-color: rgba(47, 111, 149, 0.24);
-  background: linear-gradient(90deg, rgba(232, 241, 247, 0.88), #ffffff 46%);
+  background: var(--spectrum-accent-soft);
+}
+
+.notification--unread:hover {
+  border-color: rgba(47, 111, 149, 0.4);
+  background: #deebf4;
 }
 
 .notification--unread::before {
@@ -99,4 +104,22 @@
 .notification__remove:hover {
   background: #fff1ef;
   color: var(--spectrum-error);
+}
+
+:host-context(html[data-theme="dark"]) .notification--unread {
+  border-color: rgba(122, 186, 240, 0.3);
+  background: #14283a;
+}
+
+:host-context(html[data-theme="dark"]) .notification--unread:hover {
+  border-color: rgba(122, 186, 240, 0.5);
+  background: #19324a;
+}
+
+:host-context(html[data-theme="dark"]) .notification--unread::before {
+  box-shadow: 0 0 0 3px rgba(122, 186, 240, 0.12);
+}
+
+:host-context(html[data-theme="dark"]) .notification__remove:hover {
+  background: rgba(239, 119, 119, 0.12);
 }

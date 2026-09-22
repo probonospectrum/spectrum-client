@@ -80,6 +80,10 @@
   transform: translateY(-1px);
 }
 
+:host-context(html[data-theme="dark"]) .post-composer:hover {
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
 .post-composer__avatar {
   width: 46px;
   height: 46px;
@@ -92,6 +96,12 @@
     var(--spectrum-surface-muted);
   color: var(--spectrum-primary-900);
   font: 800 18px/1 var(--spectrum-font);
+}
+
+:host-context(html[data-theme="dark"]) .post-composer__avatar {
+  border-color: rgba(122, 186, 240, 0.12);
+  background: #19324a;
+  color: #d8ecff;
 }
 
 .post-composer__body {
@@ -175,6 +185,14 @@
   background: linear-gradient(90deg, #edf2f6, #f8fafc, #edf2f6);
   background-size: 220% 100%;
   animation: posts-skeleton 1.2s ease-in-out infinite;
+}
+
+:host-context(html[data-theme="dark"]) .post-skeleton__avatar,
+:host-context(html[data-theme="dark"]) .post-skeleton__line,
+:host-context(html[data-theme="dark"]) .post-skeleton__media,
+:host-context(html[data-theme="dark"]) .post-skeleton__actions span {
+  background: linear-gradient(90deg, #18202a, #242e3a, #18202a);
+  background-size: 220% 100%;
 }
 
 .post-skeleton__avatar {

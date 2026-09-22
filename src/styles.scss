@@ -47,49 +47,43 @@
 }
 
 :root[data-theme="dark"] {
-  /* Primary */
-  --spectrum-primary-900: #e8f2ff;
-  --spectrum-primary-800: #c9e1ff;
-  --spectrum-primary-700: #a5ccf5;
-  --spectrum-primary-600: #7db3e8;
-  --spectrum-primary-500: #5b9bd5;
+  --spectrum-primary-900: #dbeafe;
+  --spectrum-primary-800: #3b82f6;
+  --spectrum-primary-700: #60a5fa;
+  --spectrum-primary-600: #3b82f6;
+  --spectrum-primary-500: #2563eb;
 
-  /* Accent */
-  --spectrum-accent: #6aa8e8;
-  --spectrum-accent-soft: #1b3047;
+  --spectrum-accent: #38bdf8;
+  --spectrum-accent-soft: #0c2a45;
 
-  /* Status */
-  --spectrum-info: #6aa8e8;
-  --spectrum-success: #69c39a;
-  --spectrum-warning: #e5ad5c;
-  --spectrum-error: #ef7777;
+  --spectrum-info: #38bdf8;
+  --spectrum-success: #34d399;
+  --spectrum-warning: #fbbf24;
+  --spectrum-error: #fb7185;
 
-  /* Background */
-  --spectrum-app-bg: #0f1115;
+  --spectrum-app-bg: #070d18;
 
-  /* Surfaces */
-  --spectrum-surface-rgb: 24 27 33;
-  --spectrum-surface: #181b21;
-  --spectrum-surface-soft: #1e222a;
-  --spectrum-surface-muted: #262b34;
+  --spectrum-surface-rgb: 15 25 42;
+  --spectrum-surface: #0f192a;
+  --spectrum-surface-soft: #0b1422;
+  --spectrum-surface-muted: #17243a;
 
-  /* Borders */
-  --spectrum-border: #303640;
-  --spectrum-border-strong: #414957;
+  --spectrum-border: #223653;
+  --spectrum-border-strong: #31547d;
 
-  /* Text */
-  --spectrum-text: #f2f4f7;
-  --spectrum-text-secondary: #c5cad3;
-  --spectrum-text-muted: #9299a6;
-  --spectrum-text-subtle: #6f7785;
+  --spectrum-text: #f8fbff;
+  --spectrum-text-secondary: #cbdcf0;
+  --spectrum-text-muted: #8fa8c4;
+  --spectrum-text-subtle: #6f89a7;
 
-  /* Focus */
-  --spectrum-focus: rgba(106, 168, 232, 0.32);
+  --spectrum-focus: rgba(59, 130, 246, 0.4);
 
-  /* Shadows */
-  --spectrum-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --spectrum-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.35);
-  --spectrum-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.5);
+  --spectrum-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.32);
+  --spectrum-shadow-md: 0 12px 36px rgba(0, 30, 80, 0.4);
+  --spectrum-shadow-lg: 0 24px 80px rgba(0, 20, 70, 0.55);
+
+  --spectrum-action: #2563eb;
+  --spectrum-action-hover: #3b82f6;
 }
 
 html,
@@ -105,9 +99,7 @@ html {
 
 body {
   overflow-x: clip;
-  background:
-    radial-gradient(circle at 12% 0%, rgba(47, 111, 149, 0.08), transparent 28rem),
-    linear-gradient(180deg, var(--spectrum-surface-soft) 0%, var(--spectrum-app-bg) 36rem);
+  background: var(--spectrum-app-bg);
   color: var(--spectrum-text);
   font-family: var(--spectrum-font);
   font-size: 15px;
@@ -148,6 +140,27 @@ svg {
 app-root {
   display: block;
   min-height: 100vh;
+}
+
+:root[data-theme="dark"] .spectrum-button,
+:root[data-theme="dark"] .social-create,
+:root[data-theme="dark"] .posts-primary-action,
+:root[data-theme="dark"] .posts-empty a,
+:root[data-theme="dark"] .posts-empty button,
+:root[data-theme="dark"] .post-composer__publish,
+:root[data-theme="dark"] .create-post-modal__submit {
+  background: var(--spectrum-action);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .spectrum-button:hover:not(:disabled),
+:root[data-theme="dark"] .social-create:hover,
+:root[data-theme="dark"] .posts-primary-action:hover,
+:root[data-theme="dark"] .posts-empty a:hover,
+:root[data-theme="dark"] .posts-empty button:hover,
+:root[data-theme="dark"] .post-composer__publish:hover,
+:root[data-theme="dark"] .create-post-modal__submit:hover:not(:disabled) {
+  background: var(--spectrum-action-hover);
 }
 
 .material-symbols-outlined {
