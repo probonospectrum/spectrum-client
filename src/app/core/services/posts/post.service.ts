@@ -125,8 +125,6 @@ export interface OccurrenceForwarding {
 export interface SpectrumPost {
   id: string;
   createdAt: string;
-  disliked: boolean;
-  dislikes: number;
   createdBy?: string;
   authorName: string;
   authorNickname: string;
@@ -785,7 +783,6 @@ export class PostService {
       publishedAt: now.toISOString(),
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
-      dislikes: 0,
       liked: false,
       dislikes: 0,
       disliked: false,
