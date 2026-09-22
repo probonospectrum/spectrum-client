@@ -151,14 +151,45 @@ export class PostCard implements OnChanges, OnDestroy {
 
   toggleLike(): void {
     const previousPost = this.post;
+
+    const nextLiked = !this.post.liked;
+
     this.post = {
       ...this.post,
-      liked: !this.post.liked,
-      likes: Math.max(0, this.post.likes + (this.post.liked ? -1 : 1)),
+      liked: nextLiked,
+      disliked: nextLiked ? false : this.post.disliked,
+      likes: this.post.likes + (nextLiked ? 1 : -1),
+      dislikes:
+        this.post.disliked && nextLiked
+          ? this.post.dislikes - 1
+          : this.post.dislikes,
     };
 
     try {
       this.post = this.postService.togglePostLike(previousPost, this.currentUser);
+    } catch {
+      this.post = previousPost;
+    }
+  }
+
+  toggleDislike(): void {
+    const previousPost = this.post;
+
+    const nextDisliked = !this.post.disliked;
+
+    this.post = {
+      ...this.post,
+      disliked: nextDisliked,
+      liked: nextDisliked ? false : this.post.liked,
+      dislikes: this.post.dislikes + (nextDisliked ? 1 : -1),
+      likes:
+        this.post.liked && nextDisliked
+          ? this.post.likes - 1
+          : this.post.likes,
+    };
+
+    try {
+      this.post = this.postService.togglePostDislike(previousPost, this.currentUser);
     } catch {
       this.post = previousPost;
     }
