@@ -37,6 +37,14 @@
   font: 850 28px/1.15 var(--spectrum-font);
 }
 
+.occurrence-detail__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .occurrence-detail__hero p,
 .occurrence-detail__empty,
 .occurrence-detail__agency {
@@ -313,6 +321,34 @@
   font: 700 12px/1 var(--spectrum-font);
 }
 
+.occurrence-detail__timeline .occurrence-detail__actor {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: var(--spectrum-surface-muted);
+  color: var(--spectrum-text-muted);
+}
+
+.occurrence-detail__timeline li[data-origin='agency'] .occurrence-detail__actor {
+  background: #edf4ff;
+  color: #1b5ca8;
+}
+
+.occurrence-detail__timeline li[data-origin='community'] .occurrence-detail__actor {
+  background: #e8f7ef;
+  color: #15633a;
+}
+
+.occurrence-detail__timeline li[data-origin='system'] .occurrence-detail__actor {
+  background: var(--spectrum-surface-soft);
+  color: var(--spectrum-text-secondary);
+}
+
+.occurrence-detail__timeline li[data-origin='moderation'] .occurrence-detail__actor {
+  background: #fff4e5;
+  color: #8a5400;
+}
+
 .occurrence-detail__timeline strong {
   color: var(--spectrum-text);
   font: 850 14px/1.2 var(--spectrum-font);
@@ -322,6 +358,29 @@
   margin: 0;
   color: var(--spectrum-text-secondary);
   font: 450 14px/1.45 var(--spectrum-font);
+}
+
+.occurrence-detail__timeline-evidences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.occurrence-detail__timeline-evidences a {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: 999px;
+  padding: 0 10px;
+  color: var(--spectrum-primary-800);
+  font: 800 12px/1 var(--spectrum-font);
+  text-decoration: none;
+}
+
+.occurrence-detail__timeline-evidences .material-symbols-outlined {
+  font-size: 17px;
 }
 
 .occurrence-detail__notice {
@@ -345,6 +404,40 @@
   min-height: 220px;
   display: grid;
   place-items: center;
+}
+
+.occurrence-detail__state {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
+  padding: 32px 20px;
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text);
+  text-align: center;
+}
+
+.occurrence-detail__state .material-symbols-outlined {
+  color: var(--spectrum-text-muted);
+  font-size: 44px;
+}
+
+.occurrence-detail__state h1 {
+  margin: 0;
+  font: 850 24px/1.2 var(--spectrum-font);
+}
+
+.occurrence-detail__state p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--spectrum-text-secondary);
+  font: 450 15px/1.45 var(--spectrum-font);
+}
+
+.occurrence-detail__state--error .material-symbols-outlined {
+  color: #b1382c;
 }
 
 @media (max-width: 760px) {
@@ -372,5 +465,14 @@
   .occurrence-detail__section-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .occurrence-detail__hero-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .occurrence-detail button {
+    width: 100%;
   }
 }

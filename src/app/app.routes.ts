@@ -90,6 +90,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'occurrences/:id',
+    loadComponent: () =>
+      import('./features/posts/occurrence-detail-page/occurrence-detail-page')
+        .then((m) => m.OccurrenceDetailPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
     path: 'ocorrencias/:id',
     loadComponent: () =>
       import('./features/posts/occurrence-detail-page/occurrence-detail-page')

@@ -285,7 +285,8 @@ export class ProfilePage implements OnInit {
   }
 
   copyPostLink(post: SpectrumPost): void {
-    const link = `${window.location.origin}/publicacoes?post=${encodeURIComponent(post.id)}`;
+    const occurrenceId = post.originalPostId ?? post.id;
+    const link = `${window.location.origin}/occurrences/${encodeURIComponent(occurrenceId)}`;
 
     void navigator.clipboard
       .writeText(link)
@@ -293,7 +294,7 @@ export class ProfilePage implements OnInit {
         this.profileAlert.set({
           type: 'success',
           title: 'Link copiado',
-          message: 'O link da publicacao foi copiado para a area de transferencia.',
+          message: 'O link da ocorrência foi copiado para a área de transferência.',
         });
       })
       .catch(() => {
