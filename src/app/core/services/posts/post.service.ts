@@ -123,6 +123,8 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  dislikes: number;
+  disliked: boolean;
   id: string;
   createdAt: string;
   createdBy?: string;
@@ -785,6 +787,7 @@ export class PostService {
       likes: 0,
       dislikes: 0,
       liked: false,
+      dislikes: 0,
       disliked: false,
       comments: 0,
       reposts: 0,
@@ -1296,6 +1299,7 @@ export class PostService {
         likes: 38,
         dislikes: 4,
         liked: false,
+        dislikes: 0,
         disliked: false,
         comments: 11,
         reposts: 4,
@@ -1331,6 +1335,7 @@ export class PostService {
         likes: 67,
         dislikes: 14,
         liked: false,
+        dislikes: 0,
         disliked: false,
         comments: 19,
         reposts: 7,
@@ -1361,6 +1366,7 @@ export class PostService {
         likes: 51,
         dislikes: 0,
         liked: false,
+        dislikes: 0,
         disliked: false,
         comments: 8,
         reposts: 3,
@@ -1395,6 +1401,7 @@ export class PostService {
         likes: 72,
         dislikes: 23,
         liked: false,
+        dislikes: 0,
         disliked: false,
         comments: 24,
         reposts: 9,
@@ -1429,6 +1436,7 @@ export class PostService {
         likes: 43,
         dislikes: 8,
         liked: false,
+        dislikes: 0,
         disliked: false,
         comments: 9,
         reposts: 4,
@@ -1496,20 +1504,20 @@ export class PostService {
         post.history?.length
           ? post.history
           : [
-              this.createHistoryEvent({
-                occurrenceId: post.id,
-                eventType: 'OCORRENCIA_CRIADA',
-                actorId: post.createdBy,
-                actorType: 'USER',
-                occurredAt: createdAt,
-                newStatus: normalizedStatus,
-                metadata: {
-                  title: post.title,
-                  location: post.authorCity,
-                  source: 'legacy_post',
-                },
-              }),
-            ],
+            this.createHistoryEvent({
+              occurrenceId: post.id,
+              eventType: 'OCORRENCIA_CRIADA',
+              actorId: post.createdBy,
+              actorType: 'USER',
+              occurredAt: createdAt,
+              newStatus: normalizedStatus,
+              metadata: {
+                title: post.title,
+                location: post.authorCity,
+                source: 'legacy_post',
+              },
+            }),
+          ],
     };
   }
 
@@ -1646,6 +1654,8 @@ export class PostService {
     const authorName = user?.name || 'Usuario Spectrum';
 
     return {
+      dislikes: 1,
+      disliked: false,
       id: occurrence._id,
       createdAt,
       createdBy: occurrence.createdBy,
