@@ -1,0 +1,61 @@
+:host {
+  display: block;
+}
+
+.line-chart svg {
+  width: 100%;
+  height: 220px;
+  display: block;
+  overflow: visible;
+}
+
+.line-chart__grid {
+  stroke: var(--spectrum-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.line-chart__line {
+  fill: none;
+  stroke: var(--spectrum-primary-700);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.line-chart__point {
+  fill: var(--spectrum-surface);
+  stroke: var(--spectrum-accent);
+  stroke-width: 3;
+  cursor: pointer;
+  vector-effect: non-scaling-stroke;
+}
+
+.line-chart__point:hover,
+.line-chart__point:focus {
+  fill: var(--spectrum-accent);
+  outline: none;
+}
+
+.line-chart__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -6px;
+  color: var(--spectrum-text-muted);
+  font: 600 11px/1 var(--spectrum-font);
+}
+
+.line-chart__empty {
+  margin: 0;
+  padding: 74px 12px;
+  color: var(--spectrum-text-muted);
+  text-align: center;
+  font: 550 13px/1.4 var(--spectrum-font);
+}
+
+@media (max-width: 540px) {
+  .line-chart svg {
+    height: 176px;
+  }
+}

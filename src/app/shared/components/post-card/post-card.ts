@@ -62,6 +62,35 @@ export class PostCard implements OnChanges, OnDestroy {
     return this.post.saved;
   }
 
+  get statusLabel(): string {
+    return this.postService.getStatusLabel(this.post.status);
+  }
+
+  get importanceLabel(): string {
+    return this.postService.getImportanceLabel(this.post.importance);
+  }
+
+  get categoryLabel(): string {
+    return this.postService.getCategoryLabel(this.post.category);
+  }
+
+  get latestHistory() {
+    return [...this.post.history]
+      .sort(
+        (first, second) =>
+          new Date(second.occurredAt).getTime() - new Date(first.occurredAt).getTime(),
+      )
+      .slice(0, 3);
+  }
+
+  get historyCount(): number {
+    return this.post.history.length;
+  }
+
+  get responsibleAgencyLabel(): string {
+    return this.post.responsibleAgency?.name || 'Orgao ainda nao identificado';
+  }
+
   get isOwnPost(): boolean {
     if (!this.currentUser) {
       return false;
@@ -172,8 +201,52 @@ export class PostCard implements OnChanges, OnDestroy {
     void this.router.navigate(['/perfil', this.post.authorNickname]);
   }
 
+  goToOccurrence(): void {
+    if (!this.canOpenOccurrence) return;
+    void this.router.navigate(['/ocorrencias', this.post.originalPostId ?? this.post.id]);
+  }
+
+  get canOpenOccurrence(): boolean {
+    return /^[a-f\d]{24}$/i.test(this.post.originalPostId ?? this.post.id);
+  }
+
   onCommentAdded(): void {
     this.addedCommentsCount++;
+  }
+
+  formatHistoryEvent(eventType: string): string {
+    const labels: Record<string, string> = {
+      OCORRENCIA_CRIADA: 'Ocorrencia criada',
+      OCCURRENCE_UPDATED: 'Ocorrencia atualizada',
+      COMMENT_ADDED: 'Comentario adicionado',
+      COMMENT_EDITED: 'Comentario editado',
+      COMMENT_REMOVED: 'Comentario removido',
+      EVIDENCIA_ADICIONADA: 'Evidencia adicionada',
+      OCORRENCIA_CONFIRMADA: 'Tambem identificado',
+      ORGAO_RESPONSAVEL_IDENTIFICADO: 'Orgao identificado',
+      AGENCY_NOT_IDENTIFIED: 'Sem orgao identificado',
+      OCORRENCIA_ENCAMINHADA: 'Encaminhamento registrado',
+      ENCAMINHAMENTO_FALHOU: 'Encaminhamento falhou',
+      FORWARDING_RESPONSE_REGISTERED: 'Resposta registrada',
+      PROTOCOL_REGISTERED: 'Protocolo recebido',
+      ANALISE_INICIADA: 'Analise iniciada',
+      RESOLUCAO_INFORMADA: 'Resolucao informada',
+      OCORRENCIA_RESOLVIDA: 'Resolucao confirmada',
+      RESOLUCAO_CONTESTADA: 'Resolucao contestada',
+      OCORRENCIA_REABERTA: 'Ocorrencia reaberta',
+      MODERATION_APPLIED: 'Moderacao registrada',
+    };
+
+    return labels[eventType] ?? eventType;
+  }
+
+  formatHistoryDate(date: string): string {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(date));
   }
 
   toggleMenu(event: MouseEvent): void {

@@ -1,4 +1,4 @@
-<main class="social-page">
+<main class="social-page" [class.social-page--wide]="wideContent">
 
     <header class="social-header">
     <div class="social-header__inner">
@@ -132,7 +132,7 @@
       <button
         class="social-create"
         type="button"
-        aria-label="Criar publicacao"
+        aria-label="Criar ocorrência"
         (click)="openCreatePost()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
@@ -170,6 +170,17 @@
             notifications
           </span>
           Notificações
+        </a>
+
+        <a
+          class="social-nav__item"
+          routerLink="/dashboard/cidades"
+          routerLinkActive="social-nav__item--active"
+        >
+          <span class="material-symbols-outlined">
+            monitoring
+          </span>
+          Cidades
         </a>
 
         <!-- PERFIL -->

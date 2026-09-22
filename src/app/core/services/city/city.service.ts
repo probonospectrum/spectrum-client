@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../../constants/api-routes';
 
 const IBGE_LOCALIDADES_BASE_URL = 'https://servicodados.ibge.gov.br/api/v1/localidades';
 
@@ -13,6 +14,13 @@ export interface BrazilState {
 export interface BrazilCity {
   id: number;
   nome: string;
+}
+
+export interface SpectrumApiCity {
+  _id: string;
+  name: string;
+  state: string;
+  normalizedName: string;
 }
 
 @Injectable({
@@ -29,5 +37,11 @@ export class CityService {
     return this.http.get<BrazilCity[]>(
       `${IBGE_LOCALIDADES_BASE_URL}/estados/${stateId}/municipios?orderBy=nome`,
     );
+  }
+
+  findSpectrumCitiesByName(name: string): Observable<SpectrumApiCity[]> {
+    return this.http.get<SpectrumApiCity[]>(`${API_BASE_URL}/city`, {
+      params: { name },
+    });
   }
 }

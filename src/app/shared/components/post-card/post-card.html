@@ -106,6 +106,25 @@
     </div>
   </header>
 
+  <section class="post-card__occurrence" aria-label="Situacao da ocorrencia">
+    <div class="post-card__status-row">
+      <span class="post-card__status" [attr.data-status]="post.status">{{ statusLabel }}</span>
+      <span class="post-card__importance">{{ categoryLabel }}</span>
+      <span class="post-card__importance">Importancia {{ importanceLabel }}</span>
+    </div>
+    @if (canOpenOccurrence) {
+      <button class="post-card__title-button" type="button" (click)="goToOccurrence()">
+        <h3 class="post-card__title">{{ post.title }}</h3>
+      </button>
+    } @else {
+      <h3 class="post-card__title">{{ post.title }}</h3>
+    }
+    <div class="post-card__agency">
+      <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+      <span>{{ responsibleAgencyLabel }}</span>
+    </div>
+  </section>
+
   <p class="post-card__copy">{{ post.content }}</p>
 
   @if (post.mediaType !== 'text') {
@@ -125,6 +144,21 @@
       }
     </div>
   }
+
+  <section class="post-card__history" aria-label="Historico da ocorrencia">
+    <div class="post-card__history-head">
+      <span>Historico</span>
+      <small>{{ historyCount }} eventos</small>
+    </div>
+    <ol>
+      @for (event of latestHistory; track event.id) {
+        <li>
+          <time>{{ formatHistoryDate(event.occurredAt) }}</time>
+          <span>{{ formatHistoryEvent(event.eventType) }}</span>
+        </li>
+      }
+    </ol>
+  </section>
 
   <footer class="post-card__footer">
     <div class="post-card__meta">
