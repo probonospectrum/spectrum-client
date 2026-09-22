@@ -52,6 +52,11 @@ export const routes: Routes = [
       import('./features/user/verify-email-page/verify-email-page')
         .then((m) => m.VerifyEmailPage),
   },
+  {
+  path: 'auth/callback',
+  loadComponent: () =>
+    import('./features/callback/callback').then((m) => m.CallbackPage),
+  },
 
   {
     path: 'publicacoes',

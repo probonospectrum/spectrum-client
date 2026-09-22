@@ -138,7 +138,9 @@ export interface SpectrumPost {
   publishedAt: string;
   publishedAtLabel: string;
   likes: number;
+  dislikes: number;
   liked: boolean;
+  disliked: boolean;
   comments: number;
   reposts: number;
   reposted: boolean;
@@ -250,6 +252,7 @@ export interface PostInteractionRecord {
   userId: string;
   postId: string;
   liked?: boolean;
+  disliked?: boolean;
   saved?: boolean;
 }
 
@@ -782,6 +785,7 @@ export class PostService {
       publishedAt: now.toISOString(),
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
+      dislikes: 0,
       liked: false,
       dislikes: 0,
       disliked: false,
@@ -832,6 +836,30 @@ export class PostService {
     const currentPost = this.withPostState(basePost, user);
 
     record.liked = !currentPost.liked;
+
+    if (record.liked) {
+      record.disliked = false;
+    }
+
+    this.savePostInteractionRecords(records);
+
+    return this.withPostState(basePost, user);
+  }
+
+  togglePostDislike(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para descurtir.');
+    const postId = post.originalPostId ?? post.id;
+    const basePost = this.findRawPost(postId) ?? this.withoutComputedPostState({ ...post, id: postId });
+    const records = this.getPostInteractionRecords();
+    const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
+    const currentPost = this.withPostState(basePost, user);
+
+    record.disliked = !currentPost.disliked;
+
+    if (record.disliked) {
+      record.liked = false;
+    }
+
     this.savePostInteractionRecords(records);
 
     return this.withPostState(basePost, user);
@@ -1438,7 +1466,9 @@ private getDefaultPosts(): SpectrumPost[] {
     return {
       ...normalizedPost,
       likes: normalizedPost.likes + postInteractions.filter((record) => record.liked).length,
+      dislikes: normalizedPost.dislikes + postInteractions.filter((record) => record.disliked).length,
       liked: currentUserInteraction?.liked ?? false,
+      disliked: currentUserInteraction?.disliked ?? false,
       saved: currentUserInteraction?.saved ?? normalizedPost.saved,
       reposts: normalizedPost.reposts + reposts.length,
       reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
@@ -1489,9 +1519,15 @@ private getDefaultPosts(): SpectrumPost[] {
 
   private withoutComputedPostState(post: SpectrumPost): SpectrumPost {
     const postId = post.originalPostId ?? post.id;
+
     const interactionLikes = this.getPostInteractionRecords().filter(
       (record) => record.postId === postId && record.liked,
     ).length;
+
+    const interactionDislikes = this.getPostInteractionRecords().filter(
+      (record) => record.postId === postId && record.disliked,
+    ).length;
+
     const reposts = this.getRepostRecords().filter(
       (repost) => repost.originalPostId === postId,
     ).length;
@@ -1499,7 +1535,9 @@ private getDefaultPosts(): SpectrumPost[] {
     return {
       ...post,
       likes: Math.max(0, post.likes - interactionLikes),
+      dislikes: Math.max(0, post.dislikes - interactionDislikes),
       liked: false,
+      disliked: false,
       reposts: Math.max(0, post.reposts - reposts),
       reposted: false,
     };

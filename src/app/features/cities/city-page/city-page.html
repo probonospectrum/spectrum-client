@@ -9,14 +9,6 @@
     <section class="city-loading">
       <app-loading-indicator label="Carregando cidade" />
     </section>
-  } @else {
-    <section class="city-header">
-      <span class="material-symbols-outlined" aria-hidden="true">location_city</span>
-      <div>
-        <p>{{ citySubtitle }}</p>
-        <h2>{{ cityTitle }}</h2>
-      </div>
-    </section>
   }
 
   @if (!cityLoading() && location()) {
