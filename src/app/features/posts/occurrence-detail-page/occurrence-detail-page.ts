@@ -131,37 +131,109 @@ export class OccurrenceDetailPage implements OnInit {
     );
   }
 
+  get isCommunityUser(): boolean {
+    return Boolean(this.user && (this.user.occurrenceRole ?? 'USER') === 'USER');
+  }
+
+  get isModerator(): boolean {
+    return this.user?.occurrenceRole === 'MODERATOR';
+  }
+
+  get isResponsibleAgencyForOccurrence(): boolean {
+    return Boolean(
+      this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
+        this.user.occurrenceAgencyId &&
+        this.user.occurrenceAgencyId === this.occurrence?.responsibleAgency?.id,
+    );
+  }
+
+  get canConfirmCommunity(): boolean {
+    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canAddEvidence(): boolean {
+    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canSuggestAgency(): boolean {
+    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canAssociateAgency(): boolean {
+    return this.isModerator && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canAssumeResponsibility(): boolean {
+    return (
+      this.isResponsibleAgencyForOccurrence &&
+      ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(
+        this.occurrence?.status ?? '',
+      )
+    );
+  }
+
   get canForward(): boolean {
-    return ['ABERTA', 'REABERTA'].includes(this.occurrence?.status ?? '');
+    return this.isModerator && ['ABERTA', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canRegisterForwardingFailure(): boolean {
+    return this.isModerator && ['ABERTA', 'REABERTA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canShowCommunityActions(): boolean {
+    return (
+      this.isCommunityUser &&
+      (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
+    );
+  }
+
+  get canShowAgencyActions(): boolean {
+    return (
+      this.isResponsibleAgencyForOccurrence &&
+      (this.canAssumeResponsibility || this.canStartAnalysis || this.canInformResolution)
+    );
+  }
+
+  get canShowModeratorActions(): boolean {
+    return this.canAssociateAgency || this.canForward || this.canRegisterForwardingFailure;
+  }
+
+  get hasAvailableActions(): boolean {
+    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canContest || this.canReopen;
+  }
+
+  get agencyActionLabel(): string {
+    return this.canAssociateAgency ? 'Associar órgão' : 'Sugerir órgão responsável';
+  }
+
+  get agencySubmitLabel(): string {
+    return this.canAssociateAgency ? 'Salvar órgão' : 'Enviar sugestão';
   }
 
   get canInformResolution(): boolean {
+    if (!this.isCommunityUser && !this.isResponsibleAgencyForOccurrence) {
+      return false;
+    }
+
     return ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA'].includes(
       this.occurrence?.status ?? '',
     );
   }
 
   get canResolve(): boolean {
-    return this.occurrence?.status === 'RESOLUCAO_INFORMADA' && this.canActAsAuthority;
+    return this.occurrence?.status === 'RESOLUCAO_INFORMADA' && (this.isModerator || this.isResponsibleAgencyForOccurrence);
   }
 
   get canStartAnalysis(): boolean {
-    return this.occurrence?.status === 'ENCAMINHADA' && this.canActAsAuthority;
-  }
-
-  private get canActAsAuthority(): boolean {
-    return this.user?.occurrenceRole === 'MODERATOR' ||
-      (this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
-        !!this.user.occurrenceAgencyId &&
-        this.user.occurrenceAgencyId === this.occurrence?.responsibleAgency?.id);
+    return this.occurrence?.status === 'ENCAMINHADA' && this.isResponsibleAgencyForOccurrence;
   }
 
   get canContest(): boolean {
-    return this.occurrence?.status === 'RESOLVIDA';
+    return this.isCommunityUser && this.occurrence?.status === 'RESOLVIDA';
   }
 
   get canReopen(): boolean {
-    return this.occurrence?.status === 'CONTESTADA';
+    return this.isCommunityUser && this.occurrence?.status === 'CONTESTADA';
   }
 
   get responsibleAgencyLabel(): string {
@@ -264,13 +336,32 @@ export class OccurrenceDetailPage implements OnInit {
       return;
     }
 
+    const action = this.canAssociateAgency
+      ? this.postService.identifyResponsibleAgency(
+          this.occurrence,
+          this.user,
+          this.buildAgency(),
+        )
+      : this.postService.suggestResponsibleAgency(
+          this.occurrence,
+          this.user,
+          this.buildAgency(),
+        );
+    const message = this.canAssociateAgency
+      ? 'Órgão responsável associado à ocorrência.'
+      : 'Sugestão de órgão responsável registrada no histórico.';
+
+    this.runAction(action, message);
+  }
+
+  assumeResponsibility(): void {
+    if (!this.occurrence || !this.canAssumeResponsibility) {
+      return;
+    }
+
     this.runAction(
-      this.postService.identifyResponsibleAgency(
-        this.occurrence,
-        this.user,
-        this.buildAgency(),
-      ),
-      'Órgão responsável associado à ocorrência.',
+      this.postService.assumeAgencyResponsibility(this.occurrence, this.user),
+      'Responsabilidade assumida pelo órgão e registrada no histórico.',
     );
   }
 
@@ -318,7 +409,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolution(): void {
-    if (!this.occurrence || !this.resolutionStatement.trim()) {
+    if (!this.occurrence || !this.canInformResolution || !this.resolutionStatement.trim()) {
       this.errorMessage = 'Descreva a resolução informada.';
       return;
     }
@@ -353,10 +444,6 @@ export class OccurrenceDetailPage implements OnInit {
 
   submitAnalysis(): void {
     if (!this.occurrence || !this.canStartAnalysis) return;
-    if (this.user?.occurrenceRole === 'MODERATOR' && !this.analysisReference.trim()) {
-      this.errorMessage = 'Informe a referência da resposta do órgão.';
-      return;
-    }
     this.runAction(
       this.postService.startOccurrenceAnalysis(this.occurrence, this.user, 'Análise iniciada pelo órgão responsável.', this.analysisReference.trim() || undefined),
       'Análise iniciada e registrada no histórico.',
@@ -415,6 +502,7 @@ export class OccurrenceDetailPage implements OnInit {
       EVIDENCIA_ADICIONADA: 'Nova evidência',
       OCORRENCIA_CONFIRMADA: 'Também identificado',
       ORGAO_RESPONSAVEL_IDENTIFICADO: 'Órgão responsável identificado',
+      ORGAO_RESPONSAVEL_SUGERIDO: 'Órgão responsável sugerido',
       AGENCY_NOT_IDENTIFIED: 'Órgão não identificado',
       OCORRENCIA_ENCAMINHADA: 'Ocorrência encaminhada',
       ENCAMINHAMENTO_FALHOU: 'Encaminhamento falhou',
@@ -479,6 +567,10 @@ export class OccurrenceDetailPage implements OnInit {
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_IDENTIFICADO') {
       return `${String(metadata['agencyName'] ?? 'Um órgão')} foi identificado como responsável pela ocorrência.`;
+    }
+
+    if (event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO') {
+      return `${String(metadata['agencyName'] ?? 'Um órgão')} foi sugerido pela comunidade.`;
     }
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {

@@ -77,10 +77,12 @@
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head">
         <h2>Evidências</h2>
-        <button type="button" (click)="openPanel('evidence')">
-          <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
-          Adicionar evidência
-        </button>
+        @if (canAddEvidence) {
+          <button type="button" (click)="openPanel('evidence')">
+            <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+            Adicionar evidência
+          </button>
+        }
       </div>
 
       @if (occurrence.evidences.length) {
@@ -106,56 +108,113 @@
         <span>{{ confirmationCount }} confirmações comunitárias</span>
       </div>
 
-      <div class="occurrence-detail__actions">
-        <button type="button" [disabled]="userAlreadyConfirmed || isSubmitting()" (click)="confirmOccurrence()">
-          <span class="material-symbols-outlined" aria-hidden="true">verified</span>
-          {{ userAlreadyConfirmed ? 'Você já confirmou' : 'Também identifiquei este problema' }}
-        </button>
-        <button type="button" (click)="openPanel('agency')">
-          <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-          Associar órgão
-        </button>
-        @if (canForward) {
-          <button type="button" (click)="openPanel('forward')">
-            <span class="material-symbols-outlined" aria-hidden="true">send</span>
-            Encaminhar ocorrência
-          </button>
-          <button type="button" (click)="openPanel('forwardFailure')">
-            <span class="material-symbols-outlined" aria-hidden="true">error</span>
-            Registrar falha
-          </button>
-        }
-        @if (canInformResolution) {
-          <button type="button" (click)="openPanel('resolution')">
-            <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
-            Informar resolução
-          </button>
-        }
-        @if (canStartAnalysis) {
-          <button type="button" [disabled]="isSubmitting()" (click)="openPanel('analysis')">
-            <span class="material-symbols-outlined" aria-hidden="true">manage_search</span>
-            Iniciar análise
-          </button>
-        }
-        @if (canResolve) {
-          <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
-            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-            Confirmar resolução
-          </button>
-        }
-        @if (canContest) {
-          <button type="button" class="occurrence-detail__danger" (click)="openPanel('contest')">
-            <span class="material-symbols-outlined" aria-hidden="true">report</span>
-            Contestar resolução
-          </button>
-        }
-        @if (canReopen) {
-          <button type="button" (click)="openPanel('reopen')">
-            <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
-            Reabrir ocorrência
-          </button>
-        }
-      </div>
+      @if (hasAvailableActions) {
+        <div class="occurrence-detail__actions">
+          @if (canShowCommunityActions) {
+            <div class="occurrence-detail__action-group">
+              <span>Comunidade</span>
+              @if (canConfirmCommunity) {
+                <button type="button" [disabled]="userAlreadyConfirmed || isSubmitting()" (click)="confirmOccurrence()">
+                  <span class="material-symbols-outlined" aria-hidden="true">verified</span>
+                  {{ userAlreadyConfirmed ? 'Você já confirmou' : 'Também identifiquei este problema' }}
+                </button>
+              }
+              @if (canAddEvidence) {
+                <button type="button" (click)="openPanel('evidence')">
+                  <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+                  Adicionar evidência
+                </button>
+              }
+              @if (canSuggestAgency) {
+                <button type="button" (click)="openPanel('agency')">
+                  <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+                  Sugerir órgão responsável
+                </button>
+              }
+              @if (canInformResolution) {
+                <button type="button" (click)="openPanel('resolution')">
+                  <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+                  Informar resolução
+                </button>
+              }
+            </div>
+          }
+
+          @if (canShowAgencyActions) {
+            <div class="occurrence-detail__action-group">
+              <span>Órgão responsável</span>
+              @if (canAssumeResponsibility) {
+                <button type="button" [disabled]="isSubmitting()" (click)="assumeResponsibility()">
+                  <span class="material-symbols-outlined" aria-hidden="true">assignment_turned_in</span>
+                  Assumir responsabilidade
+                </button>
+              }
+              @if (canStartAnalysis) {
+                <button type="button" [disabled]="isSubmitting()" (click)="openPanel('analysis')">
+                  <span class="material-symbols-outlined" aria-hidden="true">manage_search</span>
+                  Iniciar análise
+                </button>
+              }
+              @if (canInformResolution) {
+                <button type="button" (click)="openPanel('resolution')">
+                  <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+                  Informar resolução
+                </button>
+              }
+            </div>
+          }
+
+          @if (canShowModeratorActions) {
+            <div class="occurrence-detail__action-group">
+              <span>Moderação</span>
+              @if (canAssociateAgency) {
+                <button type="button" (click)="openPanel('agency')">
+                  <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+                  Associar órgão
+                </button>
+              }
+              @if (canForward) {
+                <button type="button" (click)="openPanel('forward')">
+                  <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                  Encaminhar ocorrência
+                </button>
+              }
+              @if (canRegisterForwardingFailure) {
+                <button type="button" (click)="openPanel('forwardFailure')">
+                  <span class="material-symbols-outlined" aria-hidden="true">error</span>
+                  Registrar falha
+                </button>
+              }
+            </div>
+          }
+
+          @if (canResolve || canContest || canReopen) {
+            <div class="occurrence-detail__action-group">
+              <span>Acompanhamento</span>
+              @if (canResolve) {
+                <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
+                  <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                  Confirmar resolução
+                </button>
+              }
+              @if (canContest) {
+                <button type="button" class="occurrence-detail__danger" (click)="openPanel('contest')">
+                  <span class="material-symbols-outlined" aria-hidden="true">report</span>
+                  Contestar resolução
+                </button>
+              }
+              @if (canReopen) {
+                <button type="button" (click)="openPanel('reopen')">
+                  <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                  Reabrir ocorrência
+                </button>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="occurrence-detail__empty">Nenhuma ação disponível para este perfil neste status.</p>
+      }
 
       @if (actionPanel) {
         <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
@@ -227,7 +286,7 @@
           }
 
           @if (actionPanel === 'agency') {
-            <button type="button" [disabled]="isSubmitting()" (click)="submitAgency()">Salvar órgão</button>
+            <button type="button" [disabled]="isSubmitting()" (click)="submitAgency()">{{ agencySubmitLabel }}</button>
           }
 
           @if (actionPanel === 'evidence') {

@@ -164,9 +164,26 @@
 }
 
 .occurrence-detail__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.occurrence-detail__action-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  padding: 12px;
+  background: var(--spectrum-surface-soft);
+}
+
+.occurrence-detail__action-group > span {
+  width: 100%;
+  color: var(--spectrum-text-subtle);
+  font: 800 11px/1 var(--spectrum-font);
+  text-transform: uppercase;
 }
 
 .occurrence-detail__form {
