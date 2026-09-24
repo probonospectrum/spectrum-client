@@ -4,7 +4,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Observable, finalize, forkJoin, switchMap } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, switchMap } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
   OccurrenceAgency,
@@ -17,6 +17,8 @@ import {
 } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
+
+import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
   | 'evidence'
@@ -58,13 +60,13 @@ export class OccurrenceDetailPage implements OnInit {
   evidenceDescription = '';
   agencyName = '';
   agencyId = '';
-  agencyEmail = '';
   forwardingChannel: OccurrenceForwardingChannel = 'WEBSITE';
   forwardingContent = '';
   forwardingProtocol = '';
   forwardingDeliveryConfirmed = false;
   forwardingFailureReason = '';
   analysisReference = '';
+  analysisNote = '';
   resolutionStatement = '';
   resolutionReviewNote = '';
   contestReason = '';
@@ -92,7 +94,7 @@ export class OccurrenceDetailPage implements OnInit {
     this.successMessage = '';
 
     forkJoin({
-      occurrence: this.postService.getOccurrence(id, this.user),
+      occurrence: defer(() => this.postService.getOccurrence(id, this.user)),
       history: this.postService.getOccurrenceHistory(id),
     })
       .pipe(
@@ -199,7 +201,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get hasAvailableActions(): boolean {
-    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canContest || this.canReopen;
+    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canResolve || this.canContest || this.canReopen;
   }
 
   get agencyActionLabel(): string {
@@ -283,7 +285,15 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   openPanel(panel: ActionPanel): void {
+    if (this.isSubmitting()) return;
     this.actionPanel = this.actionPanel === panel ? null : panel;
+    this.evidenceFile = null;
+    this.evidenceDescription = '';
+    this.resolutionReviewNote = '';
+    this.resolutionStatement = '';
+    this.contestReason = '';
+    this.reopenReason = '';
+    this.analysisNote = '';
     this.errorMessage = '';
     this.successMessage = '';
   }
@@ -294,18 +304,18 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   confirmOccurrence(): void {
-    if (!this.occurrence || this.userAlreadyConfirmed) {
+    if (!this.occurrence || !this.canConfirmCommunity || this.userAlreadyConfirmed || this.isSubmitting()) {
       return;
     }
 
     this.runAction(
-      this.postService.confirmOccurrence(this.occurrence, this.user),
+      () => this.postService.confirmOccurrence(this.occurrence!, this.user),
       'Confirmação registrada sem alterar o status.',
     );
   }
 
   submitEvidence(): void {
-    if (!this.occurrence || !this.evidenceFile) {
+    if (!this.occurrence || !this.canAddEvidence || !this.evidenceFile) {
       this.errorMessage = 'Selecione uma evidência para anexar.';
       return;
     }
@@ -331,19 +341,19 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitAgency(): void {
-    if (!this.occurrence || !this.agencyName.trim()) {
+    if (!this.occurrence || (!this.canAssociateAgency && !this.canSuggestAgency) || !this.agencyName.trim()) {
       this.errorMessage = 'Informe o nome do órgão responsável.';
       return;
     }
 
     const action = this.canAssociateAgency
       ? this.postService.identifyResponsibleAgency(
-          this.occurrence,
+          this.occurrence!,
           this.user,
           this.buildAgency(),
         )
       : this.postService.suggestResponsibleAgency(
-          this.occurrence,
+          this.occurrence!,
           this.user,
           this.buildAgency(),
         );
@@ -351,7 +361,7 @@ export class OccurrenceDetailPage implements OnInit {
       ? 'Órgão responsável associado à ocorrência.'
       : 'Sugestão de órgão responsável registrada no histórico.';
 
-    this.runAction(action, message);
+    this.runAction(() => action, message);
   }
 
   assumeResponsibility(): void {
@@ -360,27 +370,23 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     this.runAction(
-      this.postService.assumeAgencyResponsibility(this.occurrence, this.user),
+      () => this.postService.assumeAgencyResponsibility(this.occurrence!, this.user),
       'Responsabilidade assumida pelo órgão e registrada no histórico.',
     );
   }
 
   submitForwarding(): void {
-    if (!this.occurrence || !this.agencyName.trim() || !this.forwardingContent.trim()) {
-      this.errorMessage = 'Informe órgão e conteúdo do encaminhamento.';
+    if (!this.occurrence || !this.canForward || !this.agencyName.trim() || this.forwardingContent.trim().length < 20) {
+      this.errorMessage = 'Informe o órgão e descreva o encaminhamento em pelo menos 20 caracteres.';
       return;
     }
-    if (this.forwardingChannel === 'EMAIL' && !this.agencyEmail.trim()) {
-      this.errorMessage = 'Informe o email do órgão destinatário.';
-      return;
-    }
-    if (this.forwardingChannel !== 'EMAIL' && !this.forwardingDeliveryConfirmed) {
-      this.errorMessage = 'Confirme que o encaminhamento foi realizado.';
+    if (!['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER'].includes(this.forwardingChannel) || !this.forwardingDeliveryConfirmed) {
+      this.errorMessage = 'Confirme o registro manual do encaminhamento por um dos canais disponíveis.';
       return;
     }
 
     this.runAction(
-      this.postService.forwardOccurrence(this.occurrence, this.user, {
+      () => this.postService.forwardOccurrence(this.occurrence!, this.user, {
         agency: this.buildAgency(),
         channel: this.forwardingChannel,
         sentContent: this.forwardingContent.trim(),
@@ -392,13 +398,13 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitForwardingFailure(): void {
-    if (!this.occurrence || !this.forwardingFailureReason.trim()) {
+    if (!this.occurrence || !this.canRegisterForwardingFailure || !this.forwardingFailureReason.trim()) {
       this.errorMessage = 'Informe o motivo da falha.';
       return;
     }
 
     this.runAction(
-      this.postService.registerForwardingFailure(this.occurrence, this.user, {
+      () => this.postService.registerForwardingFailure(this.occurrence!, this.user, {
         agency: this.agencyName.trim() ? this.buildAgency() : undefined,
         channel: this.forwardingChannel,
         sentContent: this.forwardingContent.trim() || undefined,
@@ -427,14 +433,14 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolve(): void {
-    if (!this.occurrence || (this.user?.occurrenceRole === 'MODERATOR' && this.resolutionReviewNote.trim().length < 20)) {
+    if (!this.occurrence || !this.canResolve || this.resolutionReviewNote.trim().length < 20) {
       this.errorMessage = 'Descreva a verificação da resolução (mínimo de 20 caracteres).';
       return;
     }
 
     this.runAction(
-      this.postService.resolveOccurrence(
-        this.occurrence,
+      () => this.postService.resolveOccurrence(
+        this.occurrence!,
         this.user,
         this.resolutionReviewNote.trim(),
       ),
@@ -444,14 +450,18 @@ export class OccurrenceDetailPage implements OnInit {
 
   submitAnalysis(): void {
     if (!this.occurrence || !this.canStartAnalysis) return;
+    if (this.analysisNote.trim().length < 20) {
+      this.errorMessage = 'Descreva a ação iniciada em pelo menos 20 caracteres.';
+      return;
+    }
     this.runAction(
-      this.postService.startOccurrenceAnalysis(this.occurrence, this.user, 'Análise iniciada pelo órgão responsável.', this.analysisReference.trim() || undefined),
+      () => this.postService.startOccurrenceAnalysis(this.occurrence!, this.user, this.analysisNote.trim(), this.analysisReference.trim() || undefined),
       'Análise iniciada e registrada no histórico.',
     );
   }
 
   submitContest(): void {
-    if (!this.occurrence || !this.contestReason.trim()) {
+    if (!this.occurrence || !this.canContest || !this.contestReason.trim()) {
       this.errorMessage = 'Explique por que a resolução está sendo contestada.';
       return;
     }
@@ -469,19 +479,23 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitReopen(): void {
-    if (!this.occurrence || !this.reopenReason.trim()) {
+    if (!this.occurrence || !this.canReopen || !this.reopenReason.trim()) {
       this.errorMessage = 'Informe por que a ocorrência deve ser reaberta.';
       return;
     }
 
     this.runAction(
-      this.postService.reopenOccurrenceFlow(this.occurrence, this.user, this.reopenReason.trim()),
+      () => this.postService.reopenOccurrenceFlow(this.occurrence!, this.user, this.reopenReason.trim()),
       'Ocorrência reaberta para novo ciclo de acompanhamento.',
     );
   }
 
   formatStatus(): string {
-    return this.occurrence ? this.postService.getStatusLabel(this.occurrence.status) : '';
+    return this.occurrence ? occurrenceStage(this.occurrence.status) : '';
+  }
+
+  get statusDetail(): string {
+    return this.occurrence ? OCCURRENCE_STATUS_DETAILS[this.occurrence.status] : '';
   }
 
   formatCategory(): string {
@@ -554,7 +568,7 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     if (event.eventType === 'ANALISE_INICIADA') {
-      return metadata['reference'] ? `Análise iniciada. Referência: ${metadata['reference']}.` : 'O órgão responsável iniciou a análise.';
+      return [event.description, metadata['note'], metadata['reference'] ? `Referência: ${metadata['reference']}` : ''].filter(Boolean).join(' ') || 'O órgão responsável iniciou a análise.';
     }
 
     if (event.eventType === 'OCORRENCIA_RESOLVIDA') {
@@ -655,7 +669,7 @@ export class OccurrenceDetailPage implements OnInit {
     successMessage: string,
   ): void {
     if (!this.occurrence || !this.evidenceFile) {
-      this.runAction(action([]), successMessage);
+      this.runAction(() => action([]), successMessage);
       return;
     }
 
@@ -684,9 +698,12 @@ export class OccurrenceDetailPage implements OnInit {
       });
   }
 
-  private runAction(action: Observable<SpectrumPost>, successMessage: string): void {
+  private runAction(action: () => Observable<SpectrumPost>, successMessage: string): void {
+    if (this.isSubmitting()) return;
+    this.errorMessage = '';
+    this.successMessage = '';
     this.isSubmitting.set(true);
-    action
+    defer(action)
       .pipe(
         finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -699,6 +716,7 @@ export class OccurrenceDetailPage implements OnInit {
 
   private afterAction(occurrence: SpectrumPost, message: string): void {
     this.occurrence = occurrence;
+    this.historyEvents = occurrence.history;
     this.successMessage = message;
     this.errorMessage = '';
     this.actionPanel = null;
@@ -727,6 +745,7 @@ export class OccurrenceDetailPage implements OnInit {
         this.occurrence = this.withHistoryAuthor(occurrence, history);
         this.historyEvents = history;
       },
+      error: () => { /* Keep the original action error and last confirmed state. */ },
     });
   }
 
@@ -739,7 +758,6 @@ export class OccurrenceDetailPage implements OnInit {
     return {
       id: this.agencyId.trim() || undefined,
       name: this.agencyName.trim(),
-      email: this.agencyEmail.trim() || undefined,
       hasIntegration: false,
     };
   }
@@ -747,7 +765,6 @@ export class OccurrenceDetailPage implements OnInit {
   private prefillAgency(agency?: OccurrenceAgency): void {
     this.agencyId = agency?.id ?? '';
     this.agencyName = agency?.name ?? '';
-    this.agencyEmail = agency?.email ?? '';
   }
 
   private getErrorMessage(error: unknown): string {

@@ -4,37 +4,40 @@
 
 :root {
   color-scheme: light;
-  --spectrum-primary-900: #16324f;
-  --spectrum-primary-800: #1f4568;
-  --spectrum-primary-700: #275b7c;
-  --spectrum-primary-600: #2f6f95;
-  --spectrum-primary-500: #367fa7;
-  --spectrum-accent: #2f6f95;
-  --spectrum-accent-soft: #e8f1f7;
-  --spectrum-info: #246b9f;
-  --spectrum-success: #246b9f;
+  --spectrum-primary-900: #132b46;
+  --spectrum-primary-800: #2463d4;
+  --spectrum-primary-700: #245ac0;
+  --spectrum-primary-600: #3674e8;
+  --spectrum-primary-500: #5e92ee;
+  --spectrum-accent: #3674e8;
+  --spectrum-accent-soft: #eaf1ff;
+  --spectrum-info: #2964c8;
+  --spectrum-success: #2964c8;
   --spectrum-warning: #a46413;
   --spectrum-error: #b42318;
-  --spectrum-app-bg: #f4f6f8;
+  --spectrum-app-bg: #f5f7fb;
   --spectrum-surface-rgb: 255 255 255;
   --spectrum-surface: #ffffff;
-  --spectrum-surface-soft: #f8fafc;
-  --spectrum-surface-muted: #eef3f6;
-  --spectrum-border: #d9e1e8;
-  --spectrum-border-strong: #bdc9d4;
-  --spectrum-text: #172331;
-  --spectrum-text-secondary: #455468;
-  --spectrum-text-muted: #6c7a89;
-  --spectrum-text-subtle: #8b98a7;
-  --spectrum-focus: rgba(47, 111, 149, 0.26);
+  --spectrum-surface-soft: #f8faff;
+  --spectrum-surface-muted: #edf2fa;
+  --spectrum-border: #e3e8f1;
+  --spectrum-border-strong: #bccce4;
+  --spectrum-text: #172c46;
+  --spectrum-text-secondary: #4c607a;
+  --spectrum-text-muted: #657892;
+  --spectrum-text-subtle: #6d8099;
+  --spectrum-focus: rgba(54, 116, 232, 0.26);
   --spectrum-radius-xs: 6px;
   --spectrum-radius-sm: 8px;
-  --spectrum-radius-md: 10px;
-  --spectrum-radius-lg: 14px;
-  --spectrum-shadow-sm: 0 1px 2px rgba(15, 35, 55, 0.08);
+  --spectrum-radius-md: 18px;
+  --spectrum-radius-lg: 24px;
+  --spectrum-shadow-sm: 0 4px 20px rgba(24, 49, 87, 0.035);
   --spectrum-shadow-md: 0 12px 32px rgba(15, 35, 55, 0.12);
   --spectrum-shadow-lg: 0 24px 70px rgba(15, 35, 55, 0.22);
-  --spectrum-container: 1248px;
+  --spectrum-container: 1440px;
+  --spectrum-nav-bg: #122b49;
+  --spectrum-action: #2463d4;
+  --spectrum-action-hover: #1b50b1;
   --spectrum-transition: 160ms ease;
   --spectrum-font:
     Inter,
@@ -53,11 +56,11 @@
   --spectrum-primary-600: #3b82f6;
   --spectrum-primary-500: #2563eb;
 
-  --spectrum-accent: #38bdf8;
+  --spectrum-accent: #8ab4ff;
   --spectrum-accent-soft: #0c2a45;
 
-  --spectrum-info: #38bdf8;
-  --spectrum-success: #34d399;
+  --spectrum-info: #8ab4ff;
+  --spectrum-success: #8eb5ff;
   --spectrum-warning: #fbbf24;
   --spectrum-error: #fb7185;
 
@@ -198,4 +201,19 @@ app-root {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+
+::selection { background: #cddfff; color: #132b46; }
+button:disabled { cursor: not-allowed; }
+h1, h2, h3 { letter-spacing: -0.025em; }
+
+/* Shared constraints for narrow viewports and long user content. */
+html { -webkit-text-size-adjust: 100%; scroll-padding-bottom: 100px; }
+app-root { min-height: 100dvh; }
+input, select, textarea, fieldset { min-width: 0; max-width: 100%; }
+video { max-width: 100%; }
+h1, h2, h3, p, dd { overflow-wrap: anywhere; }
+@media (max-width: 780px) {
+  /* Keep native mobile inputs readable without focus zoom. */
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
 }

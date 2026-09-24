@@ -1,3 +1,4 @@
+import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -63,7 +64,15 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   get statusLabel(): string {
-    return this.postService.getStatusLabel(this.post.status);
+    return occurrenceStage(this.post.status);
+  }
+
+  get statusDetail(): string {
+    return OCCURRENCE_STATUS_DETAILS[this.post.status];
+  }
+
+  get primaryImage(): string | undefined {
+    return this.post.evidences.find(evidence => evidence.type === 'IMAGE' && evidence.url)?.url;
   }
 
   get importanceLabel(): string {

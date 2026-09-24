@@ -8,7 +8,7 @@
   min-height: 48px;
   border: 0;
   border-radius: var(--spectrum-radius-sm);
-  background: var(--spectrum-primary-800);
+  background: var(--spectrum-action);
   color: #ffffff;
   cursor: pointer;
   font: 800 14px/1.2 var(--spectrum-font);
@@ -21,7 +21,7 @@
 }
 
 .spectrum-button:hover:not(:disabled) {
-  background: var(--spectrum-primary-900);
+  background: var(--spectrum-action-hover);
   box-shadow: 0 14px 28px rgba(31, 69, 104, 0.22);
   transform: translateY(-1px);
 }

@@ -121,16 +121,18 @@
   >
     <div class="post-card__occurrence" aria-label="Situacao da ocorrencia">
       <div class="post-card__status-row">
-        <span class="post-card__status" [attr.data-status]="post.status">{{ statusLabel }}</span>
+        <span class="post-card__status" [attr.data-status]="post.status" [attr.title]="statusDetail">{{ statusLabel }}</span>
         <span class="post-card__importance">{{ categoryLabel }}</span>
-        <span class="post-card__importance">Importancia {{ importanceLabel }}</span>
+        <span class="post-card__importance">Importância {{ importanceLabel }}</span>
       </div>
       <h3 class="post-card__title">{{ post.title }}</h3>
     </div>
 
     <p class="post-card__copy">{{ post.content }}</p>
 
-    @if (post.mediaType !== 'text') {
+    @if (primaryImage; as imageUrl) {
+      <img class="post-card__evidence-image" [src]="imageUrl" [alt]="post.title" loading="lazy" />
+    } @else if (post.mediaType !== 'text') {
       <div class="post-card__media" [class.post-card__media--image]="post.mediaType === 'image'">
         @if (post.mediaType === 'video') {
           <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>

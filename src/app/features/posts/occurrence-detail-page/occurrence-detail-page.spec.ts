@@ -121,7 +121,7 @@ describe('OccurrenceDetailPage actions', () => {
   it('shows moderator operations at the same URL', () => {
     expect(actionsFor('MODERATOR')).toEqual([
       'account_balance Associar órgão',
-      'send Encaminhar ocorrência',
+      'send Registrar encaminhamento',
       'error Registrar falha',
     ]);
   });
@@ -131,4 +131,48 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.occurrence-detail__action-group button').length).toBe(0);
   });
+  it('keeps confirmation visible when an authorized agency only has resolution review available', () => {
+    actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'RESOLUCAO_INFORMADA' };
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.hasAvailableActions).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Confirmar resolução');
+    expect(fixture.componentInstance.formatStatus()).toBe('Em andamento');
+  });
+
+  it('requires a verification note before closing and does not offer closure to the community', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'RESOLUCAO_INFORMADA' };
+    expect(fixture.componentInstance.canResolve).toBe(false);
+    fixture.componentInstance.submitResolve();
+    expect(fixture.componentInstance.errorMessage).toContain('20 caracteres');
+  });
+
+  it('offers only manual forwarding channels and requires confirmation of the action', () => {
+    actionsFor('MODERATOR');
+    fixture.componentInstance.openPanel('forward');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const values = Array.from(fixture.nativeElement.querySelectorAll('select[name="forwardingChannel"] option'))
+      .map(option => (option as HTMLOptionElement).value);
+    expect(values).toEqual(['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER']);
+    fixture.componentInstance.agencyName = 'Secretaria de Obras';
+    fixture.componentInstance.forwardingContent = 'Solicitação registrada no portal municipal.';
+    fixture.componentInstance.submitForwarding();
+    expect(fixture.componentInstance.errorMessage).toContain('registro manual');
+  });
+
+  it('shows closed occurrences and offers contestation followed by reopening', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'RESOLVIDA' };
+    expect(fixture.componentInstance.formatStatus()).toBe('Fechada');
+    expect(fixture.componentInstance.canContest).toBe(true);
+    expect(fixture.componentInstance.canReopen).toBe(false);
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'CONTESTADA' };
+    expect(fixture.componentInstance.canReopen).toBe(true);
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'REABERTA' };
+    expect(fixture.componentInstance.formatStatus()).toBe('Aberta');
+  });
+
 });

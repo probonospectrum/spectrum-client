@@ -9,33 +9,40 @@
   (postUpdated)="onPostUpdated()"
 >
 
-  <section
-    class="post-composer"
-    role="button"
-    tabindex="0"
-    (click)="socialShell.openCreatePost()"
-    (keydown.enter)="socialShell.openCreatePost()"
-    (keydown.space)="socialShell.openCreatePost()"
-  >
-    <div class="post-composer__avatar">
-      {{ userInitial }}
+  <section class="community-hero" aria-labelledby="community-title">
+    <div class="community-hero__copy">
+      <span class="community-hero__eyebrow"><span aria-hidden="true"></span> SUA VOZ. NOSSA CIDADE.</span>
+      <h1 id="community-title">Pequenas atitudes.<br><em>Uma cidade melhor.</em></h1>
+      <p>Registre um problema, conecte sua comunidade e acompanhe cada passo da solução.</p>
+      <button type="button" (click)="socialShell.openCreatePost()">Registrar ocorrência <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
     </div>
-
-    <div class="post-composer__body">
-      <div class="post-composer__field">
-        <span>Registre um problema na sua cidade</span>
-
-        <button
-          type="button"
-          class="post-composer__publish"
-          (click)="$event.stopPropagation(); socialShell.openCreatePost()"
-        >
-          Publicar ocorrência
-        </button>
-      </div>
-
+    <div class="community-hero__visual" aria-hidden="true">
+      <img src="/city-grid.svg" alt="" />
+      <span class="community-hero__map-note"><span class="material-symbols-outlined">location_on</span> Seu bairro em movimento</span>
     </div>
   </section>
+
+  <section class="feed-categories" aria-label="Filtrar por categoria">
+    <div class="feed-section-heading"><h2>O que acontece na cidade</h2><span>Explore por categoria</span></div>
+    <div class="feed-categories__list">
+      @for (category of categoryFilters; track category.value) {
+        <button type="button" [attr.aria-pressed]="selectedCategory() === category.value" (click)="selectedCategory.set(category.value)">
+          <span class="material-symbols-outlined" aria-hidden="true">{{ category.icon }}</span>
+          {{ category.label }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <div class="feed-heading">
+    <div><span class="feed-eyebrow">ACOMPANHE E PARTICIPE</span><h2>Relatos da comunidade</h2></div>
+    @if (!feedLoading()) { <span class="feed-count" role="status">{{ posts.length }} {{ posts.length === 1 ? 'ocorrência' : 'ocorrências' }}</span> }
+  </div>
+  <div class="feed-tabs" aria-label="Filtrar por situação">
+    @for (stage of stages; track stage) {
+      <button type="button" [attr.aria-pressed]="selectedStage() === stage" (click)="selectedStage.set(stage)">{{ stage }}</button>
+    }
+  </div>
 
   @if (feedLoading()) {
     <section class="posts-loading" aria-label="Carregando publicacoes">
@@ -73,9 +80,14 @@
       />
     } @empty {
       <section class="posts-empty">
-        <h2>Nenhuma ocorrência por aqui</h2>
-        <p>Registre a primeira ocorrência da sua comunidade.</p>
-        <button type="button" (click)="socialShell.openCreatePost()">Criar ocorrência</button>
+        <span class="material-symbols-outlined posts-empty__icon" aria-hidden="true">{{ hasFilters ? 'filter_alt_off' : 'location_city' }}</span>
+        <h2>{{ hasFilters ? 'Nenhum relato com esses filtros' : 'Sua cidade tem espaço para a sua voz' }}</h2>
+        <p>{{ hasFilters ? 'Experimente outra categoria ou situação para explorar os relatos.' : 'Um registro pode ser o primeiro passo para melhorar o seu bairro.' }}</p>
+        @if (hasFilters) {
+          <button type="button" (click)="clearFilters()">Limpar filtros</button>
+        } @else {
+          <button type="button" (click)="socialShell.openCreatePost()">Criar a primeira ocorrência</button>
+        }
       </section>
     }
   }

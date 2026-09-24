@@ -73,7 +73,7 @@
 
 .settings-dialog__header h2 {
   color: var(--spectrum-text);
-  font: 850 21px/1.2 var(--spectrum-font);
+  font: 600 21px/1.2 var(--spectrum-font);
 }
 
 .settings-dialog__header p {
@@ -108,4 +108,12 @@
     max-height: calc(100vh - 32px);
     padding: 24px 20px 20px;
   }
+}
+
+.settings-dialog-backdrop { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.settings-dialog { min-width: 0; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 540px) {
+  .settings-dialog-backdrop { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .settings-dialog { max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)); }
+  .settings-dialog__close { width: 44px; height: 44px; }
 }

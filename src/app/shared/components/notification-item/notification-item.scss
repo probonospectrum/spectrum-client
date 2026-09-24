@@ -123,3 +123,10 @@
 :host-context(html[data-theme="dark"]) .notification__remove:hover {
   background: rgba(239, 119, 119, 0.12);
 }
+
+.notification__body { overflow-wrap: anywhere; }
+@media (max-width: 540px) {
+  .notification { padding: 12px; gap: 8px; }
+  .notification__remove { width: 44px; height: 44px; }
+  .notification__handle { display: block; margin-left: 0; }
+}

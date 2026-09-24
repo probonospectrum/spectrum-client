@@ -31,6 +31,8 @@ import {
 import { LoggedUser } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../loading-indicator/loading-indicator';
 
+import { IMPORTANCE_GUIDANCE } from '../../../core/services/posts/occurrence-flow';
+
 interface SelectedEvidence {
   file: File;
   type: 'IMAGE' | 'VIDEO';
@@ -68,9 +70,11 @@ export class CreatePostModal implements OnChanges {
     { value: 'BAIXA', label: 'Baixa' },
     { value: 'MEDIA', label: 'Média' },
     { value: 'ALTA', label: 'Alta' },
-    { value: 'CRITICA', label: 'Crítica' },
   ];
 
+  readonly importanceGuidance = IMPORTANCE_GUIDANCE;
+  address = '';
+  neighborhood = '';
   problemTitle = '';
   newPostContent = '';
   selectedCategory: OccurrenceCategory | '' = '';
@@ -122,6 +126,7 @@ export class CreatePostModal implements OnChanges {
     return Boolean(
       this.newPostContent.trim() &&
         this.problemTitle.trim() &&
+        this.address.trim() &&
         this.selectedCategory &&
         this.selectedImportance &&
         this.selectedState &&
@@ -241,6 +246,8 @@ export class CreatePostModal implements OnChanges {
                 stateName: state.nome,
                 cityId: String(city.id),
                 cityName: city.nome,
+                address: this.address.trim(),
+                neighborhoodName: this.neighborhood.trim() || undefined,
               },
               evidences,
               createdBy: user._id,
@@ -267,7 +274,8 @@ export class CreatePostModal implements OnChanges {
     if (!this.problemTitle.trim()) return 'Informe um título curto para o problema.';
     if (!this.newPostContent.trim()) return 'Explique o problema com mais detalhes.';
     if (!this.selectedCategory) return 'Selecione a categoria da ocorrência.';
-    if (!this.selectedImportance) return 'Selecione o nível de gravidade.';
+    if (!this.selectedImportance) return 'Selecione o nível de importância.';
+    if (!this.address.trim()) return 'Informe o endereço ou um ponto de referência para localizar o problema.';
     if (!this.selectedState) return 'Selecione o estado da ocorrência.';
     if (!this.selectedCity) return 'Selecione a cidade da ocorrência.';
     if (!this.user?._id) return 'Entre novamente na sua conta para publicar a ocorrência.';
@@ -299,7 +307,18 @@ export class CreatePostModal implements OnChanges {
       tags: this.editingPost?.tags ?? [],
       category: this.selectedCategory as OccurrenceCategory,
       importance: this.selectedImportance,
-      location: { label: this.locationLabel },
+      location: {
+        ...this.editingPost?.location,
+        label: this.locationLabel,
+        city: this.selectedCity!.nome,
+        cityName: this.selectedCity!.nome,
+        cityId: String(this.selectedCity!.id),
+        state: this.selectedState!.sigla,
+        stateCode: this.selectedState!.sigla,
+        stateName: this.selectedState!.nome,
+        address: this.address.trim(),
+        neighborhoodName: this.neighborhood.trim() || undefined,
+      },
     };
 
     this.isPublishing.set(true);
@@ -324,7 +343,9 @@ export class CreatePostModal implements OnChanges {
     this.problemTitle = this.editingPost?.title ?? '';
     this.newPostContent = this.editingPost?.content ?? '';
     this.selectedCategory = this.editingPost?.category ?? '';
-    this.selectedImportance = this.editingPost?.importance ?? 'MEDIA';
+    this.address = this.editingPost?.location?.address ?? '';
+    this.neighborhood = this.editingPost?.location?.neighborhoodName ?? '';
+    this.selectedImportance = this.editingPost?.importance === 'CRITICA' ? 'ALTA' : this.editingPost?.importance ?? 'MEDIA';
     this.selectedStateId = '';
     this.selectedCityId = '';
     this.selectedEvidences = [];
