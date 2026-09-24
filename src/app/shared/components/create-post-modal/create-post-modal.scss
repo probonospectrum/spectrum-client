@@ -25,6 +25,10 @@
   animation: modal-pop 160ms ease-out;
 }
 
+:host-context(html[data-theme="dark"]) .create-post-modal {
+  border-color: var(--spectrum-border);
+}
+
 .create-post-modal__header,
 .location-modal__header {
   display: grid;
@@ -75,6 +79,12 @@
     var(--spectrum-surface-muted);
   color: var(--spectrum-primary-900);
   font: 800 18px/1 var(--spectrum-font);
+}
+
+:host-context(html[data-theme="dark"]) .create-post-modal__avatar {
+  border: 1px solid rgba(122, 186, 240, 0.12);
+  background: #19324a;
+  color: #d8ecff;
 }
 
 .create-post-modal__author h2,
@@ -167,6 +177,10 @@
   background: #fff1ef;
   color: var(--spectrum-error);
   font: 750 13px/1.35 var(--spectrum-font);
+}
+
+:host-context(html[data-theme="dark"]) .create-post-modal__error {
+  background: rgba(239, 119, 119, 0.14);
 }
 
 .create-post-modal__classification {
@@ -269,7 +283,7 @@
 
 .create-post-modal__location-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -298,6 +312,11 @@
   background: #fff7ed;
   color: #895019;
   font: 700 12px/1.35 var(--spectrum-font);
+}
+
+:host-context(html[data-theme="dark"]) .create-post-modal__location-warning {
+  background: rgba(229, 173, 92, 0.14);
+  color: #f0c57f;
 }
 
 .create-post-modal__location-warning button {
@@ -592,4 +611,37 @@
   .create-post-modal__importance-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.create-post-modal__flow-note {
+  margin: 0;
+  padding: 12px;
+  background: var(--spectrum-accent-soft);
+  color: var(--spectrum-text-secondary);
+  border-radius: var(--spectrum-radius-sm);
+}
+
+.create-post-modal { padding: 26px; width: min(640px, 100%); gap: 20px; }
+.create-post-modal__header { padding-bottom: 20px; }
+.create-post-modal__header h2 { font-weight: 700; letter-spacing: -.03em; }
+.create-post-modal__flow-note { font-size: 12px; line-height: 1.8; padding: 15px; border-left: 3px solid var(--spectrum-primary-600); }
+.create-post-modal__input, .create-post-modal__textarea { background: var(--spectrum-surface-soft); }
+.create-post-modal__submit { background: var(--spectrum-action); min-height: 46px; }
+@media (max-width: 540px) { .create-post-modal { padding: 20px; } }
+
+.create-post-backdrop, .location-modal-backdrop { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.create-post-modal, .location-modal { min-width: 0; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 540px) {
+  .create-post-backdrop, .location-modal-backdrop { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .create-post-modal, .location-modal { max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)); }
+  .create-post-modal__close, .location-modal__close { width: 44px; height: 44px; }
+}
+
+.create-post-modal > *, .location-modal > *, .location-modal__option > * { min-width: 0; }
+@media (max-width: 540px) {
+  .create-post-modal__header, .location-modal__header { grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; }
+  .create-post-modal__toolbar { flex-wrap: wrap; }
+  .create-post-modal__actions { margin-left: auto; flex-wrap: wrap; }
+  .create-post-modal__actions button { width: 44px; height: 44px; }
+  .create-post-modal { padding: 16px; }
 }

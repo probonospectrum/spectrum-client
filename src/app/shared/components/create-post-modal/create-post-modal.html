@@ -19,13 +19,14 @@
         <span class="material-symbols-outlined" aria-hidden="true">close</span>
       </button>
     </header>
+    <p class="create-post-modal__flow-note">A ocorrência começa aberta. A comunidade pode confirmar o problema e adicionar evidências; a solução precisa ser verificada antes do fechamento.</p>
 
     <label class="create-post-modal__field">
       <span class="create-post-modal__label">Problema</span>
       <input
         class="create-post-modal__input"
         [(ngModel)]="problemTitle"
-        placeholder="Poste de iluminação apagado"
+        placeholder="Título da ocorrência"
         maxlength="140"
         aria-label="Título curto da ocorrência"
       />
@@ -37,7 +38,7 @@
       <textarea
         class="create-post-modal__textarea"
         [(ngModel)]="newPostContent"
-        placeholder="O poste está apagado há aproximadamente duas semanas e deixa a rua completamente escura durante a noite."
+        placeholder="O que está acontecendo?"
         maxlength="1200"
         aria-label="Descrição detalhada da ocorrência"
       ></textarea>
@@ -56,7 +57,7 @@
       </label>
 
       <fieldset class="create-post-modal__importance">
-        <legend class="create-post-modal__label">Gravidade</legend>
+        <legend class="create-post-modal__label">Importância</legend>
         <div class="create-post-modal__importance-options">
           @for (option of importanceOptions; track option.value) {
             <label [class.create-post-modal__importance-option--selected]="selectedImportance === option.value">
@@ -70,13 +71,14 @@
             </label>
           }
         </div>
+        <small>{{ importanceGuidance[selectedImportance] }}</small>
       </fieldset>
     </div>
 
     <section class="create-post-modal__section" aria-labelledby="occurrence-location-label">
       <div class="create-post-modal__section-heading">
         <span id="occurrence-location-label" class="create-post-modal__label">Localização</span>
-        @if (selectedStateId || selectedCityId || selectedNeighborhoodName) {
+        @if (selectedStateId || selectedCityId) {
           <button type="button" (click)="removeLocation()">Limpar</button>
         }
       </div>
@@ -116,23 +118,16 @@
           </select>
         </label>
 
-        <label class="create-post-modal__select-field">
-          <span class="create-post-modal__label">Bairro*</span>
-          <select
-            [(ngModel)]="selectedNeighborhoodName"
-            [disabled]="!selectedCityId || isLoadingNeighborhoods() || !neighborhoods().length"
-            aria-label="Bairro da ocorrência"
-          >
-            <option value="">
-              {{ isLoadingNeighborhoods() ? 'Carregando bairros...' : 'Selecione o bairro' }}
-            </option>
-            @for (neighborhood of neighborhoods(); track neighborhood.name) {
-              <option [value]="neighborhood.name">{{ neighborhood.name }}</option>
-            }
-          </select>
-        </label>
       </div>
 
+      <label class="create-post-modal__field">
+        <span class="create-post-modal__label">Endereço ou ponto de referência*</span>
+        <input class="create-post-modal__input" [(ngModel)]="address" maxlength="240" placeholder="Rua das Flores, em frente ao número 120" />
+      </label>
+      <label class="create-post-modal__field">
+        <span class="create-post-modal__label">Bairro (opcional)</span>
+        <input class="create-post-modal__input" [(ngModel)]="neighborhood" maxlength="100" />
+      </label>
       @if (locationErrorMessage) {
         <div class="create-post-modal__location-warning" role="alert">
           <span>{{ locationErrorMessage }}</span>
@@ -140,7 +135,7 @@
         </div>
       }
 
-      @if (selectedNeighborhoodName) {
+      @if (selectedCity) {
         <div class="create-post-modal__location" aria-label="Localização selecionada">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
           <strong>{{ locationLabel }}</strong>

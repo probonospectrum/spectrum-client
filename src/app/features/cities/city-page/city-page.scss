@@ -12,7 +12,7 @@
   justify-items: center;
   padding: 28px;
   color: var(--spectrum-primary-800);
-  font: 800 14px/1.2 var(--spectrum-font);
+  font: 600 14px/1.2 var(--spectrum-font);
 }
 
 .city-header {
@@ -43,14 +43,14 @@
 
 .city-header p {
   color: var(--spectrum-accent);
-  font: 800 12px/1 var(--spectrum-font);
+  font: 600 12px/1 var(--spectrum-font);
   text-transform: uppercase;
 }
 
 .city-header h2 {
   margin-top: 4px;
   color: var(--spectrum-text);
-  font: 850 24px/1.15 var(--spectrum-font);
+  font: 600 24px/1.15 var(--spectrum-font);
 }
 
 .city-feed {
@@ -66,7 +66,7 @@
 
 .city-empty h3 {
   color: var(--spectrum-text);
-  font: 800 20px/1.2 var(--spectrum-font);
+  font: 600 20px/1.2 var(--spectrum-font);
 }
 
 .city-empty p {

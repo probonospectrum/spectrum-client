@@ -1,3 +1,4 @@
+<a class="social-skip" href="#spectrum-content">Ir para o conteúdo</a>
 <main class="social-page" [class.social-page--wide]="wideContent">
 
     <header class="social-header">
@@ -136,6 +137,7 @@
         (click)="openCreatePost()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
+        <span class="social-create__label">Nova ocorrência</span>
       </button>
 
     </div>
@@ -157,7 +159,7 @@
           <span class="material-symbols-outlined">
             home
           </span>
-          Inicio
+          Início
         </a>
 
         <!-- NOTIFICAÇÕES -->
@@ -210,6 +212,11 @@
 
       </nav>
 
+      <div class="social-community-note">
+        <span class="material-symbols-outlined" aria-hidden="true">diversity_3</span>
+        <strong>Uma cidade melhor<br>começa com a gente.</strong>
+        <p>Seu olhar ajuda a transformar os lugares que compartilhamos.</p>
+      </div>
       <!-- USUÁRIO LOGADO -->
       <div class="social-user" (click)="$event.stopPropagation()">
         <a class="social-user__profile" routerLink="/perfil">
@@ -248,7 +255,9 @@
     <!-- CONTEÚDO PRINCIPAL -->
     <section
       class="social-content"
-      aria-labelledby="social-title"
+      id="spectrum-content"
+      tabindex="-1"
+      [attr.aria-labelledby]="showContentHeader ? 'social-title' : null"
     >
 
       @if (showContentHeader) {
@@ -285,7 +294,8 @@
       aria-label="Cidades sugeridas"
     >
 
-      <h2>Cidades para explorar</h2>
+      <h2>Explore as cidades</h2>
+      <p class="social-suggestions__intro">Cada lugar tem uma história. Faça parte da próxima mudança.</p>
 
       @for (city of suggestedCities; track city.id) {
 
@@ -312,6 +322,12 @@
 
       }
 
+      <div class="social-guide">
+        <span class="material-symbols-outlined" aria-hidden="true">route</span>
+        <h3>Do relato à solução</h3>
+        <ol><li>Registre o que você observou</li><li>Acompanhe as atualizações</li><li>Ajude a confirmar a solução</li></ol>
+        <button type="button" (click)="openCreatePost()">Registrar um problema <span aria-hidden="true">↗</span></button>
+      </div>
     </aside>
 
   </div>

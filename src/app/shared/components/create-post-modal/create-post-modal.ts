@@ -19,7 +19,6 @@ import {
   BrazilCity,
   BrazilState,
   LocalityService,
-  NeighborhoodOption,
 } from '../../../core/services/locality/locality.service';
 import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import {
@@ -31,6 +30,8 @@ import {
 } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../loading-indicator/loading-indicator';
+
+import { IMPORTANCE_GUIDANCE } from '../../../core/services/posts/occurrence-flow';
 
 interface SelectedEvidence {
   file: File;
@@ -69,22 +70,21 @@ export class CreatePostModal implements OnChanges {
     { value: 'BAIXA', label: 'Baixa' },
     { value: 'MEDIA', label: 'Média' },
     { value: 'ALTA', label: 'Alta' },
-    { value: 'CRITICA', label: 'Crítica' },
   ];
 
+  readonly importanceGuidance = IMPORTANCE_GUIDANCE;
+  address = '';
+  neighborhood = '';
   problemTitle = '';
   newPostContent = '';
   selectedCategory: OccurrenceCategory | '' = '';
   selectedImportance: OccurrenceImportance = 'MEDIA';
   selectedStateId = '';
   selectedCityId = '';
-  selectedNeighborhoodName = '';
   states = signal<BrazilState[]>([]);
   cities = signal<BrazilCity[]>([]);
-  neighborhoods = signal<NeighborhoodOption[]>([]);
   isLoadingStates = signal(false);
   isLoadingCities = signal(false);
-  isLoadingNeighborhoods = signal(false);
   locationErrorMessage = '';
   selectedEvidences: SelectedEvidence[] = [];
   errorMessage = '';
@@ -105,8 +105,8 @@ export class CreatePostModal implements OnChanges {
   get locationLabel(): string {
     const state = this.selectedState;
     const city = this.selectedCity;
-    return state && city && this.selectedNeighborhoodName
-      ? `${this.selectedNeighborhoodName}, ${city.nome} - ${state.sigla}`
+    return state && city
+      ? `${city.nome} - ${state.sigla}`
       : 'Selecione a localização';
   }
 
@@ -126,11 +126,11 @@ export class CreatePostModal implements OnChanges {
     return Boolean(
       this.newPostContent.trim() &&
         this.problemTitle.trim() &&
+        this.address.trim() &&
         this.selectedCategory &&
         this.selectedImportance &&
         this.selectedState &&
         this.selectedCity &&
-        this.selectedNeighborhoodName &&
         this.user?._id &&
         !this.isPublishing(),
     );
@@ -158,17 +158,13 @@ export class CreatePostModal implements OnChanges {
   removeLocation(): void {
     this.selectedStateId = '';
     this.selectedCityId = '';
-    this.selectedNeighborhoodName = '';
     this.cities.set([]);
-    this.neighborhoods.set([]);
     this.locationErrorMessage = '';
   }
 
   onStateChanged(): void {
     this.selectedCityId = '';
-    this.selectedNeighborhoodName = '';
     this.cities.set([]);
-    this.neighborhoods.set([]);
     this.locationErrorMessage = '';
 
     if (this.selectedStateId) {
@@ -177,28 +173,12 @@ export class CreatePostModal implements OnChanges {
   }
 
   onCityChanged(): void {
-    this.selectedNeighborhoodName = '';
-    this.neighborhoods.set([]);
     this.locationErrorMessage = '';
-
-    const city = this.selectedCity;
-    const state = this.selectedState;
-    if (city && state) {
-      this.loadNeighborhoods(String(city.id), state.sigla);
-    }
   }
 
   retryLocationLoad(): void {
     if (!this.states().length) {
       this.loadStates();
-      return;
-    }
-    if (this.selectedCity && this.selectedState) {
-      this.localityService.clearNeighborhoodCache(
-        String(this.selectedCity.id),
-        this.selectedState.sigla,
-      );
-      this.loadNeighborhoods(String(this.selectedCity.id), this.selectedState.sigla);
       return;
     }
     if (this.selectedStateId) {
@@ -243,7 +223,6 @@ export class CreatePostModal implements OnChanges {
     const user = this.user!;
     const state = this.selectedState!;
     const city = this.selectedCity!;
-    const neighborhoodName = this.selectedNeighborhoodName;
     const title = this.problemTitle.trim();
     const content = this.newPostContent.trim();
 
@@ -260,15 +239,15 @@ export class CreatePostModal implements OnChanges {
               category: this.selectedCategory as OccurrenceCategory,
               importance: this.selectedImportance,
               location: {
-                label: `${neighborhoodName}, ${city.nome} - ${state.sigla}`,
+                label: `${city.nome} - ${state.sigla}`,
                 city: city.nome,
                 state: state.sigla,
                 stateCode: state.sigla,
                 stateName: state.nome,
                 cityId: String(city.id),
                 cityName: city.nome,
-                neighborhoodName,
-                address: neighborhoodName,
+                address: this.address.trim(),
+                neighborhoodName: this.neighborhood.trim() || undefined,
               },
               evidences,
               createdBy: user._id,
@@ -295,10 +274,10 @@ export class CreatePostModal implements OnChanges {
     if (!this.problemTitle.trim()) return 'Informe um título curto para o problema.';
     if (!this.newPostContent.trim()) return 'Explique o problema com mais detalhes.';
     if (!this.selectedCategory) return 'Selecione a categoria da ocorrência.';
-    if (!this.selectedImportance) return 'Selecione o nível de gravidade.';
+    if (!this.selectedImportance) return 'Selecione o nível de importância.';
+    if (!this.address.trim()) return 'Informe o endereço ou um ponto de referência para localizar o problema.';
     if (!this.selectedState) return 'Selecione o estado da ocorrência.';
     if (!this.selectedCity) return 'Selecione a cidade da ocorrência.';
-    if (!this.selectedNeighborhoodName) return 'Selecione o bairro da ocorrência.';
     if (!this.user?._id) return 'Entre novamente na sua conta para publicar a ocorrência.';
     return '';
   }
@@ -328,7 +307,18 @@ export class CreatePostModal implements OnChanges {
       tags: this.editingPost?.tags ?? [],
       category: this.selectedCategory as OccurrenceCategory,
       importance: this.selectedImportance,
-      location: { label: this.locationLabel },
+      location: {
+        ...this.editingPost?.location,
+        label: this.locationLabel,
+        city: this.selectedCity!.nome,
+        cityName: this.selectedCity!.nome,
+        cityId: String(this.selectedCity!.id),
+        state: this.selectedState!.sigla,
+        stateCode: this.selectedState!.sigla,
+        stateName: this.selectedState!.nome,
+        address: this.address.trim(),
+        neighborhoodName: this.neighborhood.trim() || undefined,
+      },
     };
 
     this.isPublishing.set(true);
@@ -353,10 +343,11 @@ export class CreatePostModal implements OnChanges {
     this.problemTitle = this.editingPost?.title ?? '';
     this.newPostContent = this.editingPost?.content ?? '';
     this.selectedCategory = this.editingPost?.category ?? '';
-    this.selectedImportance = this.editingPost?.importance ?? 'MEDIA';
+    this.address = this.editingPost?.location?.address ?? '';
+    this.neighborhood = this.editingPost?.location?.neighborhoodName ?? '';
+    this.selectedImportance = this.editingPost?.importance === 'CRITICA' ? 'ALTA' : this.editingPost?.importance ?? 'MEDIA';
     this.selectedStateId = '';
     this.selectedCityId = '';
-    this.selectedNeighborhoodName = '';
     this.selectedEvidences = [];
     this.errorMessage = '';
   }
@@ -403,30 +394,6 @@ export class CreatePostModal implements OnChanges {
         error: () => {
           this.locationErrorMessage =
             'Não foi possível carregar as cidades. Tente novamente.';
-        },
-      });
-  }
-
-  private loadNeighborhoods(cityId: string, stateCode: string): void {
-    this.isLoadingNeighborhoods.set(true);
-    this.locationErrorMessage = '';
-    this.localityService
-      .findNeighborhoods(cityId, stateCode)
-      .pipe(
-        finalize(() => this.isLoadingNeighborhoods.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (neighborhoods) => {
-          this.neighborhoods.set(neighborhoods);
-          if (!neighborhoods.length) {
-            this.locationErrorMessage =
-              'Ainda não há bairros cadastrados para esta cidade na base da aplicação.';
-          }
-        },
-        error: () => {
-          this.locationErrorMessage =
-            'Não foi possível carregar os bairros. Tente novamente.';
         },
       });
   }

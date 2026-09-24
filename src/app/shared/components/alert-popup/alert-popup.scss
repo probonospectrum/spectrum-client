@@ -146,3 +146,11 @@
     padding: 34px 22px 22px;
   }
 }
+
+.alert-backdrop { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.alert-popup { min-width: 0; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 540px) {
+  .alert-backdrop { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .alert-popup { max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)); }
+  .alert-popup__close { width: 44px; height: 44px; }
+}

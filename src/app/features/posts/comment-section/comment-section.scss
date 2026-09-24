@@ -188,3 +188,13 @@
   color: var(--spectrum-text-muted);
   font: 450 14px/1.4 var(--spectrum-font);
 }
+
+.comment-section__input input { min-width: 0; width: 100%; }
+.comment-section__author { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .comment-section__input { grid-template-columns: 34px minmax(0, 1fr) 44px; gap: 6px; }
+  .comment-section__input input { min-height: 44px; padding-inline: 10px; }
+  .comment-section__input button, .comment-section__more { width: 44px; height: 44px; }
+  .comment-section__actions { flex-wrap: wrap; }
+  .comment-section__actions button, .comment-section__toggle { min-height: 44px; }
+}

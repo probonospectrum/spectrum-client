@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, of, tap } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
+import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser } from '../user/user.service';
 
 export type OccurrenceStatus =
@@ -37,6 +38,7 @@ export type OccurrenceEventType =
   | 'EVIDENCIA_ADICIONADA'
   | 'OCORRENCIA_CONFIRMADA'
   | 'ORGAO_RESPONSAVEL_IDENTIFICADO'
+  | 'ORGAO_RESPONSAVEL_SUGERIDO'
   | 'AGENCY_NOT_IDENTIFIED'
   | 'OCORRENCIA_ENCAMINHADA'
   | 'ENCAMINHAMENTO_FALHOU'
@@ -295,18 +297,29 @@ export class PostService {
 
   getOccurrence(id: string, user: LoggedUser | null): Observable<SpectrumPost> {
     if (!this.isApiId(id)) {
-      throw new Error('O histórico está disponível apenas para ocorrências salvas no servidor.');
+      const localOccurrence = this.findPostById(id, user);
+
+      if (!localOccurrence) {
+        throw new Error('Ocorrência não encontrada.');
+      }
+
+      return of(localOccurrence);
     }
 
     return this.http
       .get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   getOccurrenceHistory(id: string): Observable<OccurrenceHistoryEvent[]> {
     if (!this.isApiId(id)) {
-      throw new Error('O histórico está disponível apenas para ocorrências salvas no servidor.');
+      const localOccurrence = this.findPostById(id);
+      return of(localOccurrence?.history ?? []);
     }
+
     return this.http.get<OccurrenceHistoryEvent[]>(`${this.apiUrl}/${id}/history`, {
       params: { _: Date.now().toString() },
     });
@@ -314,7 +327,7 @@ export class PostService {
 
   confirmOccurrence(post: SpectrumPost, user: LoggedUser | null): Observable<SpectrumPost> {
     const userId = this.requireUserKey(user, 'Entre na sua conta para confirmar a ocorrência.');
-    const payload = { actorId: userId, actorType: 'USER' as OccurrenceActorType };
+    const payload = { note: 'Também identifiquei este problema.' };
 
     if (!this.isApiId(post.id)) {
       return of(
@@ -328,7 +341,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, payload)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   addOccurrenceEvidence(
@@ -336,11 +352,8 @@ export class PostService {
     user: LoggedUser | null,
     evidence: Pick<OccurrenceEvidence, 'type' | 'url' | 'description'>,
   ): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para adicionar evidências.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY'
-      ? 'RESPONSIBLE_AGENCY'
-      : user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
-    const payload = { ...evidence, actorId: userId, actorType };
+    this.requireUserKey(user, 'Entre na sua conta para adicionar evidências.');
+    const payload = { ...evidence };
 
     if (!this.isApiId(post.id)) {
       return of(this.addEvidence(post, user, evidence));
@@ -348,7 +361,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, payload)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   identifyResponsibleAgency(
@@ -356,15 +372,15 @@ export class PostService {
     user: LoggedUser | null,
     agency: OccurrenceAgency,
   ): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para associar o órgão.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
-    const payload = { agency, actorId: userId, actorType };
+    this.requireUserKey(user, 'Entre na sua conta para associar o órgão.');
+    const payload = { agency };
 
     if (!this.isApiId(post.id)) {
       return of(
         this.updateLocalOccurrence(post.id, user, {
           eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO',
-          metadata: { agency },
+          actorType: this.actorTypeForUser(user),
+          metadata: { agency, agencyName: agency.name },
           responsibleAgency: agency,
         }),
       );
@@ -372,7 +388,57 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, payload)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
+  }
+
+  suggestResponsibleAgency(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    agency: OccurrenceAgency,
+  ): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para sugerir o órgão.');
+    const payload = { agency };
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
+          metadata: { agency, agencyName: agency.name },
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, payload)
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
+  }
+
+  assumeAgencyResponsibility(post: SpectrumPost, user: LoggedUser | null): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para assumir responsabilidade.');
+
+    if (!this.isApiId(post.id)) {
+      return of(
+        this.updateLocalOccurrence(post.id, user, {
+          eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO',
+          actorType: 'RESPONSIBLE_AGENCY',
+          metadata: { agency: post.responsibleAgency },
+          responsibleAgency: post.responsibleAgency ?? null,
+        }),
+      );
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/assume`, {})
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   forwardOccurrence(
@@ -387,15 +453,19 @@ export class PostService {
     },
   ): Observable<SpectrumPost> {
     const userId = this.requireUserKey(user, 'Entre na sua conta para encaminhar.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
-    const body = { ...payload, actorId: userId, actorType };
+    const body = { ...payload };
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['ABERTA', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO']);
+    if (!['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER'].includes(payload.channel) || !payload.deliveryConfirmed || !payload.agency.name.trim() || payload.sentContent.trim().length < 20) {
+      throw new Error('Informe um encaminhamento manual realizado, com órgão e descrição.');
+    }
 
     if (!this.isApiId(post.id)) {
       return of(
         this.updateLocalOccurrence(post.id, user, {
           status: 'ENCAMINHADA',
           eventType: 'OCORRENCIA_ENCAMINHADA',
-          metadata: { forwarding: body },
+          actorType: this.actorTypeForUser(user),
+          metadata: { forwarding: body, agencyName: payload.agency.name, protocol: payload.protocol },
           responsibleAgency: payload.agency,
           forwarding: {
             id: this.createLocalId('forwarding'),
@@ -413,7 +483,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   registerForwardingFailure(
@@ -427,8 +500,7 @@ export class PostService {
     },
   ): Observable<SpectrumPost> {
     const userId = this.requireUserKey(user, 'Entre na sua conta para registrar a tentativa.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'MODERATOR' ? 'MODERATOR' : 'USER';
-    const body = { ...payload, actorId: userId, actorType };
+    const body = { ...payload };
 
     if (!this.isApiId(post.id)) {
       return of(
@@ -451,7 +523,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   startOccurrenceAnalysis(
@@ -461,8 +536,10 @@ export class PostService {
     reference?: string,
   ): Observable<SpectrumPost> {
     const userId = this.requireUserKey(user, 'Entre na sua conta para iniciar análise.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY' ? 'RESPONSIBLE_AGENCY' : 'MODERATOR';
-    const body = { note, reference, actorId: userId, actorType };
+    const actorType = this.actorTypeForUser(user);
+    const body = { note, reference };
+    this.assertTransition(post, this.isRelatedAgency(post, user), ['ENCAMINHADA']);
+    if (note.trim().length < 20) throw new Error('Descreva a ação iniciada em pelo menos 20 caracteres.');
 
     if (!this.isApiId(post.id)) {
       return of(
@@ -470,14 +547,17 @@ export class PostService {
           status: 'EM_ANALISE',
           eventType: 'ANALISE_INICIADA',
           actorType,
-          metadata: { note },
+          metadata: { note, reference },
         }),
       );
     }
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   informOccurrenceResolution(
@@ -486,13 +566,13 @@ export class PostService {
     statement: string,
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY' ? 'RESPONSIBLE_AGENCY' : 'USER';
+    this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
+    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER' || this.isRelatedAgency(post, user), ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA']);
+    if (!statement.trim()) throw new Error('Descreva a solução observada.');
+    const actorType = this.actorTypeForUser(user);
     const body = {
       statement,
       evidenceIds,
-      actorId: userId,
-      actorType,
     };
 
     if (!this.isApiId(post.id)) {
@@ -501,7 +581,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   resolveOccurrence(
@@ -510,13 +593,13 @@ export class PostService {
     note: string,
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para resolver.');
-    const actorType: OccurrenceActorType = user?.occurrenceRole === 'RESPONSIBLE_AGENCY' ? 'RESPONSIBLE_AGENCY' : 'MODERATOR';
+    this.requireUserKey(user, 'Entre na sua conta para resolver.');
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR' || this.isRelatedAgency(post, user), ['RESOLUCAO_INFORMADA']);
+    if (note.trim().length < 20) throw new Error('Descreva a verificação em pelo menos 20 caracteres.');
+    const actorType = this.actorTypeForUser(user);
     const body = {
       note,
       evidenceIds,
-      actorId: userId,
-      actorType,
     };
 
     if (!this.isApiId(post.id)) {
@@ -532,7 +615,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   contestOccurrenceResolution(
@@ -541,12 +627,12 @@ export class PostService {
     reason: string,
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para contestar.');
+    this.requireUserKey(user, 'Entre na sua conta para contestar.');
+    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER', ['RESOLVIDA']);
+    if (!reason.trim()) throw new Error('Explique por que o problema continua.');
     const body = {
       reason,
       evidenceIds,
-      actorId: userId,
-      actorType: 'USER' as OccurrenceActorType,
     };
 
     if (!this.isApiId(post.id)) {
@@ -555,7 +641,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   reopenOccurrenceFlow(
@@ -563,8 +652,10 @@ export class PostService {
     user: LoggedUser | null,
     reason: string,
   ): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para reabrir.');
-    const body = { reason, actorId: userId, actorType: 'USER' as OccurrenceActorType };
+    this.requireUserKey(user, 'Entre na sua conta para reabrir.');
+    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER', ['CONTESTADA']);
+    if (!reason.trim()) throw new Error('Informe o motivo da reabertura.');
+    const body = { reason };
 
     if (!this.isApiId(post.id)) {
       return of(this.reopenOccurrence(post, user, reason));
@@ -572,7 +663,10 @@ export class PostService {
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, body)
-      .pipe(map((occurrence) => this.toSpectrumPost(occurrence, user)));
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((post) => this.cacheOccurrence(post)),
+      );
   }
 
   readonly suggestions: SuggestedProfile[] = [
@@ -767,7 +861,7 @@ export class PostService {
 
   createPost(payload: CreatePostPayload, user: LoggedUser | null): SpectrumPost {
     const now = new Date();
-    const authorName = user?.name || 'Usuario Spectrum';
+    const authorName = user?.name || 'Usuário Spectrum';
     const authorNickname = user?.nickname || 'spectrum';
     const post: SpectrumPost = {
       id: `local-${now.getTime()}`,
@@ -783,8 +877,8 @@ export class PostService {
       publishedAt: now.toISOString(),
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
-      liked: false,
       dislikes: 0,
+      liked: false,
       disliked: false,
       comments: 0,
       reposts: 0,
@@ -1035,7 +1129,7 @@ export class PostService {
         ...evidence,
         id: this.createLocalId('evidence'),
         addedBy: this.getUserKey(user) || undefined,
-        actorType: 'USER',
+        actorType: this.actorTypeForUser(user),
         addedAt: new Date().toISOString(),
       },
     });
@@ -1045,9 +1139,10 @@ export class PostService {
     return this.updateLocalOccurrence(post.id, user, {
       status: 'RESOLUCAO_INFORMADA',
       eventType: 'RESOLUCAO_INFORMADA',
+      actorType: this.actorTypeForUser(user),
       metadata: {
         statement,
-        source: 'community_claim',
+        source: this.actorTypeForUser(user) === 'RESPONSIBLE_AGENCY' ? 'agency' : 'community',
       },
     });
   }
@@ -1066,7 +1161,7 @@ export class PostService {
     return this.updateLocalOccurrence(post.id, user, {
       status: 'REABERTA',
       eventType: 'OCORRENCIA_REABERTA',
-      actorType: 'MODERATOR',
+      actorType: this.actorTypeForUser(user),
       metadata: {
         reason,
       },
@@ -1092,18 +1187,7 @@ export class PostService {
   }
 
   getStatusLabel(status: OccurrenceStatus): string {
-    const labels: Record<OccurrenceStatus, string> = {
-      ABERTA: 'Aberta',
-      ENCAMINHADA: 'Encaminhada',
-      EM_ANALISE: 'Em análise',
-      RESOLUCAO_INFORMADA: 'Resolução informada',
-      RESOLVIDA: 'Resolvida',
-      CONTESTADA: 'Contestada',
-      REABERTA: 'Reaberta',
-      SEM_ORGAO_IDENTIFICADO: 'Sem órgão identificado',
-    };
-
-    return labels[status];
+    return `${occurrenceStage(status)} · ${OCCURRENCE_STATUS_DETAILS[status]}`;
   }
 
   getImportanceLabel(importance: OccurrenceImportance): string {
@@ -1111,7 +1195,7 @@ export class PostService {
       BAIXA: 'Baixa',
       MEDIA: 'Média',
       ALTA: 'Alta',
-      CRITICA: 'Crítica',
+      CRITICA: 'Alta',
     };
 
     return labels[importance];
@@ -1178,6 +1262,7 @@ export class PostService {
         this.createHistoryEvent({
           occurrenceId: currentPost.id,
           eventType: update.eventType,
+          actorName: user?.name,
           actorId: this.getUserKey(user) || undefined,
           actorType: update.actorType ?? 'USER',
           previousStatus: currentPost.status,
@@ -1644,7 +1729,10 @@ private getDefaultPosts(): SpectrumPost[] {
         : primaryEvidence?.type === 'IMAGE'
           ? 'image'
           : 'text';
-    const authorName = user?.name || 'Usuario Spectrum';
+    const cached = this.getUserPosts().find((post) => post.id === occurrence._id);
+    const creation = occurrence.history?.find((event) => event.eventType === 'OCORRENCIA_CRIADA');
+    const isAuthor = user?._id === occurrence.createdBy;
+    const authorName = creation?.actorName || cached?.authorName || (isAuthor ? user?.name : '') || 'Usuário Spectrum';
 
 return {
   id: occurrence._id,
@@ -1652,7 +1740,7 @@ return {
   createdBy: occurrence.createdBy,
   originalPostId: occurrence.originalPostId,
   authorName,
-  authorNickname: user?.nickname || 'spectrum',
+  authorNickname: cached?.authorNickname || (isAuthor ? user?.nickname : '') || 'spectrum',
   authorInitial: authorName.charAt(0).toUpperCase(),
   authorCity: occurrence.location.label,
   title: occurrence.title || occurrence.text,
@@ -1698,6 +1786,22 @@ return {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
+  private cacheOccurrence(post: SpectrumPost): void {
+    const remaining = this.getUserPosts().filter((item) => item.id !== post.id);
+    localStorage.setItem(this.storageKey, JSON.stringify([this.withoutComputedPostState(post), ...remaining]));
+  }
+
+  private isRelatedAgency(post: SpectrumPost, user: LoggedUser | null): boolean {
+    return user?.occurrenceRole === 'RESPONSIBLE_AGENCY' && Boolean(user.occurrenceAgencyId) && user.occurrenceAgencyId === post.responsibleAgency?.id;
+  }
+
+  private assertTransition(post: SpectrumPost, permitted: boolean, statuses: OccurrenceStatus[]): void {
+    const current = this.isApiId(post.id) ? post : this.findPostById(post.id);
+    if (!permitted || !current || !statuses.includes(current.status)) {
+      throw new Error('Esta ação não está disponível para seu perfil ou para a situação atual da ocorrência.');
+    }
+  }
+
   private isApiId(id: string): boolean {
     return /^[a-f\d]{24}$/i.test(id);
   }
@@ -1714,6 +1818,18 @@ return {
 
   private getUserKey(user: LoggedUser | null): string {
     return user?._id || user?.nickname || '';
+  }
+
+  private actorTypeForUser(user: LoggedUser | null): OccurrenceActorType {
+    if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY') {
+      return 'RESPONSIBLE_AGENCY';
+    }
+
+    if (user?.occurrenceRole === 'MODERATOR') {
+      return 'MODERATOR';
+    }
+
+    return 'USER';
   }
 
   private formatPublishedAt(date: Date): string {

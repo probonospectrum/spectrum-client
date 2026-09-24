@@ -12,7 +12,7 @@
   align-items: center;
   gap: 6px;
   color: var(--spectrum-primary-800);
-  font: 800 13px/1 var(--spectrum-font);
+  font: 600 13px/1 var(--spectrum-font);
   text-decoration: none;
 }
 
@@ -26,7 +26,7 @@
 
 .occurrence-detail__hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   padding: 24px;
 }
@@ -34,15 +34,19 @@
 .occurrence-detail__hero h1 {
   margin: 14px 0 10px;
   color: var(--spectrum-text);
-  font: 850 28px/1.15 var(--spectrum-font);
+  font: 600 28px/1.15 var(--spectrum-font);
 }
 
 .occurrence-detail__hero-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
+}
+
+.occurrence-detail__hero-actions > button {
+  margin-left: auto;
 }
 
 .occurrence-detail__hero p,
@@ -60,7 +64,7 @@
   padding: 7px 12px;
   background: var(--spectrum-surface-muted);
   color: var(--spectrum-primary-900);
-  font: 850 12px/1 var(--spectrum-font);
+  font: 600 12px/1 var(--spectrum-font);
   text-transform: uppercase;
 }
 
@@ -80,13 +84,11 @@
   color: #1b5ca8;
 }
 
-.occurrence-detail__summary,
 .occurrence-detail__facts {
   display: grid;
   gap: 10px;
 }
 
-.occurrence-detail__summary div,
 .occurrence-detail__facts div {
   display: grid;
   gap: 4px;
@@ -94,18 +96,16 @@
   padding-bottom: 10px;
 }
 
-.occurrence-detail__summary span,
 .occurrence-detail__facts dt {
   color: var(--spectrum-text-subtle);
-  font: 750 11px/1 var(--spectrum-font);
+  font: 600 11px/1 var(--spectrum-font);
   text-transform: uppercase;
 }
 
-.occurrence-detail__summary strong,
 .occurrence-detail__facts dd {
   margin: 0;
   color: var(--spectrum-text);
-  font: 800 14px/1.25 var(--spectrum-font);
+  font: 600 14px/1.25 var(--spectrum-font);
 }
 
 .occurrence-detail__grid {
@@ -123,7 +123,7 @@
 .occurrence-detail__section h2 {
   margin: 0;
   color: var(--spectrum-text);
-  font: 850 18px/1.2 var(--spectrum-font);
+  font: 600 18px/1.2 var(--spectrum-font);
 }
 
 .occurrence-detail__section-head {
@@ -135,7 +135,7 @@
 
 .occurrence-detail__section-head > span {
   color: var(--spectrum-text-muted);
-  font: 750 12px/1 var(--spectrum-font);
+  font: 600 12px/1 var(--spectrum-font);
 }
 
 .occurrence-detail button,
@@ -151,7 +151,7 @@
   background: var(--spectrum-primary-800);
   color: #ffffff;
   cursor: pointer;
-  font: 800 13px/1 var(--spectrum-font);
+  font: 600 13px/1 var(--spectrum-font);
 }
 
 .occurrence-detail button:disabled {
@@ -164,9 +164,26 @@
 }
 
 .occurrence-detail__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.occurrence-detail__action-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  padding: 12px;
+  background: var(--spectrum-surface-soft);
+}
+
+.occurrence-detail__action-group > span {
+  width: 100%;
+  color: var(--spectrum-text-subtle);
+  font: 600 11px/1 var(--spectrum-font);
+  text-transform: uppercase;
 }
 
 .occurrence-detail__form {
@@ -198,9 +215,17 @@
   grid-column: 1 / -1;
 }
 
-.occurrence-detail__form span {
+/* Botões finais (submit + cancelar) lado a lado, cada um ocupando
+   metade da linha, em vez do span de linha inteira */
+.occurrence-detail__form .occurrence-detail__form-inline {
+  grid-column: auto;
+}
+
+/* Antes era ".occurrence-detail__form span": atingia também os ícones
+   (Material Symbols) e quebrava a fonte deles. Agora só os rótulos. */
+.occurrence-detail__form label > span {
   color: var(--spectrum-text-secondary);
-  font: 800 12px/1.2 var(--spectrum-font);
+  font: 600 12px/1.2 var(--spectrum-font);
 }
 
 .occurrence-detail__form input,
@@ -248,7 +273,7 @@
 .occurrence-detail__evidence strong,
 .occurrence-detail__forwarding strong {
   overflow: hidden;
-  font: 800 14px/1.2 var(--spectrum-font);
+  font: 600 14px/1.2 var(--spectrum-font);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -318,7 +343,7 @@
 .occurrence-detail__timeline time,
 .occurrence-detail__timeline small {
   color: var(--spectrum-text-subtle);
-  font: 700 12px/1 var(--spectrum-font);
+  font: 600 12px/1 var(--spectrum-font);
 }
 
 .occurrence-detail__timeline .occurrence-detail__actor {
@@ -351,7 +376,7 @@
 
 .occurrence-detail__timeline strong {
   color: var(--spectrum-text);
-  font: 850 14px/1.2 var(--spectrum-font);
+  font: 600 14px/1.2 var(--spectrum-font);
 }
 
 .occurrence-detail__timeline p {
@@ -375,7 +400,7 @@
   border-radius: 999px;
   padding: 0 10px;
   color: var(--spectrum-primary-800);
-  font: 800 12px/1 var(--spectrum-font);
+  font: 600 12px/1 var(--spectrum-font);
   text-decoration: none;
 }
 
@@ -387,7 +412,7 @@
   margin: 0;
   border-radius: var(--spectrum-radius-sm);
   padding: 12px 14px;
-  font: 800 13px/1.35 var(--spectrum-font);
+  font: 600 13px/1.35 var(--spectrum-font);
 }
 
 .occurrence-detail__notice--success {
@@ -426,7 +451,7 @@
 
 .occurrence-detail__state h1 {
   margin: 0;
-  font: 850 24px/1.2 var(--spectrum-font);
+  font: 600 24px/1.2 var(--spectrum-font);
 }
 
 .occurrence-detail__state p {
@@ -475,4 +500,180 @@
   .occurrence-detail button {
     width: 100%;
   }
+}
+
+.occurrence-detail__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  list-style-position: inside;
+}
+.occurrence-detail__steps li {
+  padding: 10px 16px;
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-muted);
+}
+.occurrence-detail__steps [aria-current='step'] {
+  color: var(--spectrum-text);
+  outline: 2px solid var(--spectrum-accent);
+  font-weight: 600;
+}
+.occurrence-detail__evidence img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: var(--spectrum-radius-sm);
+}
+.occurrence-detail__action-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.occurrence-detail__action-fields.occurrence-detail__action-fields--inline-actions {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+}
+
+.occurrence-detail__action-fields--inline-actions > .occurrence-detail__upload {
+  grid-column: 1 / -1;
+}
+
+.occurrence-detail__action-fields--inline-actions > label {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.occurrence-detail__form .occurrence-detail__action-fields--inline-actions > label:last-of-type {
+  grid-column: 1;
+}
+
+.occurrence-detail__action-fields--inline-actions > .occurrence-detail__form-inline {
+  min-height: 44px;
+}
+
+@media (max-width: 760px) {
+  .occurrence-detail__action-fields,
+  .occurrence-detail__action-fields.occurrence-detail__action-fields--inline-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.occurrence-detail__video { width: 100%; max-height: 320px; background: #111; }
+
+.occurrence-detail { max-width: 1060px; gap: 22px; padding-top: 32px; }
+.occurrence-detail__hero { padding: 32px; border-top: 4px solid var(--spectrum-primary-600); }
+.occurrence-detail__hero h1 { font-size: clamp(25px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.2; }
+.occurrence-detail__hero p { font-size: 14px; line-height: 1.85; }
+.occurrence-detail__section { padding: 24px; }
+.occurrence-detail__section h2 { font-size: 19px; font-weight: 600; }
+.occurrence-detail__steps { gap: 8px; counter-reset: step; }
+.occurrence-detail__steps li { flex: 1; display: flex; align-items: center; gap: 12px; padding: 14px; font-size: 13px; counter-increment: step; }
+.occurrence-detail__steps li::before { content: counter(step, decimal-leading-zero); color: var(--spectrum-text-muted); font-size: 11px; font-weight: 600; }
+.occurrence-detail__steps [aria-current='step'] { background: var(--spectrum-accent-soft); outline: 1px solid var(--spectrum-primary-600); color: var(--spectrum-primary-800); }
+.occurrence-detail__status[data-status='RESOLVIDA'] { background: var(--spectrum-accent-soft); color: var(--spectrum-primary-800); }
+@media (max-width: 600px) { .occurrence-detail__hero { padding: 22px; } .occurrence-detail__section { padding: 18px; } .occurrence-detail__steps li { min-width: 90px; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 9px; font-size: 11px; } }
+
+/* =========================================
+   UPLOAD DE EVIDÊNCIA: botão de ícone
+   (mesmo estilo do "Adicionar evidências" de criar ocorrência)
+   ========================================= */
+.occurrence-detail__upload {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  padding: 12px 14px;
+  background: var(--spectrum-surface-soft);
+}
+
+.occurrence-detail__upload-info {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.occurrence-detail__upload-label {
+  color: var(--spectrum-text-secondary);
+  font: 600 12px/1.2 var(--spectrum-font);
+}
+
+.occurrence-detail__upload-name {
+  overflow: hidden;
+  color: var(--spectrum-text-muted);
+  font: 500 12px/1.3 var(--spectrum-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ".occurrence-detail .classe" tem mais força que ".occurrence-detail button",
+   então o botão de ícone não vira a pílula azul de largura total */
+.occurrence-detail .occurrence-detail__upload-button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--spectrum-border);
+  border-radius: 12px;
+  background: var(--spectrum-surface);
+  color: var(--spectrum-primary-800);
+  box-shadow: none;
+}
+
+.community-hero__eyebrow { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  font-size: 12px; 
+  font-weight: 600; 
+  letter-spacing: .13em; 
+  color: var(--spectrum-primary-surface); }
+
+.occurrence-detail .occurrence-detail__upload-button:hover {
+  background: var(--spectrum-accent-soft);
+}
+
+.occurrence-detail .occurrence-detail__upload-button:focus-visible {
+  outline: 2px solid var(--spectrum-primary-600);
+  outline-offset: 2px;
+}
+
+.occurrence-detail .occurrence-detail__upload-button .material-symbols-outlined {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.occurrence-detail .occurrence-detail__file-input {
+  display: none;
+}
+
+.occurrence-detail__section {
+  align-content: start;
+}
+
+.occurrence-detail__facts {
+  margin: 0;
+  align-content: start;
+}
+
+.occurrence-detail > *, .occurrence-detail__section > *, .occurrence-detail__hero > * { min-width: 0; }
+.occurrence-detail__facts dd, .occurrence-detail__timeline-evidences a { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .occurrence-detail { padding-top: 16px; gap: 16px; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .occurrence-detail__hero-actions { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .occurrence-detail button { min-height: 44px; line-height: 1.35; padding-block: 10px; }
+  .occurrence-detail__status { max-width: 100%; line-height: 1.3; }
+  .occurrence-detail__steps { gap: 6px; }
+  .occurrence-detail__steps li { min-width: 0; padding: 10px 6px; overflow-wrap: anywhere; }
+  .occurrence-detail__back { min-height: 44px; }
+  .occurrence-detail__evidence strong { white-space: normal; }
 }

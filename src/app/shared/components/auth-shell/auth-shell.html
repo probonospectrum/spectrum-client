@@ -1,10 +1,19 @@
 <section class="auth-page">
-  <div class="auth-card" [class.auth-card--compact]="compact">
-    <div class="auth-brand">
-      <span class="auth-mark">
-        <img src="/logo.png" alt="Spectrum" />
-      </span>
+  <aside class="auth-story" aria-label="Sobre o Spectrum">
+    <div class="auth-story__brand"><img src="/logo.png" alt="Spectrum" /><span>COMUNIDADE EM MOVIMENTO</span></div>
+    <div class="auth-story__message">
+      <span class="auth-story__eyebrow">O SEU OLHAR FAZ A DIFERENÇA</span>
+      <h2>A cidade é de todos.<br><em>A mudança também.</em></h2>
+      <p>Conecte-se com a sua comunidade e ajude a transformar os lugares que fazem parte da sua vida.</p>
+      <div class="auth-story__illustration"><img src="/city-grid.svg" alt="" /><span><span class="material-symbols-outlined" aria-hidden="true">location_on</span> Cada relato coloca uma mudança no mapa.</span></div>
     </div>
-    <ng-content></ng-content>
+    <div class="auth-story__footer"><span>Um novo olhar para o seu bairro.</span><span>Spectrum © 2026</span></div>
+  </aside>
+  <div class="auth-form-side">
+    <div class="auth-card" [class.auth-card--compact]="compact">
+      <div class="auth-brand"><span class="auth-mark"><img src="/logo.png" alt="Spectrum" /></span></div>
+      <ng-content></ng-content>
+    </div>
+    <p class="auth-page__note">Conexões locais. Transformações reais.</p>
   </div>
 </section>

@@ -1,0 +1,119 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: block;
+}
+
+.settings-dialog-backdrop {
+  width: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 23, 36, 0.55);
+  backdrop-filter: blur(6px);
+  animation: settings-dialog-fade 0.18s ease-out;
+}
+
+.settings-dialog {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  display: grid;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--spectrum-radius-lg);
+  padding: 28px;
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text);
+  box-shadow: var(--spectrum-shadow-lg);
+  font-family: var(--spectrum-font);
+  animation: settings-dialog-pop 0.2s ease-out;
+}
+
+.settings-dialog:focus {
+  outline: 0;
+}
+
+.settings-dialog__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--spectrum-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--spectrum-transition),
+    color var(--spectrum-transition);
+}
+
+.settings-dialog__close:hover {
+  background: var(--spectrum-surface-muted);
+  color: var(--spectrum-text);
+}
+
+.settings-dialog__header {
+  display: grid;
+  gap: 8px;
+  padding-right: 34px;
+}
+
+.settings-dialog__header h2,
+.settings-dialog__header p {
+  margin: 0;
+}
+
+.settings-dialog__header h2 {
+  color: var(--spectrum-text);
+  font: 600 21px/1.2 var(--spectrum-font);
+}
+
+.settings-dialog__header p {
+  color: var(--spectrum-text-secondary);
+  font: 450 14px/1.5 var(--spectrum-font);
+}
+
+.settings-dialog__content {
+  min-width: 0;
+}
+
+@keyframes settings-dialog-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes settings-dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-dialog-backdrop {
+    align-items: end;
+    padding: 16px;
+  }
+
+  .settings-dialog {
+    max-height: calc(100vh - 32px);
+    padding: 24px 20px 20px;
+  }
+}
+
+.settings-dialog-backdrop { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.settings-dialog { min-width: 0; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 540px) {
+  .settings-dialog-backdrop { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .settings-dialog { max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)); }
+  .settings-dialog__close { width: 44px; height: 44px; }
+}

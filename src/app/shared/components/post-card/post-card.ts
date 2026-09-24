@@ -1,3 +1,4 @@
+import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -63,7 +64,15 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   get statusLabel(): string {
-    return this.postService.getStatusLabel(this.post.status);
+    return occurrenceStage(this.post.status);
+  }
+
+  get statusDetail(): string {
+    return OCCURRENCE_STATUS_DETAILS[this.post.status];
+  }
+
+  get primaryImage(): string | undefined {
+    return this.post.evidences.find(evidence => evidence.type === 'IMAGE' && evidence.url)?.url;
   }
 
   get importanceLabel(): string {
@@ -223,11 +232,23 @@ export class PostCard implements OnChanges, OnDestroy {
 
   goToOccurrence(): void {
     if (!this.canOpenOccurrence) return;
-    void this.router.navigate(['/occurrences', this.post.originalPostId ?? this.post.id]);
+    void this.router.navigate(['/occurrences', this.occurrenceId]);
   }
 
   get canOpenOccurrence(): boolean {
-    return /^[a-f\d]{24}$/i.test(this.post.originalPostId ?? this.post.id);
+    return Boolean(this.occurrenceId);
+  }
+
+  get occurrenceId(): string {
+    return this.post.originalPostId ?? this.post.id;
+  }
+
+  openOccurrenceFromCard(event: MouseEvent): void {
+    if (this.isInteractiveClick(event)) {
+      return;
+    }
+
+    this.goToOccurrence();
   }
 
   onCommentAdded(): void {
@@ -296,6 +317,24 @@ export class PostCard implements OnChanges, OnDestroy {
     }
 
     this.selectMenuAction(action);
+  }
+
+  private isInteractiveClick(event: MouseEvent): boolean {
+    if (event.defaultPrevented || event.button !== 0) {
+      return true;
+    }
+
+    const target = event.target;
+
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest(
+        'a, button, input, select, textarea, [role="button"], [role="link"]:not(.post-card__main), [role="menuitem"], [contenteditable="true"], app-comment-section',
+      ),
+    );
   }
 
   private configureEditWindowTimer(): void {

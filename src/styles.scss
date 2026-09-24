@@ -4,37 +4,40 @@
 
 :root {
   color-scheme: light;
-  --spectrum-primary-900: #16324f;
-  --spectrum-primary-800: #1f4568;
-  --spectrum-primary-700: #275b7c;
-  --spectrum-primary-600: #2f6f95;
-  --spectrum-primary-500: #367fa7;
-  --spectrum-accent: #2f6f95;
-  --spectrum-accent-soft: #e8f1f7;
-  --spectrum-info: #246b9f;
-  --spectrum-success: #246b9f;
+  --spectrum-primary-900: #132b46;
+  --spectrum-primary-800: #2463d4;
+  --spectrum-primary-700: #245ac0;
+  --spectrum-primary-600: #3674e8;
+  --spectrum-primary-500: #5e92ee;
+  --spectrum-accent: #3674e8;
+  --spectrum-accent-soft: #eaf1ff;
+  --spectrum-info: #2964c8;
+  --spectrum-success: #2964c8;
   --spectrum-warning: #a46413;
   --spectrum-error: #b42318;
-  --spectrum-app-bg: #f4f6f8;
+  --spectrum-app-bg: #f5f7fb;
   --spectrum-surface-rgb: 255 255 255;
   --spectrum-surface: #ffffff;
-  --spectrum-surface-soft: #f8fafc;
-  --spectrum-surface-muted: #eef3f6;
-  --spectrum-border: #d9e1e8;
-  --spectrum-border-strong: #bdc9d4;
-  --spectrum-text: #172331;
-  --spectrum-text-secondary: #455468;
-  --spectrum-text-muted: #6c7a89;
-  --spectrum-text-subtle: #8b98a7;
-  --spectrum-focus: rgba(47, 111, 149, 0.26);
+  --spectrum-surface-soft: #f8faff;
+  --spectrum-surface-muted: #edf2fa;
+  --spectrum-border: #e3e8f1;
+  --spectrum-border-strong: #bccce4;
+  --spectrum-text: #172c46;
+  --spectrum-text-secondary: #4c607a;
+  --spectrum-text-muted: #657892;
+  --spectrum-text-subtle: #6d8099;
+  --spectrum-focus: rgba(54, 116, 232, 0.26);
   --spectrum-radius-xs: 6px;
   --spectrum-radius-sm: 8px;
-  --spectrum-radius-md: 10px;
-  --spectrum-radius-lg: 14px;
-  --spectrum-shadow-sm: 0 1px 2px rgba(15, 35, 55, 0.08);
+  --spectrum-radius-md: 18px;
+  --spectrum-radius-lg: 24px;
+  --spectrum-shadow-sm: 0 4px 20px rgba(24, 49, 87, 0.035);
   --spectrum-shadow-md: 0 12px 32px rgba(15, 35, 55, 0.12);
   --spectrum-shadow-lg: 0 24px 70px rgba(15, 35, 55, 0.22);
-  --spectrum-container: 1248px;
+  --spectrum-container: 1440px;
+  --spectrum-nav-bg: #122b49;
+  --spectrum-action: #2463d4;
+  --spectrum-action-hover: #1b50b1;
   --spectrum-transition: 160ms ease;
   --spectrum-font:
     Inter,
@@ -47,49 +50,43 @@
 }
 
 :root[data-theme="dark"] {
-  /* Primary */
-  --spectrum-primary-900: #e8f2ff;
-  --spectrum-primary-800: #c9e1ff;
-  --spectrum-primary-700: #a5ccf5;
-  --spectrum-primary-600: #7db3e8;
-  --spectrum-primary-500: #5b9bd5;
+  --spectrum-primary-900: #dbeafe;
+  --spectrum-primary-800: #3b82f6;
+  --spectrum-primary-700: #60a5fa;
+  --spectrum-primary-600: #3b82f6;
+  --spectrum-primary-500: #2563eb;
 
-  /* Accent */
-  --spectrum-accent: #6aa8e8;
-  --spectrum-accent-soft: #1b3047;
+  --spectrum-accent: #8ab4ff;
+  --spectrum-accent-soft: #0c2a45;
 
-  /* Status */
-  --spectrum-info: #6aa8e8;
-  --spectrum-success: #69c39a;
-  --spectrum-warning: #e5ad5c;
-  --spectrum-error: #ef7777;
+  --spectrum-info: #8ab4ff;
+  --spectrum-success: #8eb5ff;
+  --spectrum-warning: #fbbf24;
+  --spectrum-error: #fb7185;
 
-  /* Background */
-  --spectrum-app-bg: #0f1115;
+  --spectrum-app-bg: #070d18;
 
-  /* Surfaces */
-  --spectrum-surface-rgb: 24 27 33;
-  --spectrum-surface: #181b21;
-  --spectrum-surface-soft: #1e222a;
-  --spectrum-surface-muted: #262b34;
+  --spectrum-surface-rgb: 15 25 42;
+  --spectrum-surface: #0f192a;
+  --spectrum-surface-soft: #0b1422;
+  --spectrum-surface-muted: #17243a;
 
-  /* Borders */
-  --spectrum-border: #303640;
-  --spectrum-border-strong: #414957;
+  --spectrum-border: #223653;
+  --spectrum-border-strong: #31547d;
 
-  /* Text */
-  --spectrum-text: #f2f4f7;
-  --spectrum-text-secondary: #c5cad3;
-  --spectrum-text-muted: #9299a6;
-  --spectrum-text-subtle: #6f7785;
+  --spectrum-text: #f8fbff;
+  --spectrum-text-secondary: #cbdcf0;
+  --spectrum-text-muted: #8fa8c4;
+  --spectrum-text-subtle: #6f89a7;
 
-  /* Focus */
-  --spectrum-focus: rgba(106, 168, 232, 0.32);
+  --spectrum-focus: rgba(59, 130, 246, 0.4);
 
-  /* Shadows */
-  --spectrum-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --spectrum-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.35);
-  --spectrum-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.5);
+  --spectrum-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.32);
+  --spectrum-shadow-md: 0 12px 36px rgba(0, 30, 80, 0.4);
+  --spectrum-shadow-lg: 0 24px 80px rgba(0, 20, 70, 0.55);
+
+  --spectrum-action: #2563eb;
+  --spectrum-action-hover: #3b82f6;
 }
 
 html,
@@ -105,9 +102,7 @@ html {
 
 body {
   overflow-x: clip;
-  background:
-    radial-gradient(circle at 12% 0%, rgba(47, 111, 149, 0.08), transparent 28rem),
-    linear-gradient(180deg, var(--spectrum-surface-soft) 0%, var(--spectrum-app-bg) 36rem);
+  background: var(--spectrum-app-bg);
   color: var(--spectrum-text);
   font-family: var(--spectrum-font);
   font-size: 15px;
@@ -150,6 +145,27 @@ app-root {
   min-height: 100vh;
 }
 
+:root[data-theme="dark"] .spectrum-button,
+:root[data-theme="dark"] .social-create,
+:root[data-theme="dark"] .posts-primary-action,
+:root[data-theme="dark"] .posts-empty a,
+:root[data-theme="dark"] .posts-empty button,
+:root[data-theme="dark"] .post-composer__publish,
+:root[data-theme="dark"] .create-post-modal__submit {
+  background: var(--spectrum-action);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .spectrum-button:hover:not(:disabled),
+:root[data-theme="dark"] .social-create:hover,
+:root[data-theme="dark"] .posts-primary-action:hover,
+:root[data-theme="dark"] .posts-empty a:hover,
+:root[data-theme="dark"] .posts-empty button:hover,
+:root[data-theme="dark"] .post-composer__publish:hover,
+:root[data-theme="dark"] .create-post-modal__submit:hover:not(:disabled) {
+  background: var(--spectrum-action-hover);
+}
+
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;
@@ -185,4 +201,19 @@ app-root {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+
+::selection { background: #cddfff; color: #132b46; }
+button:disabled { cursor: not-allowed; }
+h1, h2, h3 { letter-spacing: -0.025em; }
+
+/* Shared constraints for narrow viewports and long user content. */
+html { -webkit-text-size-adjust: 100%; scroll-padding-bottom: 100px; }
+app-root { min-height: 100dvh; }
+input, select, textarea, fieldset { min-width: 0; max-width: 100%; }
+video { max-width: 100%; }
+h1, h2, h3, p, dd { overflow-wrap: anywhere; }
+@media (max-width: 780px) {
+  /* Keep native mobile inputs readable without focus zoom. */
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
 }

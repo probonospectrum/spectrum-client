@@ -15,7 +15,7 @@
 
 .settings-section h2 {
   color: var(--spectrum-text);
-  font: 850 18px/1.2 var(--spectrum-font);
+  font: 600 18px/1.2 var(--spectrum-font);
 }
 
 .settings-section p {
@@ -26,4 +26,8 @@
 
 .settings-section__body {
   display: grid;
+}
+
+@media (max-width: 640px) {
+  .settings-section { padding: 16px 16px 4px; min-width: 0; }
 }

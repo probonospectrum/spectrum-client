@@ -31,7 +31,7 @@
 
 .bar-chart__label {
   overflow: hidden;
-  font: 700 12px/1.2 var(--spectrum-font);
+  font: 600 12px/1.2 var(--spectrum-font);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -52,7 +52,7 @@
 
 .bar-chart__row strong {
   justify-self: end;
-  font: 850 13px/1 var(--spectrum-font);
+  font: 600 13px/1 var(--spectrum-font);
 }
 
 .bar-chart__row small {
@@ -74,4 +74,8 @@
     grid-template-columns: minmax(90px, 1fr) minmax(70px, 1.4fr) 36px;
     gap: 7px;
   }
+}
+
+@media (max-width: 480px) {
+  .bar-chart__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 36px; }
 }

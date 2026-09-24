@@ -4,7 +4,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Observable, finalize, forkJoin, switchMap } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, switchMap } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
   OccurrenceAgency,
@@ -17,6 +17,8 @@ import {
 } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
+
+import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
   | 'evidence'
@@ -58,13 +60,13 @@ export class OccurrenceDetailPage implements OnInit {
   evidenceDescription = '';
   agencyName = '';
   agencyId = '';
-  agencyEmail = '';
   forwardingChannel: OccurrenceForwardingChannel = 'WEBSITE';
   forwardingContent = '';
   forwardingProtocol = '';
   forwardingDeliveryConfirmed = false;
   forwardingFailureReason = '';
   analysisReference = '';
+  analysisNote = '';
   resolutionStatement = '';
   resolutionReviewNote = '';
   contestReason = '';
@@ -92,7 +94,7 @@ export class OccurrenceDetailPage implements OnInit {
     this.successMessage = '';
 
     forkJoin({
-      occurrence: this.postService.getOccurrence(id, this.user),
+      occurrence: defer(() => this.postService.getOccurrence(id, this.user)),
       history: this.postService.getOccurrenceHistory(id),
     })
       .pipe(
@@ -131,37 +133,109 @@ export class OccurrenceDetailPage implements OnInit {
     );
   }
 
+  get isCommunityUser(): boolean {
+    return Boolean(this.user && (this.user.occurrenceRole ?? 'USER') === 'USER');
+  }
+
+  get isModerator(): boolean {
+    return this.user?.occurrenceRole === 'MODERATOR';
+  }
+
+  get isResponsibleAgencyForOccurrence(): boolean {
+    return Boolean(
+      this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
+        this.user.occurrenceAgencyId &&
+        this.user.occurrenceAgencyId === this.occurrence?.responsibleAgency?.id,
+    );
+  }
+
+  get canConfirmCommunity(): boolean {
+    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canAddEvidence(): boolean {
+    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canSuggestAgency(): boolean {
+    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canAssociateAgency(): boolean {
+    return this.isModerator && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canAssumeResponsibility(): boolean {
+    return (
+      this.isResponsibleAgencyForOccurrence &&
+      ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(
+        this.occurrence?.status ?? '',
+      )
+    );
+  }
+
   get canForward(): boolean {
-    return ['ABERTA', 'REABERTA'].includes(this.occurrence?.status ?? '');
+    return this.isModerator && ['ABERTA', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canRegisterForwardingFailure(): boolean {
+    return this.isModerator && ['ABERTA', 'REABERTA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get canShowCommunityActions(): boolean {
+    return (
+      this.isCommunityUser &&
+      (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
+    );
+  }
+
+  get canShowAgencyActions(): boolean {
+    return (
+      this.isResponsibleAgencyForOccurrence &&
+      (this.canAssumeResponsibility || this.canStartAnalysis || this.canInformResolution)
+    );
+  }
+
+  get canShowModeratorActions(): boolean {
+    return this.canAssociateAgency || this.canForward || this.canRegisterForwardingFailure;
+  }
+
+  get hasAvailableActions(): boolean {
+    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canResolve || this.canContest || this.canReopen;
+  }
+
+  get agencyActionLabel(): string {
+    return this.canAssociateAgency ? 'Associar órgão' : 'Sugerir órgão responsável';
+  }
+
+  get agencySubmitLabel(): string {
+    return this.canAssociateAgency ? 'Salvar órgão' : 'Enviar sugestão';
   }
 
   get canInformResolution(): boolean {
+    if (!this.isCommunityUser && !this.isResponsibleAgencyForOccurrence) {
+      return false;
+    }
+
     return ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA'].includes(
       this.occurrence?.status ?? '',
     );
   }
 
   get canResolve(): boolean {
-    return this.occurrence?.status === 'RESOLUCAO_INFORMADA' && this.canActAsAuthority;
+    return this.occurrence?.status === 'RESOLUCAO_INFORMADA' && (this.isModerator || this.isResponsibleAgencyForOccurrence);
   }
 
   get canStartAnalysis(): boolean {
-    return this.occurrence?.status === 'ENCAMINHADA' && this.canActAsAuthority;
-  }
-
-  private get canActAsAuthority(): boolean {
-    return this.user?.occurrenceRole === 'MODERATOR' ||
-      (this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
-        !!this.user.occurrenceAgencyId &&
-        this.user.occurrenceAgencyId === this.occurrence?.responsibleAgency?.id);
+    return this.occurrence?.status === 'ENCAMINHADA' && this.isResponsibleAgencyForOccurrence;
   }
 
   get canContest(): boolean {
-    return this.occurrence?.status === 'RESOLVIDA';
+    return this.isCommunityUser && this.occurrence?.status === 'RESOLVIDA';
   }
 
   get canReopen(): boolean {
-    return this.occurrence?.status === 'CONTESTADA';
+    return this.isCommunityUser && this.occurrence?.status === 'CONTESTADA';
   }
 
   get responsibleAgencyLabel(): string {
@@ -211,7 +285,15 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   openPanel(panel: ActionPanel): void {
+    if (this.isSubmitting()) return;
     this.actionPanel = this.actionPanel === panel ? null : panel;
+    this.evidenceFile = null;
+    this.evidenceDescription = '';
+    this.resolutionReviewNote = '';
+    this.resolutionStatement = '';
+    this.contestReason = '';
+    this.reopenReason = '';
+    this.analysisNote = '';
     this.errorMessage = '';
     this.successMessage = '';
   }
@@ -222,18 +304,18 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   confirmOccurrence(): void {
-    if (!this.occurrence || this.userAlreadyConfirmed) {
+    if (!this.occurrence || !this.canConfirmCommunity || this.userAlreadyConfirmed || this.isSubmitting()) {
       return;
     }
 
     this.runAction(
-      this.postService.confirmOccurrence(this.occurrence, this.user),
+      () => this.postService.confirmOccurrence(this.occurrence!, this.user),
       'Confirmação registrada sem alterar o status.',
     );
   }
 
   submitEvidence(): void {
-    if (!this.occurrence || !this.evidenceFile) {
+    if (!this.occurrence || !this.canAddEvidence || !this.evidenceFile) {
       this.errorMessage = 'Selecione uma evidência para anexar.';
       return;
     }
@@ -259,37 +341,52 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitAgency(): void {
-    if (!this.occurrence || !this.agencyName.trim()) {
+    if (!this.occurrence || (!this.canAssociateAgency && !this.canSuggestAgency) || !this.agencyName.trim()) {
       this.errorMessage = 'Informe o nome do órgão responsável.';
       return;
     }
 
+    const action = this.canAssociateAgency
+      ? this.postService.identifyResponsibleAgency(
+          this.occurrence!,
+          this.user,
+          this.buildAgency(),
+        )
+      : this.postService.suggestResponsibleAgency(
+          this.occurrence!,
+          this.user,
+          this.buildAgency(),
+        );
+    const message = this.canAssociateAgency
+      ? 'Órgão responsável associado à ocorrência.'
+      : 'Sugestão de órgão responsável registrada no histórico.';
+
+    this.runAction(() => action, message);
+  }
+
+  assumeResponsibility(): void {
+    if (!this.occurrence || !this.canAssumeResponsibility) {
+      return;
+    }
+
     this.runAction(
-      this.postService.identifyResponsibleAgency(
-        this.occurrence,
-        this.user,
-        this.buildAgency(),
-      ),
-      'Órgão responsável associado à ocorrência.',
+      () => this.postService.assumeAgencyResponsibility(this.occurrence!, this.user),
+      'Responsabilidade assumida pelo órgão e registrada no histórico.',
     );
   }
 
   submitForwarding(): void {
-    if (!this.occurrence || !this.agencyName.trim() || !this.forwardingContent.trim()) {
-      this.errorMessage = 'Informe órgão e conteúdo do encaminhamento.';
+    if (!this.occurrence || !this.canForward || !this.agencyName.trim() || this.forwardingContent.trim().length < 20) {
+      this.errorMessage = 'Informe o órgão e descreva o encaminhamento em pelo menos 20 caracteres.';
       return;
     }
-    if (this.forwardingChannel === 'EMAIL' && !this.agencyEmail.trim()) {
-      this.errorMessage = 'Informe o email do órgão destinatário.';
-      return;
-    }
-    if (this.forwardingChannel !== 'EMAIL' && !this.forwardingDeliveryConfirmed) {
-      this.errorMessage = 'Confirme que o encaminhamento foi realizado.';
+    if (!['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER'].includes(this.forwardingChannel) || !this.forwardingDeliveryConfirmed) {
+      this.errorMessage = 'Confirme o registro manual do encaminhamento por um dos canais disponíveis.';
       return;
     }
 
     this.runAction(
-      this.postService.forwardOccurrence(this.occurrence, this.user, {
+      () => this.postService.forwardOccurrence(this.occurrence!, this.user, {
         agency: this.buildAgency(),
         channel: this.forwardingChannel,
         sentContent: this.forwardingContent.trim(),
@@ -301,13 +398,13 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitForwardingFailure(): void {
-    if (!this.occurrence || !this.forwardingFailureReason.trim()) {
+    if (!this.occurrence || !this.canRegisterForwardingFailure || !this.forwardingFailureReason.trim()) {
       this.errorMessage = 'Informe o motivo da falha.';
       return;
     }
 
     this.runAction(
-      this.postService.registerForwardingFailure(this.occurrence, this.user, {
+      () => this.postService.registerForwardingFailure(this.occurrence!, this.user, {
         agency: this.agencyName.trim() ? this.buildAgency() : undefined,
         channel: this.forwardingChannel,
         sentContent: this.forwardingContent.trim() || undefined,
@@ -318,7 +415,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolution(): void {
-    if (!this.occurrence || !this.resolutionStatement.trim()) {
+    if (!this.occurrence || !this.canInformResolution || !this.resolutionStatement.trim()) {
       this.errorMessage = 'Descreva a resolução informada.';
       return;
     }
@@ -336,14 +433,14 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolve(): void {
-    if (!this.occurrence || (this.user?.occurrenceRole === 'MODERATOR' && this.resolutionReviewNote.trim().length < 20)) {
+    if (!this.occurrence || !this.canResolve || this.resolutionReviewNote.trim().length < 20) {
       this.errorMessage = 'Descreva a verificação da resolução (mínimo de 20 caracteres).';
       return;
     }
 
     this.runAction(
-      this.postService.resolveOccurrence(
-        this.occurrence,
+      () => this.postService.resolveOccurrence(
+        this.occurrence!,
         this.user,
         this.resolutionReviewNote.trim(),
       ),
@@ -353,18 +450,18 @@ export class OccurrenceDetailPage implements OnInit {
 
   submitAnalysis(): void {
     if (!this.occurrence || !this.canStartAnalysis) return;
-    if (this.user?.occurrenceRole === 'MODERATOR' && !this.analysisReference.trim()) {
-      this.errorMessage = 'Informe a referência da resposta do órgão.';
+    if (this.analysisNote.trim().length < 20) {
+      this.errorMessage = 'Descreva a ação iniciada em pelo menos 20 caracteres.';
       return;
     }
     this.runAction(
-      this.postService.startOccurrenceAnalysis(this.occurrence, this.user, 'Análise iniciada pelo órgão responsável.', this.analysisReference.trim() || undefined),
+      () => this.postService.startOccurrenceAnalysis(this.occurrence!, this.user, this.analysisNote.trim(), this.analysisReference.trim() || undefined),
       'Análise iniciada e registrada no histórico.',
     );
   }
 
   submitContest(): void {
-    if (!this.occurrence || !this.contestReason.trim()) {
+    if (!this.occurrence || !this.canContest || !this.contestReason.trim()) {
       this.errorMessage = 'Explique por que a resolução está sendo contestada.';
       return;
     }
@@ -382,19 +479,23 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitReopen(): void {
-    if (!this.occurrence || !this.reopenReason.trim()) {
+    if (!this.occurrence || !this.canReopen || !this.reopenReason.trim()) {
       this.errorMessage = 'Informe por que a ocorrência deve ser reaberta.';
       return;
     }
 
     this.runAction(
-      this.postService.reopenOccurrenceFlow(this.occurrence, this.user, this.reopenReason.trim()),
+      () => this.postService.reopenOccurrenceFlow(this.occurrence!, this.user, this.reopenReason.trim()),
       'Ocorrência reaberta para novo ciclo de acompanhamento.',
     );
   }
 
   formatStatus(): string {
-    return this.occurrence ? this.postService.getStatusLabel(this.occurrence.status) : '';
+    return this.occurrence ? occurrenceStage(this.occurrence.status) : '';
+  }
+
+  get statusDetail(): string {
+    return this.occurrence ? OCCURRENCE_STATUS_DETAILS[this.occurrence.status] : '';
   }
 
   formatCategory(): string {
@@ -415,6 +516,7 @@ export class OccurrenceDetailPage implements OnInit {
       EVIDENCIA_ADICIONADA: 'Nova evidência',
       OCORRENCIA_CONFIRMADA: 'Também identificado',
       ORGAO_RESPONSAVEL_IDENTIFICADO: 'Órgão responsável identificado',
+      ORGAO_RESPONSAVEL_SUGERIDO: 'Órgão responsável sugerido',
       AGENCY_NOT_IDENTIFIED: 'Órgão não identificado',
       OCORRENCIA_ENCAMINHADA: 'Ocorrência encaminhada',
       ENCAMINHAMENTO_FALHOU: 'Encaminhamento falhou',
@@ -466,7 +568,7 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     if (event.eventType === 'ANALISE_INICIADA') {
-      return metadata['reference'] ? `Análise iniciada. Referência: ${metadata['reference']}.` : 'O órgão responsável iniciou a análise.';
+      return [event.description, metadata['note'], metadata['reference'] ? `Referência: ${metadata['reference']}` : ''].filter(Boolean).join(' ') || 'O órgão responsável iniciou a análise.';
     }
 
     if (event.eventType === 'OCORRENCIA_RESOLVIDA') {
@@ -479,6 +581,10 @@ export class OccurrenceDetailPage implements OnInit {
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_IDENTIFICADO') {
       return `${String(metadata['agencyName'] ?? 'Um órgão')} foi identificado como responsável pela ocorrência.`;
+    }
+
+    if (event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO') {
+      return `${String(metadata['agencyName'] ?? 'Um órgão')} foi sugerido pela comunidade.`;
     }
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {
@@ -563,7 +669,7 @@ export class OccurrenceDetailPage implements OnInit {
     successMessage: string,
   ): void {
     if (!this.occurrence || !this.evidenceFile) {
-      this.runAction(action([]), successMessage);
+      this.runAction(() => action([]), successMessage);
       return;
     }
 
@@ -592,9 +698,12 @@ export class OccurrenceDetailPage implements OnInit {
       });
   }
 
-  private runAction(action: Observable<SpectrumPost>, successMessage: string): void {
+  private runAction(action: () => Observable<SpectrumPost>, successMessage: string): void {
+    if (this.isSubmitting()) return;
+    this.errorMessage = '';
+    this.successMessage = '';
     this.isSubmitting.set(true);
-    action
+    defer(action)
       .pipe(
         finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -607,6 +716,7 @@ export class OccurrenceDetailPage implements OnInit {
 
   private afterAction(occurrence: SpectrumPost, message: string): void {
     this.occurrence = occurrence;
+    this.historyEvents = occurrence.history;
     this.successMessage = message;
     this.errorMessage = '';
     this.actionPanel = null;
@@ -635,6 +745,7 @@ export class OccurrenceDetailPage implements OnInit {
         this.occurrence = this.withHistoryAuthor(occurrence, history);
         this.historyEvents = history;
       },
+      error: () => { /* Keep the original action error and last confirmed state. */ },
     });
   }
 
@@ -647,7 +758,6 @@ export class OccurrenceDetailPage implements OnInit {
     return {
       id: this.agencyId.trim() || undefined,
       name: this.agencyName.trim(),
-      email: this.agencyEmail.trim() || undefined,
       hasIntegration: false,
     };
   }
@@ -655,7 +765,6 @@ export class OccurrenceDetailPage implements OnInit {
   private prefillAgency(agency?: OccurrenceAgency): void {
     this.agencyId = agency?.id ?? '';
     this.agencyName = agency?.name ?? '';
-    this.agencyEmail = agency?.email ?? '';
   }
 
   private getErrorMessage(error: unknown): string {
