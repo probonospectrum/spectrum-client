@@ -877,6 +877,7 @@ export class PostService {
       publishedAt: now.toISOString(),
       publishedAtLabel: this.formatPublishedAt(now),
       likes: 0,
+      dislikes: 0,
       liked: false,
       disliked: false,
       comments: 0,
