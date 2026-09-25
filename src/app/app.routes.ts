@@ -69,11 +69,8 @@ export const routes: Routes = [
 
   {
     path: 'publicacoes/nova',
-    loadComponent: () =>
-      import('./features/posts/create-post-page/create-post-page')
-        .then((m) => m.CreatePostPage),
-
-    canActivate: [authGuard],
+    redirectTo: '/publicacoes?criar=1',
+    pathMatch: 'full',
   },
 
   {

@@ -127,11 +127,6 @@ export class CityDashboardPage implements OnInit {
     });
   }
 
-  get selectedCityLabel(): string {
-    const city = this.options()?.cities.find((item) => item.id === this.selectedCityId);
-    return city ? `${city.name} - ${city.stateCode}` : 'Todas as cidades';
-  }
-
   get statusChartItems(): DashboardBarItem[] {
     return (this.dashboard()?.statusDistribution ?? []).map((item) => ({
       key: item.key,

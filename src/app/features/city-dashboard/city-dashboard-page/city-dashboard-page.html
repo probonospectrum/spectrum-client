@@ -5,15 +5,6 @@
   [wideContent]="true"
   (logout)="logout()"
 >
-  <header class="dashboard-heading">
-    <div>
-      <p>Indicadores públicos</p>
-      <h1>Dashboard de cidades</h1>
-      <span>{{ selectedCityLabel }}</span>
-    </div>
-    <span class="material-symbols-outlined" aria-hidden="true">location_city</span>
-  </header>
-
   <section class="dashboard-filters" aria-labelledby="dashboard-filters-title">
     <div class="dashboard-section-heading">
       <div>
@@ -356,7 +347,7 @@
           <button type="button" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" aria-label="Página anterior">
             <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
           </button>
-          <span>Página {{ currentPage }} de {{ occurrences()?.pagination?.totalPages }}</span>
+          <span class="dashboard-pagination__label">Página {{ currentPage }} de {{ occurrences()?.pagination?.totalPages }}</span>
           <button type="button" [disabled]="currentPage === occurrences()?.pagination?.totalPages" (click)="goToPage(currentPage + 1)" aria-label="Próxima página">
             <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
           </button>

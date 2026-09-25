@@ -10,11 +10,11 @@
 }
 
 .auth-form--login {
-  gap: 6px;
+  gap: 16px;
 }
 
 .auth-form--register {
-  gap: 6px;
+  gap: 16px;
 }
 
 .auth-link {
@@ -174,3 +174,12 @@
     flex-wrap: wrap;
   }
 }
+
+.auth-welcome { margin-bottom: 28px; }
+.auth-welcome > span { color: var(--spectrum-primary-700); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.auth-welcome h1 { margin: 12px 0 10px; color: var(--spectrum-text); font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -.035em; }
+.auth-welcome p { margin: 0; color: var(--spectrum-text-muted); font-size: 13px; line-height: 1.8; }
+.auth-link--forgot { justify-self: end; font-size: 12px; }
+.auth-switch { margin-top: 26px; flex-wrap: wrap; }
+.auth-link--google { min-height: 48px; }
+@media (max-width: 480px) { .auth-welcome h1 { font-size: 25px; } }

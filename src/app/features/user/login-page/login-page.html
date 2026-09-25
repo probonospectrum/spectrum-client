@@ -1,4 +1,9 @@
 <app-auth-shell [compact]="isRegisterMode">
+  <header class="auth-welcome">
+    <span>{{ isRegisterMode ? 'FAÇA PARTE DA COMUNIDADE' : 'BEM-VINDO AO SPECTRUM' }}</span>
+    <h1>{{ isRegisterMode ? 'Sua participação importa.' : 'Bom ter você por aqui.' }}</h1>
+    <p>{{ isRegisterMode ? 'Crie sua conta para acompanhar e transformar seu bairro.' : 'Entre para acompanhar o que acontece na sua cidade.' }}</p>
+  </header>
 
   @if (!isRegisterMode) {
 
@@ -9,8 +14,8 @@
     >
 
       <app-input
-        label="Nome de usuario ou email"
-        placeholder="Seu nome de usuario ou email"
+        label="Usuário ou e-mail"
+        placeholder="Seu usuário ou e-mail"
         autocomplete="username"
         formControlName="identifier"
         [error]="fieldError('login', 'identifier')"

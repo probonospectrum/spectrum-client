@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 
 import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import {
+  OccurrenceCategory,
   PostService,
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
@@ -24,6 +25,8 @@ import {
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+
+import { occurrenceStage, OccurrenceStage } from '../../../core/services/posts/occurrence-flow';
 
 interface FeedAlert {
   type: AlertPopupType;
@@ -55,6 +58,29 @@ export class PostsPage implements OnInit {
 
   allPosts = signal<SpectrumPost[]>([]);
   feedLoading = signal(true);
+  readonly selectedStage = signal<OccurrenceStage | 'Todas'>('Todas');
+  readonly selectedCategory = signal<OccurrenceCategory | ''>('');
+  readonly stages: Array<OccurrenceStage | 'Todas'> = ['Todas', 'Aberta', 'Em andamento', 'Fechada'];
+  readonly categoryFilters: Array<{ value: OccurrenceCategory | ''; label: string; icon: string }> = [
+    { value: '', label: 'Todas', icon: 'grid_view' },
+    { value: 'INFRAESTRUTURA', label: 'Infraestrutura', icon: 'construction' },
+    { value: 'ILUMINACAO_PUBLICA', label: 'Iluminação', icon: 'lightbulb' },
+    { value: 'LIMPEZA_URBANA', label: 'Limpeza', icon: 'delete_sweep' },
+    { value: 'ACESSIBILIDADE', label: 'Acessibilidade', icon: 'accessible' },
+    { value: 'TRANSITO', label: 'Trânsito', icon: 'traffic' },
+    { value: 'SEGURANCA', label: 'Segurança', icon: 'shield' },
+    { value: 'MEIO_AMBIENTE', label: 'Meio ambiente', icon: 'park' },
+    { value: 'OUTROS', label: 'Outros', icon: 'more_horiz' },
+  ];
+
+  get hasFilters(): boolean {
+    return this.selectedStage() !== 'Todas' || this.selectedCategory() !== '';
+  }
+
+  clearFilters(): void {
+    this.selectedStage.set('Todas');
+    this.selectedCategory.set('');
+  }
 
   reportPost: SpectrumPost | null = null;
 
@@ -76,7 +102,9 @@ export class PostsPage implements OnInit {
     return this.allPosts().filter(
       (post) =>
         !this.hiddenPostIds.has(post.id) &&
-        !this.hiddenAuthorNicknames.has(post.authorNickname),
+        !this.hiddenAuthorNicknames.has(post.authorNickname) &&
+        (this.selectedStage() === 'Todas' || occurrenceStage(post.status) === this.selectedStage()) &&
+        (!this.selectedCategory() || post.category === this.selectedCategory()),
     );
   }
 

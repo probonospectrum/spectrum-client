@@ -5,7 +5,7 @@
 
 .field {
   display: grid;
-  gap: 4px;
+  gap: 8px;
   color: var(--spectrum-text);
   font-family: var(--spectrum-font);
 }
@@ -17,7 +17,7 @@
 
 .field__control {
   width: 100%;
-  min-height: 46px;
+  min-height: 49px;
   border: 1px solid var(--spectrum-border);
   border-radius: var(--spectrum-radius-sm);
   background: var(--spectrum-surface-soft);

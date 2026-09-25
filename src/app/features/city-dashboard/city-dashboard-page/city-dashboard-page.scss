@@ -2,7 +2,6 @@
   display: block;
 }
 
-.dashboard-heading,
 .dashboard-filters,
 .dashboard-summary,
 .dashboard-averages,
@@ -15,17 +14,6 @@
   box-shadow: var(--spectrum-shadow-sm);
 }
 
-.dashboard-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 22px 24px;
-}
-
-.dashboard-heading p,
-.dashboard-heading h1,
-.dashboard-heading span,
 .dashboard-section-heading p,
 .dashboard-section-heading h2,
 .chart-panel__heading p,
@@ -33,37 +21,12 @@
   margin: 0;
 }
 
-.dashboard-heading p,
 .dashboard-section-heading p,
 .chart-panel__heading p,
 .city-focus__heading p {
   color: var(--spectrum-accent);
-  font: 800 11px/1 var(--spectrum-font);
+  font: 500 11px/1 var(--spectrum-font);
   text-transform: uppercase;
-}
-
-.dashboard-heading h1 {
-  margin-top: 4px;
-  color: var(--spectrum-text);
-  font: 850 26px/1.15 var(--spectrum-font);
-}
-
-.dashboard-heading div > span {
-  display: block;
-  margin-top: 6px;
-  color: var(--spectrum-text-muted);
-  font: 550 13px/1.2 var(--spectrum-font);
-}
-
-.dashboard-heading > .material-symbols-outlined {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--spectrum-accent-soft);
-  color: var(--spectrum-accent);
-  font-size: 24px;
 }
 
 .dashboard-filters,
@@ -85,12 +48,12 @@
 .chart-panel__heading h2 {
   margin-top: 3px;
   color: var(--spectrum-text);
-  font: 820 17px/1.2 var(--spectrum-font);
+  font: 600 17px/1.2 var(--spectrum-font);
 }
 
 .dashboard-section-heading > span {
   color: var(--spectrum-text-muted);
-  font: 650 12px/1.2 var(--spectrum-font);
+  font: 500 12px/1.2 var(--spectrum-font);
 }
 
 .dashboard-link-button {
@@ -99,7 +62,7 @@
   background: transparent;
   color: var(--spectrum-accent);
   cursor: pointer;
-  font: 750 12px/1 var(--spectrum-font);
+  font: 500 12px/1 var(--spectrum-font);
 }
 
 .dashboard-filters__grid {
@@ -114,7 +77,7 @@
   display: grid;
   gap: 7px;
   color: var(--spectrum-text-secondary);
-  font: 750 12px/1.2 var(--spectrum-font);
+  font: 500 12px/1.2 var(--spectrum-font);
 }
 
 .dashboard-filters select {
@@ -126,7 +89,7 @@
   padding: 0 34px 0 11px;
   background: var(--spectrum-surface-soft);
   color: var(--spectrum-text);
-  font: 600 13px/1.2 var(--spectrum-font);
+  font: 400 13px/1.2 var(--spectrum-font);
 }
 
 .dashboard-filters select:focus {
@@ -147,7 +110,7 @@
   background: var(--spectrum-primary-800);
   color: #fff;
   cursor: pointer;
-  font: 800 13px/1 var(--spectrum-font);
+  font: 600 13px/1 var(--spectrum-font);
 }
 
 .dashboard-filter-submit .material-symbols-outlined {
@@ -189,7 +152,7 @@
   background: var(--spectrum-primary-800);
   color: #fff;
   cursor: pointer;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .dashboard-metrics {
@@ -240,13 +203,13 @@
 
 .metric-card strong {
   overflow: hidden;
-  font: 850 24px/1 var(--spectrum-font);
+  font: 650 24px/1.2 var(--spectrum-font);
   text-overflow: ellipsis;
 }
 
 .metric-card small {
   color: var(--spectrum-text-muted);
-  font: 650 11px/1.25 var(--spectrum-font);
+  font: 500 11px/1.25 var(--spectrum-font);
 }
 
 .dashboard-averages {
@@ -270,12 +233,12 @@
 .dashboard-averages small,
 .dashboard-averages span {
   color: var(--spectrum-text-muted);
-  font: 600 11px/1.2 var(--spectrum-font);
+  font: 500 11px/1.2 var(--spectrum-font);
 }
 
 .dashboard-averages strong {
   color: var(--spectrum-text);
-  font: 850 20px/1 var(--spectrum-font);
+  font: 650 20px/1.2 var(--spectrum-font);
 }
 
 .city-focus {
@@ -309,7 +272,7 @@
 
 .city-focus__heading h2 {
   margin-top: 4px;
-  font: 850 22px/1.15 var(--spectrum-font);
+  font: 600 22px/1.15 var(--spectrum-font);
 }
 
 .city-focus__heading div > span {
@@ -334,14 +297,14 @@
 .city-focus dt,
 .occurrence-row dt {
   color: var(--spectrum-text-muted);
-  font: 600 11px/1.2 var(--spectrum-font);
+  font: 500 11px/1.2 var(--spectrum-font);
 }
 
 .city-focus dd,
 .occurrence-row dd {
   margin: 4px 0 0;
   color: var(--spectrum-text);
-  font: 800 13px/1.2 var(--spectrum-font);
+  font: 600 13px/1.2 var(--spectrum-font);
 }
 
 .dashboard-charts {
@@ -398,13 +361,13 @@
   color: var(--spectrum-text-secondary);
   text-align: right;
   white-space: nowrap;
-  font: 600 12px/1.2 var(--spectrum-font);
+  font: 500 12px/1.2 var(--spectrum-font);
 }
 
 .city-comparison th {
   background: var(--spectrum-surface-soft);
   color: var(--spectrum-text-muted);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .city-comparison th:first-child,
@@ -424,7 +387,7 @@
   background: transparent;
   color: var(--spectrum-primary-800);
   cursor: pointer;
-  font: 800 12px/1.2 var(--spectrum-font);
+  font: 500 12px/1.2 var(--spectrum-font);
 }
 
 .recent-occurrences {
@@ -452,7 +415,7 @@
   padding: 5px 8px;
   background: var(--spectrum-surface-muted);
   color: var(--spectrum-text-secondary);
-  font: 800 10px/1 var(--spectrum-font);
+  font: 600 10px/1 var(--spectrum-font);
   text-transform: uppercase;
 }
 
@@ -480,7 +443,7 @@
   margin-top: 7px;
   overflow: hidden;
   color: var(--spectrum-text);
-  font: 800 14px/1.25 var(--spectrum-font);
+  font: 600 14px/1.25 var(--spectrum-font);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -539,9 +502,9 @@
   cursor: not-allowed;
 }
 
-.dashboard-pagination span {
+.dashboard-pagination__label {
   color: var(--spectrum-text-muted);
-  font: 700 12px/1 var(--spectrum-font);
+  font: 500 12px/1 var(--spectrum-font);
 }
 
 @media (max-width: 1180px) {
@@ -593,7 +556,6 @@
 }
 
 @media (max-width: 560px) {
-  .dashboard-heading,
   .dashboard-filters,
   .dashboard-summary,
   .city-comparison,
@@ -602,11 +564,6 @@
   .city-focus {
     padding: 16px;
   }
-
-  .dashboard-heading h1 {
-    font-size: 22px;
-  }
-
   .dashboard-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -628,4 +585,20 @@
   .occurrence-row dl {
     grid-template-columns: 1fr;
   }
+}
+
+:host, .city-comparison, .city-comparison__table-wrap, .dashboard-summary, .recent-occurrences { min-width: 0; }
+.city-comparison__table-wrap { max-width: 100%; overscroll-behavior-x: contain; }
+.city-focus dd, .occurrence-row dd { overflow-wrap: anywhere; }
+@media (max-width: 860px) {
+  .dashboard-charts { grid-template-columns: minmax(0, 1fr); }
+  .chart-panel__heading { flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+  .dashboard-filter-submit { width: 100%; min-height: 44px; }
+  .city-focus dl { grid-template-columns: minmax(0, 1fr); }
+  .occurrence-row { grid-template-columns: minmax(0, 1fr) 44px; gap: 12px; }
+  .occurrence-row h3 { white-space: normal; }
+  .occurrence-row > a, .dashboard-pagination button { width: 44px; height: 44px; }
+  .metric-card strong { font-size: clamp(20px, 6vw, 24px); }
 }

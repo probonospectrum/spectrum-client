@@ -6,7 +6,7 @@
   background: var(--spectrum-primary-800);
   color: #ffffff;
   cursor: pointer;
-  font: 800 13px/1 var(--spectrum-font);
+  font: 600 13px/1 var(--spectrum-font);
   transition:
     background-color var(--spectrum-transition),
     transform var(--spectrum-transition);
@@ -22,6 +22,15 @@
   gap: 16px;
 }
 
+.settings-list--compact {
+  gap: 10px;
+}
+
+.settings-list--compact .settings-row {
+  min-height: 52px;
+  padding: 8px 0;
+}
+
 .settings-row {
   width: 100%;
   min-height: 66px;
@@ -35,6 +44,9 @@
   background: transparent;
   color: var(--spectrum-text);
   text-align: left;
+  transition:
+    background-color var(--spectrum-transition),
+    color var(--spectrum-transition);
 }
 
 .settings-row:last-child {
@@ -43,6 +55,11 @@
 
 .settings-row--button {
   cursor: pointer;
+}
+
+.settings-row--button:hover,
+.settings-row--button:focus-visible {
+  background: var(--spectrum-surface-soft);
 }
 
 .settings-row--button:hover .settings-row__content strong {
@@ -64,12 +81,12 @@
 
 .settings-row__content strong {
   color: var(--spectrum-text);
-  font: 800 15px/1.2 var(--spectrum-font);
+  font: 500 15px/1.4 var(--spectrum-font);
 }
 
 .settings-row__content small {
   color: var(--spectrum-text-muted);
-  font: 450 13px/1.35 var(--spectrum-font);
+  font: 400 13px/1.35 var(--spectrum-font);
 }
 
 .settings-row__avatar {
@@ -82,7 +99,7 @@
     linear-gradient(135deg, rgba(47, 111, 149, 0.2), rgba(36, 107, 159, 0.18)),
     var(--spectrum-surface-muted);
   color: var(--spectrum-primary-900);
-  font: 800 15px/1 var(--spectrum-font);
+  font: 600 15px/1 var(--spectrum-font);
 }
 
 .settings-row__arrow {
@@ -95,6 +112,7 @@
 
 select,
 input {
+  font-weight: 400;
   width: min(230px, 100%);
   height: 42px;
   border: 1px solid var(--spectrum-border);
@@ -133,11 +151,245 @@ input:focus {
   display: grid;
   gap: 8px;
   color: var(--spectrum-text-secondary);
-  font: 800 14px/1 var(--spectrum-font);
+  font: 500 14px/1.4 var(--spectrum-font);
 }
 
 .settings-password input {
   width: 100%;
+}
+
+.settings-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1100;
+  max-width: min(360px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  padding: 12px 14px;
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text);
+  box-shadow: var(--spectrum-shadow-md);
+  font: 600 14px/1.35 var(--spectrum-font);
+  animation: settings-toast-in 0.18s ease-out;
+}
+
+.settings-toast .material-symbols-outlined {
+  color: var(--spectrum-success);
+}
+
+.settings-form,
+.settings-two-factor,
+.settings-sessions,
+.settings-confirm {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--spectrum-text-secondary);
+  font: 500 14px/1.4 var(--spectrum-font);
+}
+
+.settings-form input {
+  width: 100%;
+}
+
+.settings-form__hint,
+.settings-form__error,
+.settings-empty,
+.settings-confirm p {
+  margin: 0;
+  color: var(--spectrum-text-muted);
+  font: 400 13px/1.45 var(--spectrum-font);
+}
+
+.settings-form__hint--checking {
+  color: var(--spectrum-info);
+}
+
+.settings-form__hint--success {
+  color: var(--spectrum-success);
+  font-weight: 600;
+}
+
+.settings-form__error {
+  color: var(--spectrum-error);
+  font-weight: 600;
+}
+
+.settings-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.settings-dialog-actions button {
+  min-height: 42px;
+  border-radius: var(--spectrum-radius-sm);
+  padding: 0 16px;
+  cursor: pointer;
+  font: 600 13px/1 var(--spectrum-font);
+  transition:
+    background-color var(--spectrum-transition),
+    border-color var(--spectrum-transition),
+    transform var(--spectrum-transition);
+}
+
+.settings-dialog-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+.settings-dialog-actions__ghost {
+  border: 1px solid var(--spectrum-border);
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text-secondary);
+}
+
+.settings-dialog-actions__ghost:hover:not(:disabled) {
+  border-color: var(--spectrum-border-strong);
+  background: var(--spectrum-surface-soft);
+}
+
+.settings-dialog-actions__primary {
+  border: 0;
+  background: var(--spectrum-primary-800);
+  color: #ffffff;
+}
+
+.settings-dialog-actions__primary:hover:not(:disabled) {
+  background: var(--spectrum-primary-900);
+  transform: translateY(-1px);
+}
+
+.settings-summary,
+.settings-session,
+.settings-confirmation {
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-soft);
+}
+
+.settings-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.settings-summary span,
+.settings-session span,
+.settings-session small {
+  color: var(--spectrum-text-muted);
+  font: 400 13px/1.4 var(--spectrum-font);
+}
+
+.settings-summary strong,
+.settings-session strong {
+  color: var(--spectrum-text);
+  font: 600 14px/1.35 var(--spectrum-font);
+  overflow-wrap: anywhere;
+}
+
+.settings-summary--pending {
+  background: var(--spectrum-accent-soft);
+}
+
+.settings-session {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.settings-session div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.settings-session button {
+  min-height: 36px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  padding: 0 12px;
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text-secondary);
+  cursor: pointer;
+  font: 600 12px/1 var(--spectrum-font);
+}
+
+.settings-session button:hover {
+  border-color: var(--spectrum-border-strong);
+  color: var(--spectrum-text);
+}
+
+.settings-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.settings-steps span {
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-muted);
+  color: var(--spectrum-text-muted);
+  font: 600 13px/1 var(--spectrum-font);
+}
+
+.settings-steps .settings-steps__item--active {
+  background: var(--spectrum-primary-800);
+  color: #ffffff;
+}
+
+.settings-qr {
+  min-height: 168px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--spectrum-border-strong);
+  border-radius: var(--spectrum-radius-sm);
+  background:
+    linear-gradient(90deg, transparent 47%, var(--spectrum-border) 48% 52%, transparent 53%),
+    linear-gradient(0deg, transparent 47%, var(--spectrum-border) 48% 52%, transparent 53%),
+    var(--spectrum-surface-soft);
+  color: var(--spectrum-text-secondary);
+  font: 600 14px/1.2 var(--spectrum-font);
+}
+
+.settings-confirmation {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.settings-confirmation .material-symbols-outlined {
+  color: var(--spectrum-success);
+  font-size: 36px;
+}
+
+.settings-confirmation strong {
+  color: var(--spectrum-text);
+  font: 600 16px/1.3 var(--spectrum-font);
+}
+
+@keyframes settings-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 @media (max-width: 640px) {
@@ -165,4 +417,29 @@ input:focus {
   .settings-password {
     grid-template-columns: 1fr;
   }
+
+  .settings-dialog-actions,
+  .settings-session {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-dialog-actions {
+    display: grid;
+  }
+
+  .settings-dialog-actions button,
+  .settings-session button {
+    width: 100%;
+  }
+
+  .settings-toast {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+.settings-row__content small { overflow-wrap: anywhere; }
+@media (max-width: 780px) {
+  .settings-toast { bottom: calc(94px + env(safe-area-inset-bottom)); }
+  .settings-row input, .settings-row select, .settings-dialog-actions button, .settings-session button { min-height: 44px; }
 }
