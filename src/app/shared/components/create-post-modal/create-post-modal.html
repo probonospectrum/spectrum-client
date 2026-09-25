@@ -65,9 +65,15 @@
                 type="radio"
                 name="occurrenceImportance"
                 [value]="option.value"
+                [attr.aria-describedby]="'importance-tip-' + option.value"
                 [(ngModel)]="selectedImportance"
               />
               <span>{{ option.label }}</span>
+              <span
+                class="create-post-modal__importance-tooltip"
+                role="tooltip"
+                [id]="'importance-tip-' + option.value"
+              >{{ importanceGuidance[option.value] }}</span>
             </label>
           }
         </div>
