@@ -224,13 +224,14 @@
 }
 
 .create-post-modal__importance-options {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
 .create-post-modal__importance-options label {
-  position: relative;
+  position: static;
   min-width: 0;
   border: 1px solid var(--spectrum-border);
   border-radius: var(--spectrum-radius-sm);
@@ -250,6 +251,28 @@
   position: absolute;
   opacity: 0;
   pointer-events: none;
+}
+
+.create-post-modal__importance-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--spectrum-border-strong);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text);
+  box-shadow: var(--spectrum-shadow-md);
+  font: 400 12px/1.5 var(--spectrum-font);
+  text-align: left;
+  visibility: hidden;
+}
+
+.create-post-modal__importance-options label:not(.create-post-modal__importance-option--selected):hover .create-post-modal__importance-tooltip,
+.create-post-modal__importance-options label:not(.create-post-modal__importance-option--selected):focus-within .create-post-modal__importance-tooltip {
+  visibility: visible;
 }
 
 .create-post-modal__importance-options label:hover,
