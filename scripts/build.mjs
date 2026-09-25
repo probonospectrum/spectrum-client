@@ -3,10 +3,7 @@ import { spawnSync } from 'node:child_process';
 const branchName = process.env.VERCEL_GIT_COMMIT_REF;
 const configuration = branchName === 'stg' ? 'stg' : 'production';
 
-const apiUrl =
-  configuration === 'stg'
-    ? 'https://spectrum-server-2qne.onrender.com'
-    : 'https://spectrum-server-2qne.onrender.com';
+const apiUrl = process.env.API_URL?.trim() || 'https://spectrum-server-2qne.onrender.com';
 
 const command = process.execPath;
 
@@ -16,6 +13,10 @@ const args = [
   `--configuration=${configuration}`,
   `--define=API_URL=${JSON.stringify(apiUrl.replace(/\/+$/, ''))}`,
 ];
+
+if (process.env.GOOGLE_CLIENT_ID?.trim()) {
+  args.push(`--define=GOOGLE_CLIENT_ID=${JSON.stringify(process.env.GOOGLE_CLIENT_ID.trim())}`);
+}
 
 console.log(`Branch: ${branchName}`);
 console.log(`Configuration: ${configuration}`);

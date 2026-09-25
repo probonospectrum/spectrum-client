@@ -8,24 +8,18 @@ import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-pop
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
 
-import {
-  SpectrumInput,
-} from '../../../shared/components/input/input/input';
+import { SpectrumInput } from '../../../shared/components/input/input/input';
 
-import {
-  SelectOption,
-  SpectrumSelect,
-} from '../../../shared/components/select/select';
+import { SelectOption, SpectrumSelect } from '../../../shared/components/select/select';
 
-import {
-  BrazilCity,
-  BrazilState,
-  CityService,
-} from '../../../core/services/city/city.service';
+import { BrazilCity, BrazilState, CityService } from '../../../core/services/city/city.service';
 
 import { UserService } from '../../../core/services/user/user.service';
 import { GoogleAuthService } from '../../../core/services/user/google-auth.service';
-import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
+import {
+  AuthApiService,
+  PendingGoogleRegistration,
+} from '../../../core/services/authApi/auth-api.service';
 type AuthMode = 'login' | 'register';
 
 @Component({
@@ -38,13 +32,12 @@ type AuthMode = 'login' | 'register';
     Button,
     SpectrumInput,
     SpectrumSelect,
-    RouterLink
-],
+    RouterLink,
+  ],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
 })
 export class LoginPage implements OnInit {
-
   private readonly formBuilder = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly cityService = inject(CityService);
@@ -53,6 +46,7 @@ export class LoginPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly googleAuth = inject(GoogleAuthService);
   private readonly authApiService = inject(AuthApiService);
+  pendingGoogleRegistration: PendingGoogleRegistration | null = null;
   readonly isGoogleLoginAvailable = this.googleAuth.isConfigured;
 
   mode = signal<AuthMode>('login');
@@ -84,69 +78,39 @@ export class LoginPage implements OnInit {
     nickname: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     birthDate: ['', Validators.required],
-    password: [
-      '',
-      [
-        Validators.required,
-        Validators.minLength(10),
-        Validators.maxLength(30),
-      ],
-    ],
+    password: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(30)]],
     name: ['', Validators.required],
     stateId: ['', Validators.required],
     cityUser: ['', Validators.required],
   });
 
   ngOnInit(): void {
-
     const routeMode = this.route.snapshot.data['mode'];
 
-    this.mode.set(routeMode === 'register'
-      ? 'register'
-      : 'login');
+    this.mode.set(routeMode === 'register' ? 'register' : 'login');
+
+    if (this.mode() === 'register' && this.route.snapshot.queryParamMap?.get('google') === '1') {
+      this.pendingGoogleRegistration = this.authApiService.getPendingRegistration();
+      if (!this.pendingGoogleRegistration) {
+        this.showAlert(
+          'error',
+          'Cadastro Google expirado',
+          'Entre com Google novamente para continuar.',
+          'Voltar ao login',
+          '/login',
+        );
+      } else {
+        const profile = this.pendingGoogleRegistration.profile;
+        this.registerForm.patchValue({ email: profile.email, name: profile.name });
+        this.registerForm.controls.email.disable();
+      }
+    }
 
     this.loadStates();
     this.registerForm.controls.stateId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((stateId) => {
         this.loadCities(stateId);
-      });
-
-    this.tryGoogleLogin();
-  }
-
-  private tryGoogleLogin(): void {
-    if (!this.googleAuth.isConfigured) {
-      return;
-    }
-
-    const code = this.googleAuth.getAuthorizationCode();
-
-    if (!code) {
-      return;
-    }
-
-    this.isSubmitting.set(true);
-    this.authApiService
-      .loginWithGoogle(code)
-      .pipe(
-        finalize(() => this.isSubmitting.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => {
-          this.googleAuth.clearUrlParams();
-          void this.router.navigate(['/publicacoes']);
-        },
-        error: () => {
-          this.googleAuth.clearUrlParams();
-          this.alert.set({
-            type: 'error',
-            title: 'Erro no login',
-            message: 'Não foi possível fazer o login com o Google.',
-            actionLabel: 'Fechar',
-          });
-        },
       });
   }
 
@@ -162,27 +126,21 @@ export class LoginPage implements OnInit {
   }
 
   get cityOptions(): SelectOption[] {
-
     const selectedState = this.selectedState;
 
     return this.cities().map((city) => ({
-      value: selectedState
-        ? `${city.nome} - ${selectedState.sigla}`
-        : city.nome,
+      value: selectedState ? `${city.nome} - ${selectedState.sigla}` : city.nome,
       label: city.nome,
     }));
   }
 
   get isCitySelectDisabled(): boolean {
     return (
-      !this.registerForm.controls.stateId.value ||
-      this.isLoadingCities() ||
-      !this.cities().length
+      !this.registerForm.controls.stateId.value || this.isLoadingCities() || !this.cities().length
     );
   }
 
   goToRegister(): void {
-
     this.mode.set('register');
     this.registerStep.set(1);
 
@@ -190,7 +148,9 @@ export class LoginPage implements OnInit {
   }
 
   goToLogin(): void {
-
+    this.authApiService.clearPendingRegistration();
+    this.pendingGoogleRegistration = null;
+    this.registerForm.controls.email.enable();
     this.mode.set('login');
     this.registerStep.set(1);
 
@@ -198,21 +158,14 @@ export class LoginPage implements OnInit {
   }
 
   goToNextRegisterStep(): void {
-
-    const firstStepControls = [
-      'nickname',
-      'email',
-      'birthDate',
-      'password',
-    ] as const;
+    const firstStepControls = ['nickname', 'email', 'birthDate', 'password'] as const;
 
     firstStepControls.forEach((controlName) => {
       this.registerForm.controls[controlName].markAsTouched();
     });
 
     const hasInvalidField = firstStepControls.some(
-      (controlName) =>
-        this.registerForm.controls[controlName].invalid,
+      (controlName) => this.registerForm.controls[controlName].invalid,
     );
 
     if (!hasInvalidField) {
@@ -225,11 +178,9 @@ export class LoginPage implements OnInit {
   }
 
   submitLogin(): void {
-
     this.loginForm.markAllAsTouched();
 
     if (this.loginForm.invalid) {
-
       this.showAlert(
         'error',
         'Campos obrigatorios',
@@ -248,7 +199,6 @@ export class LoginPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-
         next: (response) => {
           this.showAlert(
             'success',
@@ -263,25 +213,32 @@ export class LoginPage implements OnInit {
           this.showAlert(
             'error',
             'Nao foi possivel entrar',
-            this.getErrorMessage(
-              error,
-              'Verifique seu usuario, email e senha.',
-            ),
+            this.getErrorMessage(error, 'Verifique seu usuario, email e senha.'),
           );
         },
       });
   }
 
-  loginWithGoogle(): void {
-    this.googleAuth.login();
+  async loginWithGoogle(): Promise<void> {
+    if (this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+    try {
+      await this.googleAuth.login();
+    } catch {
+      this.showAlert(
+        'error',
+        'Erro no login Google',
+        'Não foi possível conectar ao Google. Verifique sua conexão e tente novamente.',
+      );
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 
   submitRegister(): void {
-
     this.registerForm.markAllAsTouched();
 
     if (this.registerForm.invalid) {
-
       this.showAlert(
         'error',
         'Cadastro incompleto',
@@ -291,12 +248,40 @@ export class LoginPage implements OnInit {
       return;
     }
 
-    const {
-      stateId: _stateId,
-      ...payload
-    } = this.registerForm.getRawValue();
+    const { stateId: _stateId, ...payload } = this.registerForm.getRawValue();
 
     this.isSubmitting.set(true);
+
+    if (this.pendingGoogleRegistration) {
+      this.authApiService
+        .completeGoogleRegistration({
+          registrationToken: this.pendingGoogleRegistration.registrationToken,
+          name: payload.name,
+          nickname: payload.nickname,
+          password: payload.password,
+          birthDate: payload.birthDate,
+          cityUser: payload.cityUser,
+        })
+        .pipe(
+          finalize(() => this.isSubmitting.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: () => void this.router.navigate(['/publicacoes'], { replaceUrl: true }),
+          error: (error: unknown) => {
+            const expired = error instanceof HttpErrorResponse && error.status === 401;
+            if (expired) this.authApiService.clearPendingRegistration();
+            this.showAlert(
+              'error',
+              'Não foi possível concluir o cadastro',
+              this.getErrorMessage(error, 'Verifique os dados e tente novamente.'),
+              expired ? 'Voltar ao login' : 'Fechar',
+              expired ? '/login' : null,
+            );
+          },
+        });
+      return;
+    }
 
     this.userService
       .create({
@@ -308,31 +293,21 @@ export class LoginPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-
         next: (response) => {
-          this.showAlert(
-            'success',
-            'Cadastro criado',
-            response.message,
-            'Entendi',
-          );
+          this.showAlert('success', 'Cadastro criado', response.message, 'Entendi');
         },
 
         error: (error: unknown) => {
           this.showAlert(
             'error',
             'Cadastro nao realizado',
-            this.getErrorMessage(
-              error,
-              'Verifique os dados informados e tente novamente.',
-            ),
+            this.getErrorMessage(error, 'Verifique os dados informados e tente novamente.'),
           );
         },
       });
   }
 
   dismissAlert(): void {
-
     const redirectUrl = this.alertRedirectUrl;
 
     this.alert.set(null);
@@ -343,15 +318,9 @@ export class LoginPage implements OnInit {
     }
   }
 
-  fieldError(
-    form: 'login' | 'register',
-    controlName: string,
-  ): string {
-
+  fieldError(form: 'login' | 'register', controlName: string): string {
     const control =
-      form === 'login'
-        ? this.loginForm.get(controlName)
-        : this.registerForm.get(controlName);
+      form === 'login' ? this.loginForm.get(controlName) : this.registerForm.get(controlName);
 
     if (!control || !control.touched || control.valid) {
       return '';
@@ -377,18 +346,12 @@ export class LoginPage implements OnInit {
   }
 
   private get selectedState(): BrazilState | undefined {
+    const selectedStateId = this.registerForm.controls.stateId.value;
 
-    const selectedStateId =
-      this.registerForm.controls.stateId.value;
-
-    return this.states().find(
-      (state) =>
-        String(state.id) === selectedStateId,
-    );
+    return this.states().find((state) => String(state.id) === selectedStateId);
   }
 
   private loadStates(): void {
-
     this.isLoadingStates.set(true);
 
     this.cityService
@@ -398,24 +361,17 @@ export class LoginPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
+        next: (states) => {
+          this.states.set(states);
+        },
 
-      next: (states) => {
-
-        this.states.set(states);
-      },
-
-      error: () => {
-        this.showAlert(
-          'error',
-          'Estados indisponiveis',
-          'Nao foi possivel carregar os estados.',
-        );
-      },
-    });
+        error: () => {
+          this.showAlert('error', 'Estados indisponiveis', 'Nao foi possivel carregar os estados.');
+        },
+      });
   }
 
   private loadCities(stateId: string): void {
-
     this.cities.set([]);
 
     this.registerForm.controls.cityUser.setValue('');
@@ -433,9 +389,7 @@ export class LoginPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-
         next: (cities) => {
-
           this.cities.set(cities);
         },
 
@@ -456,7 +410,6 @@ export class LoginPage implements OnInit {
     actionLabel = 'Ok',
     redirectUrl: string | null = null,
   ): void {
-
     this.alert.set({
       type,
       title,
@@ -467,15 +420,8 @@ export class LoginPage implements OnInit {
     this.alertRedirectUrl = redirectUrl;
   }
 
-  private getErrorMessage(
-    error: unknown,
-    fallback: string,
-  ): string {
-
-    if (
-      error instanceof Error &&
-      error.name === 'TimeoutError'
-    ) {
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.name === 'TimeoutError') {
       return 'O servidor demorou para responder. Tente novamente em alguns instantes.';
     }
 
@@ -489,17 +435,11 @@ export class LoginPage implements OnInit {
       return apiMessage.join(' ');
     }
 
-    if (
-      typeof apiMessage === 'string' &&
-      apiMessage.trim()
-    ) {
+    if (typeof apiMessage === 'string' && apiMessage.trim()) {
       return apiMessage;
     }
 
-    if (
-      typeof error.error?.error === 'string' &&
-      error.error.error.trim()
-    ) {
+    if (typeof error.error?.error === 'string' && error.error.error.trim()) {
       return error.error.error;
     }
 
