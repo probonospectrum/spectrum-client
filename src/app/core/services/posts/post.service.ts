@@ -6,6 +6,12 @@ import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser } from '../user/user.service';
 
 export type OccurrenceStatus =
+  | 'AGUARDANDO_ENCAMINHAMENTO'
+  | 'EM_ANALISE_DE_COMPETENCIA'
+  | 'FALHA_NO_ENCAMINHAMENTO'
+  | 'RESPOSTA_EM_APURACAO'
+  | 'EM_RESOLUCAO'
+  | 'REJEITADA'
   | 'ABERTA'
   | 'ENCAMINHADA'
   | 'EM_ANALISE'
@@ -30,6 +36,10 @@ export type OccurrenceCategory =
 export type OccurrenceActorType = 'USER' | 'COMMUNITY' | 'RESPONSIBLE_AGENCY' | 'MODERATOR' | 'SYSTEM';
 
 export type OccurrenceEventType =
+  | 'ANALISE_DE_COMPETENCIA_INICIADA'
+  | 'MODERACAO_NECESSARIA'
+  | 'OCORRENCIA_REENVIADA'
+  | 'RESPOSTA_CLASSIFICADA'
   | 'OCORRENCIA_CRIADA'
   | 'OCCURRENCE_UPDATED'
   | 'COMMENT_ADDED'
@@ -125,6 +135,8 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  moderationReason?: string | null;
+  forwardingDueAt?: string | null;
   id: string;
   createdAt: string;
   createdBy?: string;
@@ -216,6 +228,8 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  moderationReason?: string | null;
+  forwardingDueAt?: string | null;
   _id: string;
   text: string;
   title?: string;
@@ -269,6 +283,16 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  getRegisteredAgencies(): Observable<{ _id: string; name: string; emails: string[] }[]> {
+    return this.http.get<{ _id: string; name: string; emails: string[] }[]>(`${this.apiUrl}/agencies`);
+  }
+
+  reviewForwardingResponse(post: SpectrumPost, user: LoggedUser | null, responseCode: string, note: string): Observable<SpectrumPost> {
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['RESPOSTA_EM_APURACAO', 'RESOLUCAO_INFORMADA']);
+    return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/response/review`, { responseCode, note }).pipe(
+      map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)),
+    );
+  }
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${API_BASE_URL}/post`;
   private readonly storageKey = 'spectrum-mock-posts';
@@ -454,32 +478,9 @@ export class PostService {
   ): Observable<SpectrumPost> {
     const userId = this.requireUserKey(user, 'Entre na sua conta para encaminhar.');
     const body = { ...payload };
-    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['ABERTA', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO']);
-    if (!['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER'].includes(payload.channel) || !payload.deliveryConfirmed || !payload.agency.name.trim() || payload.sentContent.trim().length < 20) {
-      throw new Error('Informe um encaminhamento manual realizado, com órgão e descrição.');
-    }
-
-    if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          status: 'ENCAMINHADA',
-          eventType: 'OCORRENCIA_ENCAMINHADA',
-          actorType: this.actorTypeForUser(user),
-          metadata: { forwarding: body, agencyName: payload.agency.name, protocol: payload.protocol },
-          responsibleAgency: payload.agency,
-          forwarding: {
-            id: this.createLocalId('forwarding'),
-            agency: payload.agency,
-            channel: payload.channel,
-            sentAt: new Date().toISOString(),
-            sentContent: payload.sentContent,
-            protocol: payload.protocol,
-            responsibleUserId: userId,
-            success: true,
-          },
-        }),
-      );
-    }
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO', 'ABERTA', 'SEM_ORGAO_IDENTIFICADO']);
+    if (payload.channel !== 'EMAIL' || !payload.agency.id) throw new Error('Selecione um órgão cadastrado para envio por e-mail.');
+    if (!this.isApiId(post.id)) throw new Error('O envio por e-mail exige uma ocorrência salva no servidor.');
 
     return this.http
       .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, body)
@@ -594,7 +595,7 @@ export class PostService {
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para resolver.');
-    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR' || this.isRelatedAgency(post, user), ['RESOLUCAO_INFORMADA']);
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['RESOLUCAO_INFORMADA', 'RESPOSTA_EM_APURACAO']);
     if (note.trim().length < 20) throw new Error('Descreva a verificação em pelo menos 20 caracteres.');
     const actorType = this.actorTypeForUser(user);
     const body = {
@@ -885,7 +886,7 @@ export class PostService {
       reposted: false,
       saved: false,
       tags: payload.tags,
-      status: 'ABERTA',
+      status: 'AGUARDANDO_ENCAMINHAMENTO',
       category: payload.category ?? 'OUTROS',
       importance: payload.importance ?? 'MEDIA',
       location: payload.location ?? { label: payload.authorCity.trim() },
@@ -899,7 +900,7 @@ export class PostService {
           actorId: user?._id,
           actorType: 'USER',
           occurredAt: now.toISOString(),
-          newStatus: 'ABERTA',
+          newStatus: 'AGUARDANDO_ENCAMINHAMENTO',
           metadata: {
             title: payload.title.trim(),
             location: payload.authorCity.trim(),
@@ -1175,7 +1176,7 @@ export class PostService {
       return false;
     }
 
-    return this.isOwnPost(post, user) && now - createdAt <= POST_EDIT_WINDOW_MS;
+    return this.isOwnPost(post, user) && now - createdAt < POST_EDIT_WINDOW_MS;
   }
 
   isOwnPost(post: SpectrumPost, user: LoggedUser | null): boolean {
@@ -1187,7 +1188,7 @@ export class PostService {
   }
 
   getStatusLabel(status: OccurrenceStatus): string {
-    return `${occurrenceStage(status)} · ${OCCURRENCE_STATUS_DETAILS[status]}`;
+    return OCCURRENCE_STATUS_DETAILS[status] ?? status;
   }
 
   getImportanceLabel(importance: OccurrenceImportance): string {
@@ -1758,6 +1759,8 @@ return {
   saved: false,
   tags: [],
   status: occurrence.status,
+  moderationReason: occurrence.moderationReason,
+  forwardingDueAt: occurrence.forwardingDueAt,
   category: occurrence.category,
   importance: occurrence.importance,
   location: occurrence.location,

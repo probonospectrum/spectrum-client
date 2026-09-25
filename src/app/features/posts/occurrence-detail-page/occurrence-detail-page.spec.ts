@@ -65,6 +65,7 @@ describe('OccurrenceDetailPage actions', () => {
           useValue: {
             getOccurrence: () => of(occurrence),
             getOccurrenceHistory: () => of([]),
+            getRegisteredAgencies: () => of([{ _id: 'works', name: 'Obras', emails: ['works@example.com'] }]),
             getStatusLabel: (status: string) => status,
             getCategoryLabel: (category: string) => category,
             getImportanceLabel: (importance: string) => importance,
@@ -109,7 +110,6 @@ describe('OccurrenceDetailPage actions', () => {
 
   it('shows only related agency actions at the same URL', () => {
     expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual([
-      'assignment_turned_in Assumir responsabilidade',
       'task_alt Informar resolução',
     ]);
   });
@@ -122,7 +122,6 @@ describe('OccurrenceDetailPage actions', () => {
     expect(actionsFor('MODERATOR')).toEqual([
       'account_balance Associar órgão',
       'send Registrar encaminhamento',
-      'error Registrar falha',
     ]);
   });
 
@@ -131,13 +130,13 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.occurrence-detail__action-group button').length).toBe(0);
   });
-  it('keeps confirmation visible when an authorized agency only has resolution review available', () => {
+  it('does not allow the agency to validate its own response', () => {
     actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
     fixture.componentInstance.occurrence = { ...occurrence, status: 'RESOLUCAO_INFORMADA' };
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
-    expect(fixture.componentInstance.hasAvailableActions).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Confirmar resolução');
+    expect(fixture.componentInstance.canResolve).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('Classificar resposta');
     expect(fixture.componentInstance.formatStatus()).toBe('Em andamento');
   });
 
@@ -149,18 +148,24 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.errorMessage).toContain('20 caracteres');
   });
 
-  it('offers only manual forwarding channels and requires confirmation of the action', () => {
+  it('offers registered agencies and contacts for email forwarding', () => {
     actionsFor('MODERATOR');
     fixture.componentInstance.openPanel('forward');
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-    const values = Array.from(fixture.nativeElement.querySelectorAll('select[name="forwardingChannel"] option'))
-      .map(option => (option as HTMLOptionElement).value);
-    expect(values).toEqual(['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER']);
-    fixture.componentInstance.agencyName = 'Secretaria de Obras';
-    fixture.componentInstance.forwardingContent = 'Solicitação registrada no portal municipal.';
+    fixture.componentInstance.agencyId = 'works';
+    fixture.componentInstance.selectRegisteredAgency();
+    fixture.changeDetectorRef.markForCheck(); fixture.detectChanges();
+    expect(fixture.componentInstance.agencyEmail).toBe('works@example.com');
+    expect(fixture.nativeElement.querySelector('input[name="agencyEmail"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Encaminhar por e-mail');
+    fixture.componentInstance.agencyId = '';
     fixture.componentInstance.submitForwarding();
-    expect(fixture.componentInstance.errorMessage).toContain('registro manual');
+    expect(fixture.componentInstance.errorMessage).toContain('órgão cadastrado');
+  });
+
+  it('keeps forwarding unavailable during the editing window', () => {
+    actionsFor('MODERATOR');
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'AGUARDANDO_ENCAMINHAMENTO', createdAt: new Date().toISOString() };
+    expect(fixture.componentInstance.canForward).toBe(false);
   });
 
   it('shows closed occurrences and offers contestation followed by reopening', () => {

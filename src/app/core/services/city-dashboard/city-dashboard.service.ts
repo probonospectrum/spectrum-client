@@ -135,6 +135,12 @@ interface MockOccurrence extends DashboardOccurrenceListItem {
 }
 
 const DASHBOARD_STATUSES: OccurrenceStatus[] = [
+  'AGUARDANDO_ENCAMINHAMENTO',
+  'EM_ANALISE_DE_COMPETENCIA',
+  'FALHA_NO_ENCAMINHAMENTO',
+  'RESPOSTA_EM_APURACAO',
+  'EM_RESOLUCAO',
+  'REJEITADA',
   'ABERTA',
   'ENCAMINHADA',
   'EM_ANALISE',
@@ -579,7 +585,7 @@ export class CityDashboardService {
         }
         if (filters.category && item.category !== filters.category) return false;
         if (filters.importance && item.importance !== filters.importance) return false;
-        if (filters.status && item.status !== filters.status) return false;
+        if (filters.status && !this.statusGroup(filters.status).includes(item.status)) return false;
         if (from && createdAt < from) return false;
         if (to && createdAt > to) return false;
 
@@ -745,7 +751,13 @@ export class CityDashboardService {
   }
 
   private countStatus(occurrences: MockOccurrence[], status: OccurrenceStatus): number {
-    return occurrences.filter((item) => item.status === status).length;
+    return occurrences.filter((item) => this.statusGroup(status).includes(item.status)).length;
+  }
+
+  private statusGroup(status: OccurrenceStatus): OccurrenceStatus[] {
+    if (status === 'ABERTA') return [status, 'AGUARDANDO_ENCAMINHAMENTO'];
+    if (status === 'EM_ANALISE') return [status, 'EM_ANALISE_DE_COMPETENCIA', 'RESPOSTA_EM_APURACAO'];
+    return [status];
   }
 
   private average(values: number[]): number | null {

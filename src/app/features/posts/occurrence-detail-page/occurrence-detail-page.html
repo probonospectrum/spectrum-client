@@ -35,6 +35,8 @@
         }
       </ol>
       <strong>{{ statusDetail }}</strong>
+      @if (occurrence.status === 'AGUARDANDO_ENCAMINHAMENTO') { <p>Você pode editar a ocorrência por 15 minutos após a publicação. Depois, o sistema buscará o órgão responsável e fará o encaminhamento.</p> }
+      @if (moderationLabel) { <p>{{ moderationLabel }}. A ocorrência está disponível para análise da moderação.</p> }
       <p>Confirmações da comunidade ajudam a documentar o problema. Informar uma solução não fecha a ocorrência: um perfil autorizado precisa verificar o resultado. Se o problema persistir após o fechamento, a comunidade pode contestar e reabrir o acompanhamento.</p>
     </section>
 
@@ -165,7 +167,7 @@
               @if (canResolve) {
                 <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
                   <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-                  Confirmar resolução
+                  Classificar resposta
                 </button>
               }
               @if (canContest) {
@@ -223,44 +225,25 @@
             }
           }
 
-          @if (actionPanel === 'agency' || actionPanel === 'forward' || actionPanel === 'forwardFailure') {
-            <label>
-              <span>Identificador do órgão</span>
-              <input type="text" [(ngModel)]="agencyId" name="agencyId" />
-            </label>
-            <label>
-              <span>Órgão responsável</span>
-              <input type="text" [(ngModel)]="agencyName" name="agencyName" placeholder="Secretaria Municipal responsável" />
-            </label>
-          }
-
-          @if (actionPanel === 'forward' || actionPanel === 'forwardFailure') {
-            <label>
-              <span>Canal</span>
-              <select [(ngModel)]="forwardingChannel" name="forwardingChannel">
-                <option value="WEBSITE">Site</option>
-                <option value="PHONE">Telefone</option>
-                <option value="IN_PERSON">Atendimento presencial</option>
-                <option value="OTHER">Outro</option>
+          @if ((actionPanel === 'agency' && isModerator) || actionPanel === 'forward') {
+            <label><span>Órgão cadastrado</span>
+              <select [(ngModel)]="agencyId" name="agencyId" (ngModelChange)="selectRegisteredAgency()">
+                <option value="">Selecione um órgão</option>
+                @for (agency of registeredAgencies; track agency._id) { <option [value]="agency._id">{{ agency.name }}</option> }
               </select>
             </label>
-            <label>
-              <span>Conteúdo enviado</span>
-              <textarea [(ngModel)]="forwardingContent" name="forwardingContent"></textarea>
+            <label><span>E-mail cadastrado</span>
+              <select [(ngModel)]="agencyEmail" name="agencyEmail">
+                @for (email of registeredContacts; track email) { <option [value]="email">{{ email }}</option> }
+              </select>
             </label>
+            <p>O sistema gera o documento da ocorrência e o envia ao e-mail selecionado. O status será atualizado após a confirmação do envio.</p>
           }
-
+          @if (actionPanel === 'agency' && !isModerator) {
+            <label><span>Órgão sugerido</span><input type="text" [(ngModel)]="agencyName" name="agencyName" /></label>
+          }
           @if (actionPanel === 'forward') {
-            <p>Registre uma ação já realizada. Informe o protocolo, quando disponível. Este registro não confirma recebimento nem execução do serviço pelo órgão.</p>
-              <label class="occurrence-detail__confirmation">
-                <input type="checkbox" [(ngModel)]="forwardingDeliveryConfirmed" name="forwardingDeliveryConfirmed" />
-                <span>O encaminhamento por este canal foi realizado</span>
-              </label>
-            <label>
-              <span>Protocolo, se existir</span>
-              <input type="text" [(ngModel)]="forwardingProtocol" name="forwardingProtocol" />
-            </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitForwarding()">Salvar registro</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitForwarding()">Encaminhar por e-mail</button>
           }
 
           @if (actionPanel === 'forwardFailure') {
@@ -299,11 +282,14 @@
           }
 
           @if (actionPanel === 'resolve') {
+            <label><span>Classificação após análise</span><select [(ngModel)]="responseCode" name="responseCode">
+              <option value="02">Ocorrência resolvida</option><option value="03">Ocorrência em resolução</option><option value="01">Ocorrência rejeitada</option>
+            </select></label>
             <label>
               <span>Como a solução foi verificada? (mínimo de 20 caracteres)</span>
               <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">Confirmar resolução</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">Classificar resposta</button>
           }
 
           @if (actionPanel === 'contest') {
@@ -337,6 +323,10 @@
             <strong>{{ formatEvent(event.eventType) }}</strong>
             <small class="occurrence-detail__actor">{{ eventActorLine(event) }}</small>
             <p>{{ eventDescription(event) }}</p>
+            @if (isModerator && event.metadata?.['responseReceived']) {
+              <p>{{ event.metadata?.['responseReceived'] }}</p>
+              <small>Código informado pelo órgão: {{ event.metadata?.['responseCode'] || 'Não informado' }}</small>
+            }
             @if (event.previousStatus || event.newStatus) {
               <small>{{ statusLabel(event.previousStatus) }} → {{ statusLabel(event.newStatus) }}</small>
             }

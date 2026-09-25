@@ -24,34 +24,41 @@ describe('Occurrence lifecycle', () => {
     return service.createPost({ title: 'Buraco na rua', content: 'Buraco em frente à escola municipal.', authorCity: 'São Paulo - SP', mediaType: 'text', tags: [], category: 'INFRAESTRUTURA', importance: 'ALTA', location: { label: 'São Paulo - SP', address: 'Rua da Escola, 10' } }, citizen);
   }
 
-  it('persists the complete manual lifecycle, verification and reopening with history', async () => {
-    let post = create();
-    expect(occurrenceStage(post.status)).toBe('Aberta');
-    post = await firstValueFrom(service.confirmOccurrence(post, citizen));
-    expect(post.status).toBe('ABERTA');
-    post = await firstValueFrom(service.forwardOccurrence(post, moderator, { agency: { id: 'works', name: 'Obras' }, channel: 'WEBSITE', sentContent: 'Pedido registrado no portal municipal.', protocol: '123', deliveryConfirmed: true }));
-    expect(occurrenceStage(post.status)).toBe('Em andamento');
-    post = await firstValueFrom(service.startOccurrenceAnalysis(post, agency, 'Vistoria técnica iniciada no local.', '123'));
-    post = await firstValueFrom(service.informOccurrenceResolution(post, agency, 'Reparo realizado no pavimento.'));
-    expect(occurrenceStage(post.status)).toBe('Em andamento');
-    expect(() => service.resolveOccurrence(post, citizen, 'Verificação realizada no local.')).toThrow();
-    post = await firstValueFrom(service.resolveOccurrence(post, moderator, 'Verificação presencial confirmou o reparo.'));
-    expect(occurrenceStage(post.status)).toBe('Fechada');
-    post = await firstValueFrom(service.contestOccurrenceResolution(post, citizen, 'O buraco abriu novamente após a chuva.'));
-    post = await firstValueFrom(service.reopenOccurrenceFlow(post, citizen, 'Novo reparo é necessário no mesmo local.'));
-    expect(occurrenceStage(post.status)).toBe('Aberta');
-    const stored = await firstValueFrom(service.getOccurrence(post.id, citizen));
-    expect(stored.status).toBe('REABERTA');
-    expect(stored.location?.address).toBe('Rua da Escola, 10');
-    expect(stored.history.map(event => event.eventType)).toEqual(['OCORRENCIA_CRIADA', 'OCORRENCIA_CONFIRMADA', 'OCORRENCIA_ENCAMINHADA', 'ANALISE_INICIADA', 'RESOLUCAO_INFORMADA', 'OCORRENCIA_RESOLVIDA', 'RESOLUCAO_CONTESTADA', 'OCORRENCIA_REABERTA']);
-    expect(stored.history.at(-1)?.actorName).toBe('Moradora');
+  it('keeps local occurrences pending and never simulates delivery', async () => {
+    const post = await firstValueFrom(service.confirmOccurrence(create(), citizen));
+    expect(post.status).toBe('AGUARDANDO_ENCAMINHAMENTO');
+    expect(() => service.forwardOccurrence(post, moderator, { agency: { id: 'works', name: 'Obras' }, channel: 'EMAIL', sentContent: '' })).toThrow('servidor');
+    expect(post.forwardingHistory).toEqual([]);
+    expect(post.history.map(event => event.eventType)).toEqual(['OCORRENCIA_CRIADA', 'OCORRENCIA_CONFIRMADA']);
+  });
+
+  it('waits for the server before accepting email delivery and preserves pending status on failure', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const post = { ...create(), id: '66f1c0de0000000000000001' };
+    localStorage.setItem('spectrum-mock-posts', JSON.stringify([post]));
+    const result = firstValueFrom(service.forwardOccurrence(post, moderator, { agency: { id: 'works', name: 'Obras', email: 'works@example.com' }, channel: 'EMAIL', sentContent: '' }));
+    const rejected = expect(result).rejects.toMatchObject({ status: 502 });
+    const request = http.expectOne(API_BASE_URL + '/post/' + post.id + '/forward');
+    expect(request.request.body.channel).toBe('EMAIL');
+    expect(service.findPostById(post.id)?.status).toBe('AGUARDANDO_ENCAMINHAMENTO');
+    request.flush({ message: 'Falha no envio' }, { status: 502, statusText: 'Bad Gateway' });
+    await rejected;
+    expect(service.findPostById(post.id)?.forwardingHistory).toEqual([]);
+  });
+
+  it('requires moderator review for all response codes', () => {
+    const post = { ...create(), status: 'RESPOSTA_EM_APURACAO' as const };
+    expect(() => service.reviewForwardingResponse(post, agency, '02', 'Verificado')).toThrow();
+    expect(occurrenceStage('REJEITADA')).toBe('Em andamento');
+    expect(occurrenceStage('EM_RESOLUCAO')).toBe('Em andamento');
+    expect(service.getStatusLabel('FALHA_NO_ENCAMINHAMENTO')).toBe('Falha no encaminhamento');
   });
 
   it('rejects unsupported forwarding and closing without a proposed solution', () => {
     const post = create();
     expect(() => service.forwardOccurrence(post, moderator, { agency: { name: 'Obras' }, channel: 'EMAIL', sentContent: 'Pedido registrado no portal municipal.', deliveryConfirmed: true })).toThrow();
     expect(() => service.resolveOccurrence(post, moderator, 'Verificação presencial confirmou o reparo.')).toThrow();
-    expect(service.findPostById(post.id)?.status).toBe('ABERTA');
+    expect(service.findPostById(post.id)?.status).toBe('AGUARDANDO_ENCAMINHAMENTO');
   });
   it('updates the feed only after the server accepts a transition', async () => {
     const http = TestBed.inject(HttpTestingController);
