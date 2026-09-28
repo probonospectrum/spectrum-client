@@ -11,7 +11,7 @@
     <aside class="create-preview" aria-label="Previa da publicacao">
       <div class="create-preview__author">
         <span class="create-avatar">
-          {{ userInitial }}
+          <app-user-avatar [user]="user" [name]="displayName" />
         </span>
 
         <div>

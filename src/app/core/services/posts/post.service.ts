@@ -161,6 +161,7 @@ export interface SpectrumPost {
 
 export interface SpectrumComment {
   id: string;
+  authorId?: string;
   authorName: string;
   authorInitial: string;
   content: string;

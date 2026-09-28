@@ -1,0 +1,5 @@
+@if (avatarUrl && avatarUrl !== failedUrl()) {
+  <img [src]="avatarUrl" alt="" (error)="failedUrl.set(avatarUrl)" />
+} @else {
+  {{ initial }}
+}

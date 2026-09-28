@@ -286,7 +286,6 @@ export class LoginPage implements OnInit {
     this.userService
       .create({
         ...payload,
-        avatarUrl: 'https://placehold.co/200x200.png',
       })
       .pipe(
         finalize(() => this.isSubmitting.set(false)),

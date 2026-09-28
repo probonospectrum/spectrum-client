@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { tap, timeout } from 'rxjs/operators';
 import { API_BASE_URL } from '../../constants/api-routes';
 
@@ -15,7 +15,7 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   birthDate: string;
-  avatarUrl: string;
+  avatarUrl?: string;
   cityUser: string;
 }
 
@@ -46,6 +46,10 @@ export interface CreateUserResponse extends MessageResponse {
   user: LoggedUser;
 }
 
+export interface UpdateAvatarResponse extends MessageResponse {
+  avatarUrl: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -67,6 +71,25 @@ export class UserService {
 
   create(payload: CreateUserRequest): Observable<CreateUserResponse> {
     return this.http.post<CreateUserResponse>(`${this.apiUrl}`, payload).pipe(timeout(15000));
+  }
+
+  uploadAvatar(avatar: Blob): Observable<UpdateAvatarResponse> {
+    const userId = this.currentUser()?._id;
+    if (!userId) {
+      return throwError(() => new Error('Entre na sua conta para salvar a foto.'));
+    }
+    const formData = new FormData();
+    formData.append('avatar', avatar, 'avatar.png');
+    return this.http.patch<UpdateAvatarResponse>(this.apiUrl + '/' + userId + '/avatar', formData).pipe(
+      timeout(60000),
+      tap((response) => {
+        const session = this.session();
+        // Uma resposta antiga não deve restaurar uma sessão encerrada ou de outra conta.
+        if (session?.user._id === userId) {
+          this.saveSession({ ...session, user: { ...session.user, avatarUrl: response.avatarUrl } });
+        }
+      }),
+    );
   }
 
   getCurrentUser(): LoggedUser | null {
