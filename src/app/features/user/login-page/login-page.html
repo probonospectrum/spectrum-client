@@ -1,18 +1,21 @@
 <app-auth-shell [compact]="isRegisterMode">
   <header class="auth-welcome">
+    @if (pendingGoogleRegistration) {
+      <p>Conta Google confirmada. Complete seus dados para criar sua conta no Spectrum.</p>
+    }
     <span>{{ isRegisterMode ? 'FAÇA PARTE DA COMUNIDADE' : 'BEM-VINDO AO SPECTRUM' }}</span>
     <h1>{{ isRegisterMode ? 'Sua participação importa.' : 'Bom ter você por aqui.' }}</h1>
-    <p>{{ isRegisterMode ? 'Crie sua conta para acompanhar e transformar seu bairro.' : 'Entre para acompanhar o que acontece na sua cidade.' }}</p>
+    <p>
+      {{
+        isRegisterMode
+          ? 'Crie sua conta para acompanhar e transformar seu bairro.'
+          : 'Entre para acompanhar o que acontece na sua cidade.'
+      }}
+    </p>
   </header>
 
   @if (!isRegisterMode) {
-
-    <form
-      class="auth-form auth-form--login"
-      [formGroup]="loginForm"
-      (ngSubmit)="submitLogin()"
-    >
-
+    <form class="auth-form auth-form--login" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
       <app-input
         label="Usuário ou e-mail"
         placeholder="Seu usuário ou e-mail"
@@ -30,9 +33,7 @@
         [error]="fieldError('login', 'password')"
       />
 
-      <a class="auth-link auth-link--forgot" routerLink="/forgot-password">
-        Esqueceu a senha?
-      </a>
+      <a class="auth-link auth-link--forgot" routerLink="/forgot-password"> Esqueceu a senha? </a>
 
       <app-button
         class="auth-submit"
@@ -49,7 +50,12 @@
           <span>ou</span>
         </div>
 
-        <button class="auth-link auth-link--google" type="button" (click)="loginWithGoogle()">
+        <button
+          class="auth-link auth-link--google"
+          type="button"
+          [disabled]="isSubmitting()"
+          (click)="loginWithGoogle()"
+        >
           Entrar com o Google
         </button>
       }
@@ -61,16 +67,13 @@
         Criar conta
       </button>
     </p>
-
   } @else {
     <form
       class="auth-form auth-form--register"
       [formGroup]="registerForm"
       (ngSubmit)="submitRegister()"
     >
-
       @if (registerStep() === 1) {
-
         <app-input
           label="Nome de usuario"
           placeholder="Seu nome de usuario"
@@ -96,6 +99,12 @@
           [error]="fieldError('register', 'birthDate')"
         />
 
+        @if (pendingGoogleRegistration) {
+          <p>
+            Crie uma senha do Spectrum para também poder entrar com e-mail e senha. Não use sua
+            senha do Google.
+          </p>
+        }
         <app-input
           label="Senha"
           placeholder="Sua senha"
@@ -105,15 +114,8 @@
           [error]="fieldError('register', 'password')"
         />
 
-        <app-button
-          type="button"
-          (click)="goToNextRegisterStep()"
-        >
-          Proximo
-        </app-button>
-
+        <app-button type="button" (click)="goToNextRegisterStep()"> Proximo </app-button>
       } @else {
-
         <app-input
           label="Nome proprio"
           placeholder="Seu nome"
@@ -142,12 +144,7 @@
         />
 
         <div class="auth-actions">
-
-          <button
-            class="auth-link"
-            type="button"
-            (click)="goToPreviousRegisterStep()"
-          >
+          <button class="auth-link" type="button" (click)="goToPreviousRegisterStep()">
             Voltar
           </button>
 
@@ -159,11 +156,8 @@
           >
             Cadastrar
           </app-button>
-
         </div>
-
       }
-
     </form>
 
     <p class="auth-switch">
@@ -172,13 +166,10 @@
         Entrar
       </button>
     </p>
-
   }
-
 </app-auth-shell>
 
 @if (alert(); as currentAlert) {
-
   <app-alert-popup
     [type]="currentAlert.type"
     [title]="currentAlert.title"
@@ -186,5 +177,4 @@
     [actionLabel]="currentAlert.actionLabel"
     (dismissed)="dismissAlert()"
   />
-
 }
