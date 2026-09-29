@@ -47,7 +47,7 @@
             },
             "development": {
               "define": {
-                "API_URL": "\"https://spectrum-server-2qne.onrender.com\"" 
+                "API_URL": "\"http://localhost:3000\""
               }
             }
           },

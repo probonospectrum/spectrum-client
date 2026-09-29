@@ -1,5 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import {
   AccountMockService,
   SpectrumNotification,
@@ -15,19 +17,25 @@ import { SocialShell } from '../../../shared/components/social-shell/social-shel
   templateUrl: './notifications-page.html',
   styleUrl: './notifications-page.scss',
 })
-export class NotificationsPage {
+export class NotificationsPage implements OnInit {
   private readonly accountService = inject(AccountMockService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly mockLoadingService = inject(MockLoadingService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
 
   readonly user = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
-  loading = false;
-  notifications = this.accountService.getNotifications();
+  loading = signal(true);
+  notifications = signal<SpectrumNotification[]>([]);
+
+  ngOnInit(): void {
+    this.refresh();
+  }
 
   get unreadCount(): number {
-    return this.notifications.filter((notification) => !notification.read).length;
+    return this.notifications().filter((notification) => !notification.read).length;
   }
 
   markRead(id: string): void {
@@ -55,6 +63,13 @@ export class NotificationsPage {
   }
 
   private refresh(): void {
-    this.notifications = this.accountService.getNotifications();
+    this.loading.set(true);
+    this.mockLoadingService
+      .load(() => this.accountService.getNotifications())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((notifications) => {
+        this.notifications.set(notifications);
+        this.loading.set(false);
+      });
   }
 }

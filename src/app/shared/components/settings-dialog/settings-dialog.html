@@ -1,0 +1,26 @@
+<div class="settings-dialog-backdrop" role="presentation" (click)="close()">
+  <section
+    #panel
+    class="settings-dialog"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="title"
+    tabindex="-1"
+    (click)="$event.stopPropagation()"
+  >
+    <button class="settings-dialog__close" type="button" aria-label="Fechar" (click)="close()">
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
+
+    <header class="settings-dialog__header">
+      <h2>{{ title }}</h2>
+      @if (description) {
+        <p>{{ description }}</p>
+      }
+    </header>
+
+    <div class="settings-dialog__content">
+      <ng-content></ng-content>
+    </div>
+  </section>
+</div>

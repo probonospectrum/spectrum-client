@@ -11,7 +11,9 @@
     (input)="updateValue($any($event.target).value)"
     (blur)="markAsTouched()"
   />
-  @if (error) {
-    <span class="field__error">{{ error }}</span>
-  }
+  <span
+    class="field__error"
+    [class.field__error--visible]="error"
+    aria-live="polite"
+  >{{ error }}</span>
 </label>

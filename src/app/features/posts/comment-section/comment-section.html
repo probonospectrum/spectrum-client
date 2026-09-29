@@ -1,6 +1,6 @@
 <section class="comment-section">
   <div class="comment-section__input">
-    <span class="comment-section__avatar">{{ userInitial }}</span>
+    <span class="comment-section__avatar"><app-user-avatar [user]="currentUser" [name]="displayName" /></span>
     <input
       type="text"
       placeholder="Adicionar comentário..."
@@ -17,7 +17,10 @@
       @for (comment of visibleComments; track comment.id) {
         <li class="comment-section__item">
           <div class="comment-section__item-header">
-            <span class="comment-section__avatar">{{ comment.authorInitial }}</span>
+            <span class="comment-section__avatar">
+              <app-user-avatar [user]="comment.authorId === currentUser?._id ? currentUser : null"
+                [name]="comment.authorName" />
+            </span>
             <div class="comment-section__author">
               <strong>{{ comment.authorName }}</strong>
               <span class="comment-section__date">{{ comment.dateLabel }}</span>
@@ -57,18 +60,6 @@
               @if (dislikeCount(comment.id) > 0) {
                 <span class="comment-section__count">{{ dislikeCount(comment.id) }}</span>
               }
-            </button>
-
-            <button
-              type="button"
-              class="comment-section__save"
-              [class.comment-section__action--active]="isSaved(comment.id)"
-              aria-label="Salvar comentario"
-              (click)="toggleSaved(comment.id)"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">
-                {{ isSaved(comment.id) ? 'bookmark' : 'bookmark_border' }}
-              </span>
             </button>
           </div>
         </li>

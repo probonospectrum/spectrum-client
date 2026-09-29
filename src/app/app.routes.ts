@@ -38,13 +38,13 @@ export const routes: Routes = [
       import('./features/user/forgot-password-page/forgot-password-page').then(
         (m) => m.ForgotPasswordPage,
       ),
-  },  
+  },
   {
-  path: 'reset-password',
-  loadComponent: () =>
-    import('./features/user/reset-password-page/reset-password-page').then(
-      (m) => m.ResetPasswordPage,
-    ),
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/user/reset-password-page/reset-password-page').then(
+        (m) => m.ResetPasswordPage,
+      ),
   },
   {
     path: 'verify-email',
@@ -52,15 +52,10 @@ export const routes: Routes = [
       import('./features/user/verify-email-page/verify-email-page')
         .then((m) => m.VerifyEmailPage),
   },
-
   {
-    path: 'interesses',
-    outlet: 'modal',
-    loadComponent: () =>
-      import('./features/interests/interests-page/interests-page')
-        .then((m) => m.InterestsPage),
-
-    canActivate: [authGuard],
+  path: 'auth/callback',
+  loadComponent: () =>
+    import('./features/callback/callback').then((m) => m.CallbackPage),
   },
 
   {
@@ -74,11 +69,8 @@ export const routes: Routes = [
 
   {
     path: 'publicacoes/nova',
-    loadComponent: () =>
-      import('./features/posts/create-post-page/create-post-page')
-        .then((m) => m.CreatePostPage),
-
-    canActivate: [authGuard],
+    redirectTo: '/publicacoes?criar=1',
+    pathMatch: 'full',
   },
 
   {
@@ -91,6 +83,40 @@ export const routes: Routes = [
   },
 
   {
+    path: 'cidades/:slug',
+    loadComponent: () =>
+      import('./features/cities/city-page/city-page')
+        .then((m) => m.CityPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'occurrences/:id',
+    loadComponent: () =>
+      import('./features/posts/occurrence-detail-page/occurrence-detail-page')
+        .then((m) => m.OccurrenceDetailPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'ocorrencias/:id',
+    loadComponent: () =>
+      import('./features/posts/occurrence-detail-page/occurrence-detail-page')
+        .then((m) => m.OccurrenceDetailPage),
+
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'dashboard/cidades',
+    loadComponent: () =>
+      import('./features/city-dashboard/city-dashboard-page/city-dashboard-page')
+        .then((m) => m.CityDashboardPage),
+  },
+
+  {
     path: 'perfil',
     loadComponent: () =>
       import('./features/profile/profile-page/profile-page')
@@ -100,12 +126,12 @@ export const routes: Routes = [
   },
 
   {
-  path: 'perfil/salvos',
-  loadComponent: () =>
-    import('./features/profile/savedPosts/saved-post')
-      .then((m) => m.SavedPostsComponent),
+    path: 'perfil/:nickname',
+    loadComponent: () =>
+      import('./features/profile/profile-page/profile-page')
+        .then((m) => m.ProfilePage),
 
-  canActivate: [authGuard],
+    canActivate: [authGuard],
   },
 
   {
@@ -116,10 +142,4 @@ export const routes: Routes = [
 
     canActivate: [authGuard],
   },
-{
-  path: 'interesses',
-  loadComponent: () =>
-    import('./features/interests/interests-page/interests-page')
-      .then((m) => m.InterestsPage),
-},
 ];

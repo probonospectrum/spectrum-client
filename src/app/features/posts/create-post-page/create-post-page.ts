@@ -1,3 +1,4 @@
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -11,12 +12,12 @@ interface PostAlert {
   type: AlertPopupType;
   title: string;
   message: string;
-  createdPost?: SpectrumPost;
+  resultPost?: SpectrumPost;
 }
 
 @Component({
   selector: 'app-create-post-page',
-  imports: [CommonModule, FormsModule, RouterLink, AlertPopup, SocialShell],
+  imports: [UserAvatar, CommonModule, FormsModule, RouterLink, AlertPopup, SocialShell],
   templateUrl: './create-post-page.html',
   styleUrl: './create-post-page.scss',
 })
@@ -33,9 +34,8 @@ export class CreatePostPage {
     { label: 'Texto', value: 'text' },
   ];
 
-  title = '';
   content = '';
-  authorCity = this.user?.cityUser || '';
+  authorCity = this.user?.cityUser ?? '';
   tagText = '';
   mediaType: SpectrumPost['mediaType'] = 'video';
   alert: PostAlert | null = null;
@@ -52,44 +52,42 @@ export class CreatePostPage {
     return this.displayName.charAt(0).toUpperCase();
   }
 
-  publish(): void {
-    const title = this.title.trim();
+  submitPost(): void {
     const content = this.content.trim();
     const authorCity = this.authorCity.trim();
 
-    if (!title || !content || !authorCity) {
+    if (!content || !authorCity) {
       this.alert = {
         type: 'error',
         title: 'Nao foi possivel publicar',
-        message: 'Preencha titulo, conteudo e localizacao para criar uma publicacao.',
+        message: 'Preencha conteudo e localizacao para continuar.',
       };
       return;
     }
 
-    const createdPost = this.postService.createPost(
-      {
-        title,
-        content,
-        authorCity,
-        mediaType: this.mediaType,
-        tags: this.parseTags(),
-      },
-      this.user,
-    );
+    const payload = {
+      title: this.getPostTitle(content),
+      content,
+      authorCity,
+      mediaType: this.mediaType,
+      tags: this.parseTags(),
+    };
+
+    const createdPost = this.postService.createPost(payload, this.user);
 
     this.alert = {
       type: 'success',
       title: 'Publicacao criada',
-      message: 'Sua publicacao foi salva nos mocks e ja aparece no feed.',
-      createdPost,
+      message: 'Sua publicacao foi salva e ja aparece no feed.',
+      resultPost: createdPost,
     };
   }
 
   dismissAlert(): void {
-    const createdPost = this.alert?.createdPost;
+    const resultPost = this.alert?.resultPost;
     this.alert = null;
 
-    if (createdPost) {
+    if (resultPost) {
       void this.router.navigateByUrl('/publicacoes');
     }
   }
@@ -106,4 +104,9 @@ export class CreatePostPage {
       .filter(Boolean)
       .slice(0, 4);
   }
+
+  private getPostTitle(content: string): string {
+    return content.length > 72 ? `${content.slice(0, 69)}...` : content;
+  }
+
 }

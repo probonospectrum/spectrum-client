@@ -1,31 +1,25 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
-import { AuthModeToggle } from '../../../shared/components/auth-mode-toggle/auth-mode-toggle';
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
 
-import {
-  SpectrumInput,
-} from '../../../shared/components/input/input/input';
+import { SpectrumInput } from '../../../shared/components/input/input/input';
 
-import {
-  SelectOption,
-  SpectrumSelect,
-} from '../../../shared/components/select/select';
+import { SelectOption, SpectrumSelect } from '../../../shared/components/select/select';
 
-import {
-  BrazilCity,
-  BrazilState,
-  CityService,
-} from '../../../core/services/city/city.service';
+import { BrazilCity, BrazilState, CityService } from '../../../core/services/city/city.service';
 
 import { UserService } from '../../../core/services/user/user.service';
-import { GoogleAuthService} from '../../../core/services/user/google-auth.service';
-import { OAuthService } from 'angular-oauth2-oidc';
-import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
+import { GoogleAuthService } from '../../../core/services/user/google-auth.service';
+import {
+  AuthApiService,
+  PendingGoogleRegistration,
+} from '../../../core/services/authApi/auth-api.service';
 type AuthMode = 'login' | 'register';
 
 @Component({
@@ -35,46 +29,45 @@ type AuthMode = 'login' | 'register';
     ReactiveFormsModule,
     AlertPopup,
     AuthShell,
-    AuthModeToggle,
     Button,
     SpectrumInput,
     SpectrumSelect,
-    RouterLink
-],
+    RouterLink,
+  ],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
 })
 export class LoginPage implements OnInit {
-
   private readonly formBuilder = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly cityService = inject(CityService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly googleAuth = inject(GoogleAuthService);
-  private readonly oauthService = inject(OAuthService);
-  private readonly authApiService = inject(AuthApiService)
+  private readonly authApiService = inject(AuthApiService);
+  pendingGoogleRegistration: PendingGoogleRegistration | null = null;
+  readonly isGoogleLoginAvailable = this.googleAuth.isConfigured;
 
-  mode: AuthMode = 'login';
+  mode = signal<AuthMode>('login');
 
-  registerStep = 1;
+  registerStep = signal(1);
 
-  isSubmitting = false;
-  isLoadingStates = false;
-  isLoadingCities = false;
+  isSubmitting = signal(false);
+  isLoadingStates = signal(false);
+  isLoadingCities = signal(false);
 
-  alert: {
+  alert = signal<{
     type: AlertPopupType;
     title: string;
     message: string;
     actionLabel: string;
-  } | null = null;
+  } | null>(null);
 
   private alertRedirectUrl: string | null = null;
 
-  states: BrazilState[] = [];
-  cities: BrazilCity[] = [];
+  states = signal<BrazilState[]>([]);
+  cities = signal<BrazilCity[]>([]);
 
   readonly loginForm = this.formBuilder.nonNullable.group({
     identifier: ['', Validators.required],
@@ -85,140 +78,109 @@ export class LoginPage implements OnInit {
     nickname: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     birthDate: ['', Validators.required],
-    password: [
-      '',
-      [
-        Validators.required,
-        Validators.minLength(10),
-        Validators.maxLength(30),
-      ],
-    ],
+    password: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(30)]],
     name: ['', Validators.required],
     stateId: ['', Validators.required],
     cityUser: ['', Validators.required],
   });
 
   ngOnInit(): void {
-
     const routeMode = this.route.snapshot.data['mode'];
 
-    this.mode = routeMode === 'register'
-      ? 'register'
-      : 'login';
+    this.mode.set(routeMode === 'register' ? 'register' : 'login');
+
+    if (this.mode() === 'register' && this.route.snapshot.queryParamMap?.get('google') === '1') {
+      this.pendingGoogleRegistration = this.authApiService.getPendingRegistration();
+      if (!this.pendingGoogleRegistration) {
+        this.showAlert(
+          'error',
+          'Cadastro Google expirado',
+          'Entre com Google novamente para continuar.',
+          'Voltar ao login',
+          '/login',
+        );
+      } else {
+        const profile = this.pendingGoogleRegistration.profile;
+        this.registerForm.patchValue({ email: profile.email, name: profile.name });
+        this.registerForm.controls.email.disable();
+      }
+    }
 
     this.loadStates();
-    this.registerForm.controls.stateId.valueChanges.subscribe((stateId) => {
-      this.loadCities(stateId);
-    });
-
-    this.tryGoogleLogin();
+    this.registerForm.controls.stateId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((stateId) => {
+        this.loadCities(stateId);
+      });
   }
 
-  private async tryGoogleLogin(): Promise<void> {
-   await this.oauthService.loadDiscoveryDocument();
-
-      const code = this.googleAuth.getAuthorizationCode();
-       console.log('CODE:', code); //apagar  essa palhaçada dps
-      if (code) {
-        this.authApiService.loginWithGoogle(code).subscribe({
-          next: (response) => {
-            console.log('SUCESSO:', response);   //apagar isso  tbm
-            this.googleAuth.clearUrlParams();
-            this.router.navigate(['/publicacoes']);
-          },
-          error: (err) => {
-            this.googleAuth.clearUrlParams();
-            this.alert = {
-              type: 'error',
-              title: 'Erro no login',
-              message: 'Não foi possível fazer o login com o Google.',
-              actionLabel: 'Fechar',
-            };
-          }
-        });
-      }
-}
-
   get isRegisterMode(): boolean {
-    return this.mode === 'register';
+    return this.mode() === 'register';
   }
 
   get stateOptions(): SelectOption[] {
-    return this.states.map((state) => ({
+    return this.states().map((state) => ({
       value: String(state.id),
       label: `${state.nome} - ${state.sigla}`,
     }));
   }
 
   get cityOptions(): SelectOption[] {
-
     const selectedState = this.selectedState;
 
-    return this.cities.map((city) => ({
-      value: selectedState
-        ? `${city.nome} - ${selectedState.sigla}`
-        : city.nome,
+    return this.cities().map((city) => ({
+      value: selectedState ? `${city.nome} - ${selectedState.sigla}` : city.nome,
       label: city.nome,
     }));
   }
 
   get isCitySelectDisabled(): boolean {
     return (
-      !this.registerForm.controls.stateId.value ||
-      this.isLoadingCities ||
-      !this.cities.length
+      !this.registerForm.controls.stateId.value || this.isLoadingCities() || !this.cities().length
     );
   }
 
   goToRegister(): void {
-
-    this.mode = 'register';
-    this.registerStep = 1;
+    this.mode.set('register');
+    this.registerStep.set(1);
 
     this.dismissAlert();
   }
 
   goToLogin(): void {
-
-    this.mode = 'login';
-    this.registerStep = 1;
+    this.authApiService.clearPendingRegistration();
+    this.pendingGoogleRegistration = null;
+    this.registerForm.controls.email.enable();
+    this.mode.set('login');
+    this.registerStep.set(1);
 
     this.dismissAlert();
   }
 
   goToNextRegisterStep(): void {
-
-    const firstStepControls = [
-      'nickname',
-      'email',
-      'birthDate',
-      'password',
-    ] as const;
+    const firstStepControls = ['nickname', 'email', 'birthDate', 'password'] as const;
 
     firstStepControls.forEach((controlName) => {
       this.registerForm.controls[controlName].markAsTouched();
     });
 
     const hasInvalidField = firstStepControls.some(
-      (controlName) =>
-        this.registerForm.controls[controlName].invalid,
+      (controlName) => this.registerForm.controls[controlName].invalid,
     );
 
     if (!hasInvalidField) {
-      this.registerStep = 2;
+      this.registerStep.set(2);
     }
   }
 
   goToPreviousRegisterStep(): void {
-    this.registerStep = 1;
+    this.registerStep.set(1);
   }
 
   submitLogin(): void {
-
     this.loginForm.markAllAsTouched();
 
     if (this.loginForm.invalid) {
-
       this.showAlert(
         'error',
         'Campos obrigatorios',
@@ -228,52 +190,55 @@ export class LoginPage implements OnInit {
       return;
     }
 
-    this.isSubmitting = true;
+    this.isSubmitting.set(true);
 
     this.userService
       .login(this.loginForm.getRawValue())
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
-
         next: (response) => {
-
-          this.isSubmitting = false;
-
           this.showAlert(
             'success',
             'Login realizado',
-            response.message,
-            'Escolher interesses',
-            '/publicacoes(modal:interesses)',
+            response.message || 'Voce entrou na sua conta com sucesso.',
+            'Continuar',
+            '/publicacoes',
           );
         },
 
         error: (error: unknown) => {
-
-          this.isSubmitting = false;
-
           this.showAlert(
             'error',
             'Nao foi possivel entrar',
-            this.getErrorMessage(
-              error,
-              'Verifique seu usuario, email e senha.',
-            ),
+            this.getErrorMessage(error, 'Verifique seu usuario, email e senha.'),
           );
         },
       });
   }
 
-  loginWithGoogle():void {
-    //Chamar provedor OAUTH do google
-    this.googleAuth.login();
+  async loginWithGoogle(): Promise<void> {
+    if (this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+    try {
+      await this.googleAuth.login();
+    } catch {
+      this.showAlert(
+        'error',
+        'Erro no login Google',
+        'Não foi possível conectar ao Google. Verifique sua conexão e tente novamente.',
+      );
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 
   submitRegister(): void {
-
     this.registerForm.markAllAsTouched();
 
     if (this.registerForm.invalid) {
-
       this.showAlert(
         'error',
         'Cadastro incompleto',
@@ -283,53 +248,68 @@ export class LoginPage implements OnInit {
       return;
     }
 
-    const {
-      stateId: _stateId,
-      ...payload
-    } = this.registerForm.getRawValue();
+    const { stateId: _stateId, ...payload } = this.registerForm.getRawValue();
 
-    this.isSubmitting = true;
+    this.isSubmitting.set(true);
+
+    if (this.pendingGoogleRegistration) {
+      this.authApiService
+        .completeGoogleRegistration({
+          registrationToken: this.pendingGoogleRegistration.registrationToken,
+          name: payload.name,
+          nickname: payload.nickname,
+          password: payload.password,
+          birthDate: payload.birthDate,
+          cityUser: payload.cityUser,
+        })
+        .pipe(
+          finalize(() => this.isSubmitting.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: () => void this.router.navigate(['/publicacoes'], { replaceUrl: true }),
+          error: (error: unknown) => {
+            const expired = error instanceof HttpErrorResponse && error.status === 401;
+            if (expired) this.authApiService.clearPendingRegistration();
+            this.showAlert(
+              'error',
+              'Não foi possível concluir o cadastro',
+              this.getErrorMessage(error, 'Verifique os dados e tente novamente.'),
+              expired ? 'Voltar ao login' : 'Fechar',
+              expired ? '/login' : null,
+            );
+          },
+        });
+      return;
+    }
 
     this.userService
       .create({
         ...payload,
-        avatarUrl: 'https://placehold.co/200x200.png',
       })
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
-
         next: (response) => {
-
-          this.isSubmitting = false;
-
-          this.showAlert(
-            'success',
-            'Cadastro criado',
-            response.message,
-            'Entendi',
-          );
+          this.showAlert('success', 'Cadastro criado', response.message, 'Entendi');
         },
 
         error: (error: unknown) => {
-
-          this.isSubmitting = false;
-
           this.showAlert(
             'error',
             'Cadastro nao realizado',
-            this.getErrorMessage(
-              error,
-              'Verifique os dados informados e tente novamente.',
-            ),
+            this.getErrorMessage(error, 'Verifique os dados informados e tente novamente.'),
           );
         },
       });
   }
 
   dismissAlert(): void {
-
     const redirectUrl = this.alertRedirectUrl;
 
-    this.alert = null;
+    this.alert.set(null);
     this.alertRedirectUrl = null;
 
     if (redirectUrl) {
@@ -337,15 +317,9 @@ export class LoginPage implements OnInit {
     }
   }
 
-  fieldError(
-    form: 'login' | 'register',
-    controlName: string,
-  ): string {
-
+  fieldError(form: 'login' | 'register', controlName: string): string {
     const control =
-      form === 'login'
-        ? this.loginForm.get(controlName)
-        : this.registerForm.get(controlName);
+      form === 'login' ? this.loginForm.get(controlName) : this.registerForm.get(controlName);
 
     if (!control || !control.touched || control.valid) {
       return '';
@@ -371,45 +345,33 @@ export class LoginPage implements OnInit {
   }
 
   private get selectedState(): BrazilState | undefined {
+    const selectedStateId = this.registerForm.controls.stateId.value;
 
-    const selectedStateId =
-      this.registerForm.controls.stateId.value;
-
-    return this.states.find(
-      (state) =>
-        String(state.id) === selectedStateId,
-    );
+    return this.states().find((state) => String(state.id) === selectedStateId);
   }
 
   private loadStates(): void {
+    this.isLoadingStates.set(true);
 
-    this.isLoadingStates = true;
+    this.cityService
+      .findStates()
+      .pipe(
+        finalize(() => this.isLoadingStates.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (states) => {
+          this.states.set(states);
+        },
 
-    this.cityService.findStates().subscribe({
-
-      next: (states) => {
-
-        this.states = states;
-        this.isLoadingStates = false;
-        this.changeDetector.detectChanges();
-      },
-
-      error: () => {
-
-        this.isLoadingStates = false;
-
-        this.showAlert(
-          'error',
-          'Estados indisponiveis',
-          'Nao foi possivel carregar os estados.',
-        );
-      },
-    });
+        error: () => {
+          this.showAlert('error', 'Estados indisponiveis', 'Nao foi possivel carregar os estados.');
+        },
+      });
   }
 
   private loadCities(stateId: string): void {
-
-    this.cities = [];
+    this.cities.set([]);
 
     this.registerForm.controls.cityUser.setValue('');
 
@@ -417,23 +379,20 @@ export class LoginPage implements OnInit {
       return;
     }
 
-    this.isLoadingCities = true;
+    this.isLoadingCities.set(true);
 
     this.cityService
       .findCitiesByState(stateId)
+      .pipe(
+        finalize(() => this.isLoadingCities.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
-
         next: (cities) => {
-
-          this.cities = cities;
-          this.isLoadingCities = false;
-          this.changeDetector.detectChanges();
+          this.cities.set(cities);
         },
 
         error: () => {
-
-          this.isLoadingCities = false;
-
           this.showAlert(
             'error',
             'Municipios indisponiveis',
@@ -450,27 +409,18 @@ export class LoginPage implements OnInit {
     actionLabel = 'Ok',
     redirectUrl: string | null = null,
   ): void {
-
-    this.alert = {
+    this.alert.set({
       type,
       title,
       message,
       actionLabel,
-    };
+    });
 
     this.alertRedirectUrl = redirectUrl;
-    this.changeDetector.detectChanges();
   }
 
-  private getErrorMessage(
-    error: unknown,
-    fallback: string,
-  ): string {
-
-    if (
-      error instanceof Error &&
-      error.name === 'TimeoutError'
-    ) {
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.name === 'TimeoutError') {
       return 'O servidor demorou para responder. Tente novamente em alguns instantes.';
     }
 
@@ -484,17 +434,11 @@ export class LoginPage implements OnInit {
       return apiMessage.join(' ');
     }
 
-    if (
-      typeof apiMessage === 'string' &&
-      apiMessage.trim()
-    ) {
+    if (typeof apiMessage === 'string' && apiMessage.trim()) {
       return apiMessage;
     }
 
-    if (
-      typeof error.error?.error === 'string' &&
-      error.error.error.trim()
-    ) {
+    if (typeof error.error?.error === 'string' && error.error.error.trim()) {
       return error.error.error;
     }
 

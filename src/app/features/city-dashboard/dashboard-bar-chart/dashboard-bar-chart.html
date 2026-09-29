@@ -1,0 +1,22 @@
+@if (maxValue > 0) {
+  <div class="bar-chart">
+    @for (item of items; track item.key) {
+      <button type="button" class="bar-chart__row" (click)="itemSelected.emit(item.key)">
+        <span class="bar-chart__label">{{ item.label }}</span>
+        <span class="bar-chart__track" aria-hidden="true">
+          <span
+            class="bar-chart__fill"
+            [style.width.%]="widthFor(item.value)"
+            [style.background-color]="item.color || null"
+          ></span>
+        </span>
+        <strong>{{ item.value }}</strong>
+        @if (item.detail) {
+          <small>{{ item.detail }}</small>
+        }
+      </button>
+    }
+  </div>
+} @else {
+  <p class="bar-chart__empty">{{ emptyLabel }}</p>
+}

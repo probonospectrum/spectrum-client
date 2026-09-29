@@ -11,12 +11,12 @@
 
 .auth-progress__bar {
   height: 7px;
-  border-radius: 999px;
-  background: #d9e3ee;
   overflow: hidden;
+  border-radius: 999px;
+  background: var(--spectrum-surface-muted);
 }
 
 .auth-progress__bar--active {
-  background: linear-gradient(90deg, #00488d 0%, #0f7a4f 100%);
-  box-shadow: 0 6px 16px rgba(0, 72, 141, 0.18);
+  background: linear-gradient(90deg, var(--spectrum-primary-800) 0%, var(--spectrum-accent) 100%);
+  box-shadow: 0 6px 16px rgba(31, 69, 104, 0.16);
 }

@@ -1,121 +1,94 @@
 <app-social-shell
+  #socialShell
   [user]="user"
   [suggestions]="suggestions"
-  title="Publicacoes"
   [showContentHeader]="false"
   (logout)="logout()"
-  (createPost)="openCreatePost()"
+  (postCreated)="onPostCreated()"
+  (postUpdated)="onPostUpdated()"
 >
 
-
-  <section
-    class="post-composer"
-    role="button"
-    tabindex="0"
-    (click)="openCreatePost()"
-    (keydown.enter)="openCreatePost()"
-    (keydown.space)="openCreatePost()"
-  >
-    <div class="post-composer__avatar">
-      {{ userInitial }}
+  <section class="community-hero" aria-labelledby="community-title">
+    <div class="community-hero__copy">
+      <span class="community-hero__eyebrow"><span aria-hidden="true"></span> SUA VOZ. NOSSA CIDADE.</span>
+      <h1 id="community-title">Pequenas atitudes.<br><em>Uma cidade melhor.</em></h1>
+      <p>Registre um problema, conecte sua comunidade e acompanhe cada passo da solução.</p>
+      <button type="button" (click)="socialShell.openCreatePost()">Registrar ocorrência <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
     </div>
-
-    <div class="post-composer__content">
-      <span>O que você está pensando?</span>
-
-      <div class="post-composer__actions">
-        <span aria-hidden="true">📷</span>
-        <span aria-hidden="true">🎥</span>
-      </div>
+    <div class="community-hero__visual" aria-hidden="true">
+      <img src="/city-grid.svg" alt="" />
+      <span class="community-hero__map-note"><span class="material-symbols-outlined">location_on</span> Seu bairro em movimento</span>
     </div>
-
-    <button
-      type="button"
-      class="post-composer__publish"
-      (click)="$event.stopPropagation(); openCreatePost()"
-    >
-      Publicar
-    </button>
   </section>
 
-  @for (post of posts; track post.id) {
-    <app-post-card [post]="post" (report)="openReport($event)" />
-  } @empty {
-    <section class="posts-empty">
-      <h2>Nenhuma publicacao por aqui</h2>
-      <p>Crie a primeira publicacao para movimentar sua comunidade.</p>
-      <a routerLink="/publicacoes/nova">Criar publicacao</a>
-    </section>
-  }
-
-  @if (showCreatePost) {
-    <div
-      class="create-post-backdrop"
-      role="presentation"
-      (click)="closeCreatePost()"
-    >
-      <section
-        class="create-post-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-post-title"
-        (click)="$event.stopPropagation()"
-      >
-        <button
-          class="create-post-modal__close"
-          type="button"
-          aria-label="Fechar"
-          (click)="closeCreatePost()"
-        >
-          ×
+  <section class="feed-categories" aria-label="Filtrar por categoria">
+    <div class="feed-section-heading"><h2>O que acontece na cidade</h2><span>Explore por categoria</span></div>
+    <div class="feed-categories__list">
+      @for (category of categoryFilters; track category.value) {
+        <button type="button" [attr.aria-pressed]="selectedCategory() === category.value" (click)="selectedCategory.set(category.value)">
+          <span class="material-symbols-outlined" aria-hidden="true">{{ category.icon }}</span>
+          {{ category.label }}
         </button>
-
-        <div class="create-post-modal__author">
-          <div class="create-post-modal__avatar">
-            {{ userInitial }}
-          </div>
-
-          <div>
-            <strong>{{ displayName }}</strong>
-            <span>@{{ nickname }}</span>
-          </div>
-        </div>
-
-        <textarea
-          id="create-post-title"
-          class="create-post-modal__textarea"
-          [(ngModel)]="newPostContent"
-          placeholder="O que está acontecendo?"
-          maxlength="420"
-        ></textarea>
-
-        <div class="create-post-modal__footer">
-          <span>Adicionar no seu post:</span>
-
-          <div class="create-post-modal__actions">
-            <button type="button" aria-label="Adicionar imagem">
-              📷
-            </button>
-
-            <button type="button" aria-label="Adicionar localização">
-              📍
-            </button>
-
-            <button type="button" aria-label="Adicionar vídeo">
-              🎥
-            </button>
-          </div>
-        </div>
-
-        <button
-          class="create-post-modal__submit"
-          type="button"
-          (click)="publishPost()"
-        >
-          Postar
-        </button>
-      </section>
+      }
     </div>
+  </section>
+
+  <div class="feed-heading">
+    <div><span class="feed-eyebrow">ACOMPANHE E PARTICIPE</span><h2>Relatos da comunidade</h2></div>
+    @if (!feedLoading()) { <span class="feed-count" role="status">{{ posts.length }} {{ posts.length === 1 ? 'ocorrência' : 'ocorrências' }}</span> }
+  </div>
+  <div class="feed-tabs" aria-label="Filtrar por situação">
+    @for (stage of stages; track stage) {
+      <button type="button" [attr.aria-pressed]="selectedStage() === stage" (click)="selectedStage.set(stage)">{{ stage }}</button>
+    }
+  </div>
+
+  @if (feedLoading()) {
+    <section class="posts-loading" aria-label="Carregando publicacoes">
+      @for (item of [1, 2, 3]; track item) {
+        <article class="post-skeleton">
+          <div class="post-skeleton__header">
+            <span class="post-skeleton__avatar"></span>
+            <span class="post-skeleton__line post-skeleton__line--name"></span>
+            <span class="post-skeleton__line post-skeleton__line--meta"></span>
+          </div>
+          <span class="post-skeleton__line"></span>
+          <span class="post-skeleton__line post-skeleton__line--wide"></span>
+          <div class="post-skeleton__media"></div>
+          <div class="post-skeleton__actions">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </article>
+      }
+    </section>
+  } @else {
+    @for (post of posts; track post.id) {
+      <app-post-card
+        [post]="post"
+        [currentUser]="user"
+        (report)="openReport($event)"
+        (edit)="socialShell.openEditPost($event)"
+        (remove)="deletePost($event)"
+        (repost)="toggleRepost($event)"
+        (hideAuthor)="hideAuthor($event)"
+        (notInterested)="hidePost($event)"
+        (aiSpam)="openReport($event, 'Parece spam de IA')"
+        (copyLink)="copyPostLink($event)"
+      />
+    } @empty {
+      <section class="posts-empty">
+        <span class="material-symbols-outlined posts-empty__icon" aria-hidden="true">{{ hasFilters ? 'filter_alt_off' : 'location_city' }}</span>
+        <h2>{{ hasFilters ? 'Nenhum relato com esses filtros' : 'Sua cidade tem espaço para a sua voz' }}</h2>
+        <p>{{ hasFilters ? 'Experimente outra categoria ou situação para explorar os relatos.' : 'Um registro pode ser o primeiro passo para melhorar o seu bairro.' }}</p>
+        @if (hasFilters) {
+          <button type="button" (click)="clearFilters()">Limpar filtros</button>
+        } @else {
+          <button type="button" (click)="socialShell.openCreatePost()">Criar a primeira ocorrência</button>
+        }
+      </section>
+    }
   }
 
 </app-social-shell>
@@ -125,5 +98,14 @@
     title="O que está sendo reportado?"
     (close)="reportPost = null"
     (confirm)="confirmReport()"
+  />
+}
+@if (feedAlert(); as currentFeedAlert) {
+  <app-alert-popup
+    [type]="currentFeedAlert.type"
+    [title]="currentFeedAlert.title"
+    [message]="currentFeedAlert.message"
+    actionLabel="Ok"
+    (dismissed)="feedAlert.set(null)"
   />
 }

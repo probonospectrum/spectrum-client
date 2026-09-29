@@ -1,0 +1,39 @@
+<div class="logout-backdrop" role="presentation" (click)="onCancel()">
+  <section
+    class="logout-popup"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="logout-title"
+    aria-describedby="logout-desc"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      class="logout-popup__close"
+      type="button"
+      aria-label="Cancelar e fechar"
+      (click)="onCancel()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
+
+    <div class="logout-popup__icon" aria-hidden="true">
+      <span class="material-symbols-outlined">logout</span>
+    </div>
+
+    <div class="logout-popup__content">
+      <h2 id="logout-title">Sair da sua conta</h2>
+      <p id="logout-desc">
+        Você pode entrar novamente a qualquer momento. Deseja realmente sair?
+      </p>
+    </div>
+
+    <div class="logout-popup__actions">
+      <button class="logout-popup__btn logout-popup__btn--ghost" type="button" (click)="onCancel()">
+        Cancelar
+      </button>
+      <button class="logout-popup__btn logout-popup__btn--danger" type="button" (click)="onConfirm()">
+        Sair
+      </button>
+    </div>
+  </section>
+</div>

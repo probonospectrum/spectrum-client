@@ -2,32 +2,32 @@
   <section class="verify-email">
     <div
       class="verify-email__status"
-      [class.verify-email__status--success]="status === 'success'"
-      [class.verify-email__status--error]="status === 'error'"
+      [class.verify-email__status--success]="status() === 'success'"
+      [class.verify-email__status--error]="status() === 'error'"
       aria-hidden="true"
     >
-      @if (status === 'loading') {
+      @if (status() === 'loading') {
         <span class="verify-email__spinner"></span>
       } @else {
-        {{ status === 'success' ? 'OK' : '!' }}
+        {{ status() === 'success' ? 'OK' : '!' }}
       }
     </div>
 
     <div class="verify-email__content">
-      <h2>{{ title }}</h2>
-      <p>{{ message }}</p>
+      <h2>{{ title() }}</h2>
+      <p>{{ message() }}</p>
     </div>
 
     <app-button type="button" (click)="goToLogin()">Ir para login</app-button>
   </section>
 </app-auth-shell>
 
-@if (alert) {
+@if (alert(); as currentAlert) {
   <app-alert-popup
-    [type]="alert.type"
-    [title]="alert.title"
-    [message]="alert.message"
-    [actionLabel]="alert.actionLabel"
-    (dismissed)="status === 'success' ? goToLogin() : dismissAlert()"
+    [type]="currentAlert.type"
+    [title]="currentAlert.title"
+    [message]="currentAlert.message"
+    [actionLabel]="currentAlert.actionLabel"
+    (dismissed)="status() === 'success' ? goToLogin() : dismissAlert()"
   />
 }

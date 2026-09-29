@@ -1,97 +1,546 @@
 <app-social-shell
   [user]="user"
   [suggestions]="suggestions"
-  title="Configuracoes"
-  subtitle="Preferencias e seguranca"
+  [showContentHeader]="false"
   (logout)="logout()"
 >
-  <button class="settings-save" type="button" social-actions (click)="save()">Salvar alteracoes</button>
+  <div class="settings-list" [class.settings-list--compact]="settings.compactMode">
+    <app-settings-section title="Conta">
+      <button class="settings-row settings-row--button" type="button" (click)="openDialog('avatar')">
+        <span class="settings-row__content">
+          <strong>Foto de perfil</strong>
+          <small>{{ avatarUrl ? 'Alterar foto' : 'Adicionar foto' }}</small>
+        </span>
+        <span class="settings-row__avatar" aria-hidden="true">
+          <app-user-avatar [user]="user" />
+        </span>
+      </button>
 
-  <div class="settings-grid">
-    <app-settings-section
-      title="Conta"
-      description="Dados basicos usados para identificar sua conta no Spectrum."
-    >
-      <label>
-        E-mail principal
-        <input type="email" [value]="user?.email || 'usuario@spectrum.com'" disabled />
-      </label>
-      <label>
-        Idioma
+      <button class="settings-row settings-row--button" type="button" (click)="openDialog('name')">
+        <span class="settings-row__content">
+          <strong>Alterar nome</strong>
+          <small>{{ demoAccount.name }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <button
+        class="settings-row settings-row--button"
+        type="button"
+        (click)="openDialog('username')"
+      >
+        <span class="settings-row__content">
+          <strong>Username</strong>
+          <small>@{{ demoAccount.username }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <button class="settings-row settings-row--button" type="button" (click)="openDialog('email')">
+        <span class="settings-row__content">
+          <strong>E-mail principal</strong>
+          <small>{{ emailSummary }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <label class="settings-row">
+        <span class="settings-row__content">
+          <strong>Idioma</strong>
+          <small>Idioma usado na interface</small>
+        </span>
         <select
           [ngModel]="settings.language"
           (ngModelChange)="setSetting('language', $event)"
           name="language"
         >
-          <option value="pt-BR">Portugues - Brasil</option>
+          <option value="pt-BR">Português - Brasil</option>
           <option value="en-US">English</option>
         </select>
       </label>
     </app-settings-section>
 
-    <app-settings-section title="Preferencias" description="Ajustes gerais da experiencia.">
-      <app-toggle-switch
-        label="Modo compacto"
-        [checked]="settings.compactMode"
-        (checkedChange)="setSetting('compactMode', $event)"
-      />
-      <app-toggle-switch
-        label="Receber novidades"
-        [checked]="settings.news"
-        (checkedChange)="setSetting('news', $event)"
-      />
+    <app-settings-section title="Segurança">
+      <button
+        class="settings-row settings-row--button"
+        type="button"
+        (click)="openDialog('password')"
+      >
+        <span class="settings-row__content">
+          <strong>Alterar senha</strong>
+          <small>Atualizar senha da conta</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <button
+        class="settings-row settings-row--button"
+        type="button"
+        (click)="openDialog('sessions')"
+      >
+        <span class="settings-row__content">
+          <strong>Sessões ativas</strong>
+          <small>{{ activeSessionSummary }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Autenticação de dois fatores</strong>
+          <small>Exigir uma etapa extra ao entrar</small>
+        </span>
+        <app-toggle-switch
+          [checked]="twoFactorToggleChecked"
+          (checkedChange)="handleTwoFactorToggle($event)"
+        />
+      </div>
     </app-settings-section>
 
-    <app-settings-section title="Notificacoes" description="Escolha quais alertas elu deseja receber.">
-      <app-toggle-switch
-        label="Notificacoes dentro do app"
-        [checked]="settings.inAppNotifications"
-        (checkedChange)="setSetting('inAppNotifications', $event)"
-      />
-      <app-toggle-switch
-        label="E-mails"
-        [checked]="settings.emailNotifications"
-        (checkedChange)="setSetting('emailNotifications', $event)"
-      />
-      <app-toggle-switch
-        label="Atualizacoes importantes"
-        [checked]="settings.importantUpdates"
-        (checkedChange)="setSetting('importantUpdates', $event)"
-      />
-      <app-toggle-switch
-        label="Alertas de seguranca"
-        [checked]="settings.securityAlerts"
-        (checkedChange)="setSetting('securityAlerts', $event)"
-      />
+    <app-settings-section title="Preferências">
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Conta privada</strong>
+          <small>
+            {{
+              settings.privateAccount
+                ? 'Novos seguidores precisarão de aprovação'
+                : 'Aprovar seguidores antes de liberar suas publicações'
+            }}
+          </small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.privateAccount"
+          (checkedChange)="setSetting('privateAccount', $event)"
+        />
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Tema claro/escuro</strong>
+          <small>{{ settings.darkTheme ? 'Tema escuro ativo' : 'Tema claro ativo' }}</small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.darkTheme"
+          (checkedChange)="setSetting('darkTheme', $event)"
+        />
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Modo compacto</strong>
+          <small>{{ settings.compactMode ? 'Espaçamento reduzido ativo' : 'Reduzir espaçamentos no feed' }}</small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.compactMode"
+          (checkedChange)="setSetting('compactMode', $event)"
+        />
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Receber novidades</strong>
+          <small>Comunicados sobre recursos e melhorias</small>
+        </span>
+        <app-toggle-switch [checked]="settings.news" (checkedChange)="setSetting('news', $event)" />
+      </div>
     </app-settings-section>
 
-    <app-settings-section title="Seguranca" description="Simulacao local de senha e dispositivos.">
-      <div class="settings-session">
-        <span>Sessoes ativas</span>
-        <strong>{{ settings.activeSessions }}</strong>
+    <app-settings-section title="Notificações">
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Notificações dentro do app</strong>
+          <small>Alertas enquanto você usa o Spectrum</small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.inAppNotifications"
+          (checkedChange)="setSetting('inAppNotifications', $event)"
+        />
       </div>
-      <div class="settings-session">
-        <span>Dispositivo confiavel</span>
-        <strong>{{ settings.trustedDevice }}</strong>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>E-mails</strong>
+          <small>Receber notificações no e-mail principal</small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.emailNotifications"
+          (checkedChange)="setSetting('emailNotifications', $event)"
+        />
       </div>
-      <label>
-        Senha atual
-        <input type="password" [(ngModel)]="currentPassword" name="currentPassword" />
-      </label>
-      <label>
-        Nova senha
-        <input type="password" [(ngModel)]="newPassword" name="newPassword" />
-      </label>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Atualizações importantes</strong>
+          <small>Priorizar avisos de alta relevância</small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.importantUpdates"
+          (checkedChange)="setSetting('importantUpdates', $event)"
+        />
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row__content">
+          <strong>Alertas de segurança</strong>
+          <small>Notificar sobre acessos e atividades sensíveis</small>
+        </span>
+        <app-toggle-switch
+          [checked]="settings.securityAlerts"
+          (checkedChange)="setSetting('securityAlerts', $event)"
+        />
+      </div>
     </app-settings-section>
   </div>
 
-  @if (showSuccess) {
-    <app-alert-popup
-      type="success"
-      title="Configuracoes salvas"
-      message="As preferencias foram atualizadas localmente para demonstracao."
-      actionLabel="Ok"
-      (dismissed)="showSuccess = false"
-    />
+  @if (toastMessage) {
+    <div class="settings-toast" role="status" aria-live="polite">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ toastMessage }}</span>
+    </div>
+  }
+
+  @if (activeDialog === 'name') {
+    <app-settings-dialog title="Alterar nome" (closed)="closeDialog()">
+      <form class="settings-form" (ngSubmit)="saveName()">
+        <label>
+          Nome
+          <input type="text" name="name" [(ngModel)]="nameDraft" autocomplete="name" />
+        </label>
+
+        @if (formError) {
+          <p class="settings-form__error">{{ formError }}</p>
+        }
+
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="submit">Salvar alterações</button>
+        </div>
+      </form>
+    </app-settings-dialog>
+  }
+
+  @if (activeDialog === 'username') {
+    <app-settings-dialog
+      title="Alterar username"
+      description="Esse identificador aparece no seu perfil durante a demonstração."
+      (closed)="closeDialog()"
+    >
+      <form class="settings-form" (ngSubmit)="saveUsername()">
+        <label>
+          Username
+          <input
+            type="text"
+            name="username"
+            [(ngModel)]="usernameDraft"
+            (ngModelChange)="onUsernameInput()"
+            autocomplete="off"
+          />
+        </label>
+
+        <p
+          class="settings-form__hint"
+          [class.settings-form__hint--checking]="usernameFeedbackKind === 'checking'"
+          [class.settings-form__hint--success]="usernameFeedbackKind === 'success'"
+        >
+          {{ usernameFeedback }}
+        </p>
+
+        @if (formError) {
+          <p class="settings-form__error">{{ formError }}</p>
+        }
+
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="submit">Salvar alterações</button>
+        </div>
+      </form>
+    </app-settings-dialog>
+  }
+
+  @if (activeDialog === 'email') {
+    <app-settings-dialog title="E-mail principal" (closed)="closeDialog()">
+      <form class="settings-form" (ngSubmit)="saveEmail()">
+        <div class="settings-summary">
+          <span>E-mail atual</span>
+          <strong>{{ demoAccount.email }}</strong>
+        </div>
+
+        @if (demoAccount.pendingEmail) {
+          <div class="settings-summary settings-summary--pending">
+            <span>Novo e-mail pendente de confirmação</span>
+            <strong>{{ demoAccount.pendingEmail }}</strong>
+          </div>
+        }
+
+        <label>
+          Novo e-mail
+          <input type="email" name="email" [(ngModel)]="emailDraft" autocomplete="email" />
+        </label>
+
+        @if (formError) {
+          <p class="settings-form__error">{{ formError }}</p>
+        }
+
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="submit">Alterar e-mail</button>
+        </div>
+      </form>
+    </app-settings-dialog>
+  }
+
+  @if (activeDialog === 'password') {
+    <app-settings-dialog
+      title="Alterar senha"
+      description="Validação visual para demonstração, sem alterar a senha real."
+      (closed)="closeDialog()"
+    >
+      <form class="settings-form" (ngSubmit)="savePassword()">
+        <label>
+          Senha atual
+          <input type="password" name="currentPassword" [(ngModel)]="currentPassword" />
+        </label>
+
+        <label>
+          Nova senha
+          <input type="password" name="newPassword" [(ngModel)]="newPassword" />
+        </label>
+
+        <label>
+          Confirmar nova senha
+          <input type="password" name="confirmPassword" [(ngModel)]="confirmPassword" />
+        </label>
+
+        @if (formError) {
+          <p class="settings-form__error">{{ formError }}</p>
+        }
+
+        <div class="settings-dialog-actions">
+          <button
+            class="settings-dialog-actions__ghost"
+            type="button"
+            [disabled]="passwordSaving"
+            (click)="closeDialog()"
+          >
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="submit" [disabled]="passwordSaving">
+            {{ passwordSaving ? 'Salvando...' : 'Salvar alterações' }}
+          </button>
+        </div>
+      </form>
+    </app-settings-dialog>
+  }
+
+  @if (activeDialog === 'sessions') {
+    <app-settings-dialog
+      title="Sessões ativas"
+      description="Sessões mockadas para demonstrar ações de segurança."
+      (closed)="closeDialog()"
+    >
+      <div class="settings-sessions">
+        @for (session of sessions; track session.id) {
+          <article class="settings-session">
+            <div>
+              <strong>{{ session.title }}</strong>
+              <span>{{ session.device }} · {{ session.browser }}</span>
+              <small>{{ session.location }} · {{ session.lastSeen }}</small>
+            </div>
+            <button type="button" (click)="endSession(session.id)">Encerrar sessão</button>
+          </article>
+        } @empty {
+          <p class="settings-empty">Nenhuma sessão ativa na demonstração.</p>
+        }
+
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+            Fechar
+          </button>
+          <button
+            class="settings-dialog-actions__primary"
+            type="button"
+            [disabled]="sessions.length <= 1"
+            (click)="endOtherSessions()"
+          >
+            Encerrar todas as outras sessões
+          </button>
+        </div>
+      </div>
+    </app-settings-dialog>
+  }
+
+  @if (activeDialog === 'twoFactorEnable') {
+    <app-settings-dialog title="Ativar autenticação de dois fatores" (closed)="closeDialog()">
+      <div class="settings-two-factor">
+        <div class="settings-steps" aria-label="Etapas da autenticação de dois fatores">
+          <span [class.settings-steps__item--active]="twoFactorStep === 1">1</span>
+          <span [class.settings-steps__item--active]="twoFactorStep === 2">2</span>
+          <span [class.settings-steps__item--active]="twoFactorStep === 3">3</span>
+        </div>
+
+        @if (twoFactorStep === 1) {
+          <div class="settings-qr" aria-label="QR Code de demonstração">
+            <span>QR Code de demonstração</span>
+          </div>
+          <p class="settings-form__hint">
+            Escaneie este código fictício no aplicativo autenticador para continuar a demo.
+          </p>
+
+          <div class="settings-dialog-actions">
+            <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+              Cancelar
+            </button>
+            <button
+              class="settings-dialog-actions__primary"
+              type="button"
+              (click)="startTwoFactorVerification()"
+            >
+              Continuar
+            </button>
+          </div>
+        }
+
+        @if (twoFactorStep === 2) {
+          <form class="settings-form" (ngSubmit)="confirmTwoFactorCode()">
+            <label>
+              Código de 6 dígitos
+              <input
+                #twoFactorCodeInput
+                type="text"
+                name="twoFactorCode"
+                [(ngModel)]="twoFactorCode"
+                inputmode="numeric"
+                maxlength="6"
+                autocomplete="one-time-code"
+              />
+            </label>
+            <p class="settings-form__hint">Use o código mockado 123456.</p>
+
+            @if (formError) {
+              <p class="settings-form__error">{{ formError }}</p>
+            }
+
+            <div class="settings-dialog-actions">
+              <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+                Cancelar
+              </button>
+              <button class="settings-dialog-actions__primary" type="submit">Confirmar</button>
+            </div>
+          </form>
+        }
+
+        @if (twoFactorStep === 3) {
+          <div class="settings-confirmation">
+            <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+            <strong>Autenticação de dois fatores ativada.</strong>
+          </div>
+
+          <div class="settings-dialog-actions">
+            <button
+              #twoFactorDoneButton
+              class="settings-dialog-actions__primary"
+              type="button"
+              (click)="closeDialog()"
+            >
+              Concluir
+            </button>
+          </div>
+        }
+      </div>
+    </app-settings-dialog>
+  }
+
+  @if (activeDialog === 'twoFactorDisable') {
+    <app-settings-dialog title="Desativar autenticação de dois fatores?" (closed)="closeDialog()">
+      <div class="settings-confirm">
+        <p>Essa ação é apenas visual nesta demonstração e não altera nenhum método real de acesso.</p>
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="button" (click)="disableTwoFactor()">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </app-settings-dialog>
+  }
+  @if (activeDialog === 'avatar') {
+    <app-settings-dialog title="Foto de perfil" (closed)="closeDialog()">
+      <form class="settings-form" (ngSubmit)="saveAvatar()">
+        @if (avatarDraft()) {
+          <div class="settings-avatar-crop" tabindex="0" role="group"
+            aria-label="Enquadramento da foto" aria-describedby="avatar-crop-hint"
+            (pointerdown)="startAvatarDrag($event)" (pointermove)="moveAvatarDrag($event)"
+            (pointerup)="endAvatarDrag($event)" (pointercancel)="endAvatarDrag($event)"
+            (lostpointercapture)="endAvatarDrag($event)" (keydown)="moveAvatarWithKeyboard($event)">
+            <img #avatarImage [src]="avatarDraft()" alt="Prévia da foto de perfil"
+              draggable="false"
+              [style.width.%]="avatarWidth * avatarZoom * 100"
+              [style.height.%]="avatarHeight * avatarZoom * 100"
+              [style.left.%]="50 + avatarOffsetX * 100"
+              [style.top.%]="50 + avatarOffsetY * 100"
+              (load)="onAvatarLoaded()"
+              (error)="onAvatarPreviewError()" />
+            <span class="settings-avatar-crop__circle" aria-hidden="true"></span>
+            <span class="settings-avatar-crop__grid" aria-hidden="true"></span>
+          </div>
+          <p id="avatar-crop-hint" class="settings-form__hint">
+            Arraste a foto para enquadrar. O círculo mostra como ela ficará no perfil.
+            Você também pode usar as setas do teclado.
+          </p>
+          <div class="settings-avatar-actions">
+            <button class="settings-avatar-action" type="button" aria-label="Diminuir zoom"
+              [disabled]="avatarSaving() || !avatarReady() || avatarZoom <= 1" (click)="zoomAvatar(-0.1)">
+              <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+            </button>
+            <span class="settings-avatar-zoom" aria-live="polite">{{ (avatarZoom * 100).toFixed(0) }}%</span>
+            <button class="settings-avatar-action" type="button" aria-label="Aumentar zoom"
+              [disabled]="avatarSaving() || !avatarReady() || avatarZoom >= 3" (click)="zoomAvatar(0.1)">
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+            </button>
+          </div>
+        } @else {
+          <span class="settings-row__avatar settings-avatar-preview">
+            <app-user-avatar [user]="user" [name]="user?.name || 'Spectrum'" />
+          </span>
+        }
+        <input #avatarInput class="settings-avatar-input" type="file" tabindex="-1"
+          aria-label="Selecionar foto" accept="image/jpeg,image/png,image/webp"
+          [disabled]="avatarSaving()" (change)="selectAvatar($event)" />
+        <div class="settings-avatar-actions">
+          <button class="settings-avatar-action" type="button" aria-describedby="avatar-hint"
+            [disabled]="avatarSaving()" (click)="avatarInput.click()">
+            <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
+            Selecionar foto
+          </button>
+
+        </div>
+        <p id="avatar-hint" class="settings-form__hint">JPG, PNG ou WebP de até 2 MB.</p>
+        @if (avatarSaving()) {
+          <p class="settings-form__hint" role="status">Salvando foto...</p>
+        }
+        @if (avatarReading()) {
+          <p class="settings-form__hint" role="status">Carregando imagem...</p>
+        }
+        @if (formError) {
+          <p class="settings-form__error" role="alert">{{ formError }}</p>
+        }
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" [disabled]="avatarSaving()" (click)="closeDialog()">
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="submit"
+            [disabled]="avatarSaving() || !avatarDraft() || avatarReading() || !avatarReady()">{{ avatarSaving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+        </div>
+      </form>
+    </app-settings-dialog>
   }
 </app-social-shell>

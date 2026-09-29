@@ -1,9 +1,10 @@
-<main class="social-page">
+<a class="social-skip" href="#spectrum-content">Ir para o conteúdo</a>
+<main class="social-page" [class.social-page--wide]="wideContent">
 
     <header class="social-header">
     <div class="social-header__inner">
 
-      <a class="social-logo" routerLink="/home" aria-label="Spectrum">
+      <a class="social-logo" routerLink="/publicacoes" aria-label="Spectrum">
         <img src="/logo.png" alt="Spectrum" class="logo">
       </a>
 
@@ -13,9 +14,10 @@
         
         <input
           type="search"
-          placeholder="Pesquise por cidades e usuarios"
-          [(ngModel)]="searchTerm"
-          (input)="onSearch()"
+          aria-label="Pesquisar cidades e usuarios"
+          placeholder="Pesquise por cidades e usuários"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event); onSearch()"
           (keydown)="onSearchKeydown($event)"
         />
 
@@ -26,11 +28,11 @@
           search
         </span>
 
-        @if (searchTerm.trim()) {
+        @if (searchTerm().trim()) {
 
           <div class="social-search__results">
 
-            @if (isSearching) {
+            @if (isSearching()) {
 
               <div class="search-skeleton-list">
 
@@ -51,7 +53,7 @@
 
             } @else {
 
-              @if (searchResults.length > 0) {
+              @if (searchResults().length > 0) {
 
                 <div class="search-results">
 
@@ -59,18 +61,18 @@
                     RESULTADOS
                   </span>
 
-                  @for (result of searchResults; track result.id) {
+                  @for (result of searchResults(); track result.id) {
 
                     <button
                       type="button"
                       class="search-result"
+                      (click)="selectSearchResult(result)"
                     >
 
                     <span class="search-result__icon">
                       @if (result.type === 'Pessoa') {
                         {{ result.name.charAt(0).toUpperCase() }}
                       }
-
                       @if (result.type === 'Cidade') {
                         <span class="material-symbols-outlined">
                           location_city
@@ -131,10 +133,11 @@
       <button
         class="social-create"
         type="button"
-        aria-label="Criar publicacao"
-        (click)="createPost.emit()"
+        aria-label="Criar ocorrência"
+        (click)="openCreatePost()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
+        <span class="social-create__label">Nova ocorrência</span>
       </button>
 
     </div>
@@ -156,7 +159,7 @@
           <span class="material-symbols-outlined">
             home
           </span>
-          Inicio
+          Início
         </a>
 
         <!-- NOTIFICAÇÕES -->
@@ -171,11 +174,23 @@
           Notificações
         </a>
 
+        <a
+          class="social-nav__item"
+          routerLink="/dashboard/cidades"
+          routerLinkActive="social-nav__item--active"
+        >
+          <span class="material-symbols-outlined">
+            monitoring
+          </span>
+          Cidades
+        </a>
+
         <!-- PERFIL -->
         <a
           class="social-nav__item"
           routerLink="/perfil"
           routerLinkActive="social-nav__item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
         >
           <span class="material-symbols-outlined">
             account_circle
@@ -197,45 +212,52 @@
 
       </nav>
 
+      <div class="social-community-note">
+        <span class="material-symbols-outlined" aria-hidden="true">diversity_3</span>
+        <strong>Uma cidade melhor<br>começa com a gente.</strong>
+        <p>Seu olhar ajuda a transformar os lugares que compartilhamos.</p>
+      </div>
       <!-- USUÁRIO LOGADO -->
-      <a class="social-user" routerLink="/perfil">
+      <div class="social-user" (click)="$event.stopPropagation()">
+        <a class="social-user__profile" routerLink="/perfil">
+          <span class="social-avatar">
+            <app-user-avatar [user]="user" [name]="displayName" />
+          </span>
 
-        <span class="social-avatar">
-          {{ userInitial }}
-        </span>
+          <span class="social-user__text">
+            <strong>{{ displayName }}</strong>
+            <small>@{{ nickname }}</small>
+          </span>
+        </a>
 
-        <span class="social-user__text">
-          <strong>{{ displayName }}</strong>
-          <small>@{{ nickname }}</small>
-        </span>
-
-        <span
-          class="material-symbols-outlined social-user__more"
-          aria-hidden="true"
+        <button
+          class="social-user__more"
+          type="button"
+          aria-label="Abrir opcoes da conta"
+          [attr.aria-expanded]="userMenuOpen"
+          (click)="toggleUserMenu($event)"
         >
-          more_horiz
-        </span>
+          <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+        </button>
 
-      </a>
-
-      <!-- SAIR -->
-      <button
-        class="social-nav__item"
-        type="button"
-        (click)="logout.emit()"
-      >
-        <span class="material-symbols-outlined">
-          logout
-        </span>
-        Sair
-      </button>
+        @if (userMenuOpen) {
+          <div class="social-user__menu" role="menu">
+            <button type="button" role="menuitem" (click)="openLogoutConfirm()">
+              <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+              Sair
+            </button>
+          </div>
+        }
+      </div>
 
     </aside>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <section
       class="social-content"
-      aria-labelledby="social-title"
+      id="spectrum-content"
+      tabindex="-1"
+      [attr.aria-labelledby]="showContentHeader ? 'social-title' : null"
     >
 
       @if (showContentHeader) {
@@ -269,47 +291,59 @@
     <!-- SUGESTÕES -->
     <aside
       class="social-suggestions"
-      aria-label="Sugestoes para voce"
+      aria-label="Cidades sugeridas"
     >
 
-      <h2> Sugestões para você </h2>
+      <h2>Explore as cidades</h2>
+      <p class="social-suggestions__intro">Cada lugar tem uma história. Faça parte da próxima mudança.</p>
 
-      @for (profile of suggestions; track profile.nickname) {
+      @for (city of suggestedCities; track city.id) {
 
-        <article class="social-suggestion">
+        <button
+          type="button"
+          class="social-suggestion"
+          (click)="goToCity(city.slug)"
+        >
 
-          <span class="social-avatar social-avatar--small">
-
-            <img
-              class="social-avatar"
-              src="https://img.magnific.com/vetores-premium/icone-de-perfil-de-avatar-em-estilo-plano-ilustracao-vetorial-de-perfil-de-usuario-feminino-em-fundo-isolado-perfil-de-mulheres-sinal-conceito-de-negocio_157943-38866.jpg?semt=ais_hybrid&w=740&q=80"
-              alt="Foto de perfil"
-            />
-
+          <span class="social-suggestion__city-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">location_on</span>
           </span>
 
           <div>
-            <strong>{{ profile.name }}</strong>
-            <span>@{{ profile.nickname }}</span>
+            <strong>{{ city.name }}</strong>
+            <span>{{ city.state }} · {{ city.country }}</span>
           </div>
 
-          @if (profile.verified) {
+          <span class="material-symbols-outlined social-suggestion__arrow" aria-hidden="true">
+            chevron_right
+          </span>
 
-            <span
-              class="material-symbols-outlined social-suggestion__verified"
-              aria-label="Perfil verificado"
-            >
-              verified
-            </span>
-
-          }
-
-        </article>
+        </button>
 
       }
 
+      <div class="social-guide">
+        <span class="material-symbols-outlined" aria-hidden="true">route</span>
+        <h3>Do relato à solução</h3>
+        <ol><li>Registre o que você observou</li><li>Acompanhe as atualizações</li><li>Ajude a confirmar a solução</li></ol>
+        <button type="button" (click)="openCreatePost()">Registrar um problema <span aria-hidden="true">↗</span></button>
+      </div>
     </aside>
 
   </div>
 
 </main>
+
+@if (isLogoutConfirmOpen) {
+  <app-logout-confirm (confirm)="confirmLogout()" (cancel)="cancelLogout()" />
+}
+
+@if (showCreatePost) {
+  <app-create-post-modal
+    [user]="user"
+    [editingPost]="editingPost"
+    (close)="closeCreatePost()"
+    (postCreated)="handlePostCreated($event)"
+    (postUpdated)="handlePostUpdated($event)"
+  />
+}
