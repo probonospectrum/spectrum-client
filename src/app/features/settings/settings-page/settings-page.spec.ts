@@ -261,6 +261,30 @@ describe('SettingsPage', () => {
     } finally { context.mockRestore(); exportImage.mockRestore(); }
   });
 
+  it('removes the profile photo and shows the initial throughout the page', async () => {
+    const service = TestBed.inject(UserService);
+    service.saveSession({ token: 'token', message: '', user: {
+      _id: 'ana', name: 'Ana', avatarUrl: 'https://example.com/ana.png',
+    } as LoggedUser });
+    component.openDialog('avatar');
+    fixture.detectChanges();
+    const button = [...fixture.nativeElement.querySelectorAll('button')].find(
+      (item: any) => item.textContent.includes('Remover foto de perfil'),
+    ) as HTMLButtonElement;
+    expect(button.querySelector('.material-symbols-outlined')?.textContent).toBe('delete');
+    const removing = component.removeAvatar();
+    fixture.detectChanges();
+    expect(button.disabled).toBe(true);
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/ana/avatar')
+      .flush({ message: 'ok', avatarUrl: '' });
+    await removing;
+    fixture.detectChanges();
+    expect(component.activeDialog).toBeNull();
+    expect(component.avatarUrl).toBe('');
+    expect(fixture.nativeElement.querySelector('.social-avatar img')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.settings-row__avatar').textContent.trim()).toBe('A');
+  });
+
   function clickButton(text: string): void {
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     const button = buttons.find((item) => item.textContent?.includes(text));

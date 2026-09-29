@@ -34,6 +34,32 @@ describe('UserService avatar upload', () => {
     expect(new UserService(TestBed.inject(HttpClient)).getCurrentUser()).toEqual(expected.user);
   });
 
+  it('removes the avatar and persists the default avatar after reloading', () => {
+    service.removeAvatar().subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana/avatar');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    expect(service.getCurrentUser()).toEqual(session.user);
+    request.flush({ message: 'ok', avatarUrl: '' });
+    expect(service.getCurrentUser()?.avatarUrl).toBe('');
+    expect(new UserService(TestBed.inject(HttpClient)).getCurrentUser()?.avatarUrl).toBe('');
+    expect(service.getCurrentUser()?.following).toEqual(['friend']);
+  });
+
+  it('preserves the photo when removal fails', () => {
+    service.removeAvatar().subscribe({ error: () => {} });
+    http.expectOne(API_BASE_URL + '/user/ana/avatar').flush({}, { status: 500, statusText: 'Error' });
+    expect(service.getCurrentUser()).toEqual(session.user);
+  });
+
+  it('does not restore a logged out session after removal', () => {
+    service.removeAvatar().subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana/avatar');
+    service.logout();
+    request.flush({ message: 'ok', avatarUrl: '' });
+    expect(service.getCurrentUser()).toBeNull();
+  });
+
   it('preserves the session on failure', () => {
     const error = vi.fn();
     service.uploadAvatar(new Blob(['photo'])).subscribe({ error });

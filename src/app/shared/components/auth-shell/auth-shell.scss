@@ -25,6 +25,10 @@
 @media (max-width: 700px) { .auth-page { grid-template-columns: 1fr; background: var(--spectrum-app-bg); } .auth-story { display: none; } .auth-form-side { padding: 36px 24px; } .auth-brand { display: block; } .auth-card { background: var(--spectrum-surface); border: 1px solid var(--spectrum-border); border-radius: 22px; padding: 28px 24px; } }
 
 .auth-page { min-height: 100dvh; }
+// Compensate for the global desktop zoom so the layout fills the viewport.
+@media (min-width: 1024px) {
+  .auth-page { min-height: calc(100dvh / 0.9); }
+}
 .auth-form-side, .auth-card { min-width: 0; }
 .auth-page__note { text-align: center; }
 @media (max-width: 380px) {
