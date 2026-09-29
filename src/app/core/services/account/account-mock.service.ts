@@ -47,6 +47,11 @@ export interface SettingsData {
   providedIn: 'root',
 })
 export class AccountMockService {
+  getAvatarUrl(user: LoggedUser | null): string {
+    const url = user?.avatarUrl ?? '';
+    return /^https?:\/\/placehold\.co\//i.test(url) ? '' : url;
+  }
+
   private notifications: SpectrumNotification[] = [
   {
     id: 'nt-1',

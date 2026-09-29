@@ -10,7 +10,7 @@
       [attr.aria-label]="'Ver perfil de ' + post.authorName"
       (click)="goToAuthorProfile()"
     >
-      {{ post.authorInitial }}
+      <app-user-avatar [user]="isOwnPost ? currentUser : null" [name]="post.authorName" />
     </button>
     <div
       class="post-card__author"

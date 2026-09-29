@@ -1,3 +1,4 @@
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
@@ -6,7 +7,7 @@ import { LoggedUser, UserService } from '../../../core/services/user/user.servic
 
 @Component({
   selector: 'app-comment-section',
-  imports: [CommonModule, FormsModule],
+  imports: [UserAvatar, CommonModule, FormsModule],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
@@ -64,6 +65,7 @@ export class CommentSection implements OnInit {
     this.comments = [
       {
         id: newId,
+        authorId: this.currentUser?._id ?? this.userService.getCurrentUser()?._id,
         authorName: this.displayName,
         authorInitial: this.userInitial,
         content,

@@ -27,7 +27,7 @@
     </div>
 
     <div class="profile-header__info">
-      <span class="profile-header__avatar">{{ userInitial }}</span>
+      <span class="profile-header__avatar"><app-user-avatar [user]="isOwnProfile() ? user : null" [name]="displayName" /></span>
 
       <div class="profile-header__details">
         <div class="profile-header__name-row">

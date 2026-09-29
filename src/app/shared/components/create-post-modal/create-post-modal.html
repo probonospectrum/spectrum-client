@@ -8,7 +8,7 @@
   >
     <header class="create-post-modal__header">
       <div class="create-post-modal__author">
-        <div class="create-post-modal__avatar">{{ userInitial }}</div>
+        <div class="create-post-modal__avatar"><app-user-avatar [user]="user" [name]="displayName" /></div>
         <div>
           <h2 id="create-post-modal-title">{{ modalTitle }}</h2>
           <p><strong>{{ displayName }}</strong> <span>@{{ nickname }}</span></p>

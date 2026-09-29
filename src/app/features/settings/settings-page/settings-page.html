@@ -6,6 +6,16 @@
 >
   <div class="settings-list" [class.settings-list--compact]="settings.compactMode">
     <app-settings-section title="Conta">
+      <button class="settings-row settings-row--button" type="button" (click)="openDialog('avatar')">
+        <span class="settings-row__content">
+          <strong>Foto de perfil</strong>
+          <small>{{ avatarUrl ? 'Alterar foto' : 'Adicionar foto' }}</small>
+        </span>
+        <span class="settings-row__avatar" aria-hidden="true">
+          <app-user-avatar [user]="user" />
+        </span>
+      </button>
+
       <button class="settings-row settings-row--button" type="button" (click)="openDialog('name')">
         <span class="settings-row__content">
           <strong>Alterar nome</strong>
@@ -460,6 +470,77 @@
           </button>
         </div>
       </div>
+    </app-settings-dialog>
+  }
+  @if (activeDialog === 'avatar') {
+    <app-settings-dialog title="Foto de perfil" (closed)="closeDialog()">
+      <form class="settings-form" (ngSubmit)="saveAvatar()">
+        @if (avatarDraft()) {
+          <div class="settings-avatar-crop" tabindex="0" role="group"
+            aria-label="Enquadramento da foto" aria-describedby="avatar-crop-hint"
+            (pointerdown)="startAvatarDrag($event)" (pointermove)="moveAvatarDrag($event)"
+            (pointerup)="endAvatarDrag($event)" (pointercancel)="endAvatarDrag($event)"
+            (lostpointercapture)="endAvatarDrag($event)" (keydown)="moveAvatarWithKeyboard($event)">
+            <img #avatarImage [src]="avatarDraft()" alt="Prévia da foto de perfil"
+              draggable="false"
+              [style.width.%]="avatarWidth * avatarZoom * 100"
+              [style.height.%]="avatarHeight * avatarZoom * 100"
+              [style.left.%]="50 + avatarOffsetX * 100"
+              [style.top.%]="50 + avatarOffsetY * 100"
+              (load)="onAvatarLoaded()"
+              (error)="onAvatarPreviewError()" />
+            <span class="settings-avatar-crop__circle" aria-hidden="true"></span>
+            <span class="settings-avatar-crop__grid" aria-hidden="true"></span>
+          </div>
+          <p id="avatar-crop-hint" class="settings-form__hint">
+            Arraste a foto para enquadrar. O círculo mostra como ela ficará no perfil.
+            Você também pode usar as setas do teclado.
+          </p>
+          <div class="settings-avatar-actions">
+            <button class="settings-avatar-action" type="button" aria-label="Diminuir zoom"
+              [disabled]="avatarSaving() || !avatarReady() || avatarZoom <= 1" (click)="zoomAvatar(-0.1)">
+              <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+            </button>
+            <span class="settings-avatar-zoom" aria-live="polite">{{ (avatarZoom * 100).toFixed(0) }}%</span>
+            <button class="settings-avatar-action" type="button" aria-label="Aumentar zoom"
+              [disabled]="avatarSaving() || !avatarReady() || avatarZoom >= 3" (click)="zoomAvatar(0.1)">
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+            </button>
+          </div>
+        } @else {
+          <span class="settings-row__avatar settings-avatar-preview">
+            <app-user-avatar [user]="user" [name]="user?.name || 'Spectrum'" />
+          </span>
+        }
+        <input #avatarInput class="settings-avatar-input" type="file" tabindex="-1"
+          aria-label="Selecionar foto" accept="image/jpeg,image/png,image/webp"
+          [disabled]="avatarSaving()" (change)="selectAvatar($event)" />
+        <div class="settings-avatar-actions">
+          <button class="settings-avatar-action" type="button" aria-describedby="avatar-hint"
+            [disabled]="avatarSaving()" (click)="avatarInput.click()">
+            <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
+            Selecionar foto
+          </button>
+
+        </div>
+        <p id="avatar-hint" class="settings-form__hint">JPG, PNG ou WebP de até 2 MB.</p>
+        @if (avatarSaving()) {
+          <p class="settings-form__hint" role="status">Salvando foto...</p>
+        }
+        @if (avatarReading()) {
+          <p class="settings-form__hint" role="status">Carregando imagem...</p>
+        }
+        @if (formError) {
+          <p class="settings-form__error" role="alert">{{ formError }}</p>
+        }
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" [disabled]="avatarSaving()" (click)="closeDialog()">
+            Cancelar
+          </button>
+          <button class="settings-dialog-actions__primary" type="submit"
+            [disabled]="avatarSaving() || !avatarDraft() || avatarReading() || !avatarReady()">{{ avatarSaving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+        </div>
+      </form>
     </app-settings-dialog>
   }
 </app-social-shell>
