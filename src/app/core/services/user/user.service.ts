@@ -73,6 +73,22 @@ export class UserService {
     return this.http.post<CreateUserResponse>(`${this.apiUrl}`, payload).pipe(timeout(15000));
   }
 
+  removeAvatar(): Observable<UpdateAvatarResponse> {
+    const userId = this.currentUser()?._id;
+    if (!userId) {
+      return throwError(() => new Error('Entre na sua conta para remover a foto.'));
+    }
+    return this.http.delete<UpdateAvatarResponse>(`${this.apiUrl}/${userId}/avatar`).pipe(
+      timeout(60000),
+      tap((response) => {
+        const session = this.session();
+        if (session?.user._id === userId) {
+          this.saveSession({ ...session, user: { ...session.user, avatarUrl: response.avatarUrl } });
+        }
+      }),
+    );
+  }
+
   uploadAvatar(avatar: Blob): Observable<UpdateAvatarResponse> {
     const userId = this.currentUser()?._id;
     if (!userId) {
