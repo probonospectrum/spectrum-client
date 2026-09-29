@@ -280,6 +280,23 @@ export class SettingsPage implements OnDestroy {
     this.avatarOffsetY = Math.max(-maxY, Math.min(maxY, this.avatarOffsetY));
   }
 
+  async removeAvatar(): Promise<void> {
+    if (this.avatarSaving() || !this.avatarUrl) return;
+    this.avatarSaving.set(true);
+    this.formError = '';
+    try {
+      await firstValueFrom(this.userService.removeAvatar());
+      if (this.destroyed) return;
+      this.avatarSaving.set(false);
+      this.closeDialog();
+      this.showToast('Foto de perfil removida.');
+    } catch {
+      if (!this.destroyed) this.formError = 'Não foi possível remover a foto. Tente novamente.';
+    } finally {
+      this.avatarSaving.set(false);
+    }
+  }
+
   async saveAvatar(): Promise<void> {
     if (this.avatarSaving() || !this.avatarDraft() || this.avatarReading() || !this.avatarReady()) return;
     const userId = this.user?._id;

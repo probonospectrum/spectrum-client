@@ -521,7 +521,13 @@
             <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
             Selecionar foto
           </button>
-
+          @if (avatarUrl) {
+            <button class="settings-avatar-action" type="button"
+              [disabled]="avatarSaving()" (click)="removeAvatar()">
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              Remover foto de perfil
+            </button>
+          }
         </div>
         <p id="avatar-hint" class="settings-form__hint">JPG, PNG ou WebP de até 2 MB.</p>
         @if (avatarSaving()) {
