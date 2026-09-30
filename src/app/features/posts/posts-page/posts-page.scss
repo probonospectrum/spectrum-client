@@ -307,7 +307,12 @@
 .feed-section-heading { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 14px; }
 .feed-section-heading h2 { font-size: 15px; margin: 0; font-weight: 600; }
 .feed-section-heading > span { color: var(--spectrum-text-muted); font-size: 11px; }
-.feed-categories__list { display: flex; gap: 8px; padding: 3px 3px 10px; overflow-x: auto; scrollbar-width: thin; }
+.feed-categories__carousel { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; align-items: center; gap: 6px; }
+.feed-categories__arrow { display: grid; place-items: center; width: 36px; min-height: 44px; padding: 0; border: 1px solid var(--spectrum-border); border-radius: 12px; background: var(--spectrum-surface); color: var(--spectrum-primary-700); cursor: pointer; }
+.feed-categories__arrow:hover { background: var(--spectrum-accent-soft); border-color: var(--spectrum-primary-600); }
+.feed-categories__arrow:focus-visible, .feed-categories__list button:focus-visible { outline: 2px solid var(--spectrum-primary-600); outline-offset: 2px; }
+.feed-categories__list { display: flex; min-width: 0; gap: 8px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
+.feed-categories__list::-webkit-scrollbar { display: none; }
 .feed-categories__list button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; flex: 0 0 103px; min-height: 83px; padding: 14px 6px; border: 1px solid var(--spectrum-border); background: var(--spectrum-surface); color: var(--spectrum-text-secondary); border-radius: 14px; font-size: 10px; cursor: pointer; transition: border-color 160ms, background 160ms; }
 .feed-categories__list button > span { color: var(--spectrum-primary-700); font-size: 23px; }
 .feed-categories__list button:hover, .feed-categories__list button[aria-pressed='true'] { border-color: var(--spectrum-primary-600); background: var(--spectrum-accent-soft); color: var(--spectrum-primary-800); }

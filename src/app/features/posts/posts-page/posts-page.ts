@@ -82,6 +82,13 @@ export class PostsPage implements OnInit {
     this.selectedCategory.set('');
   }
 
+  scrollCategories(list: HTMLElement, direction: -1 | 1): void {
+    list.scrollBy({
+      left: direction * list.clientWidth,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    });
+  }
+
   reportPost: SpectrumPost | null = null;
 
   selectedReason = 'Discurso de odio';
