@@ -1,3 +1,4 @@
+import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -33,6 +34,7 @@ interface SearchResult {
 @Component({
   selector: 'app-social-shell',
   imports: [
+    UserAvatar,
     CommonModule,
     FormsModule,
     RouterLink,

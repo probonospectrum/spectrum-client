@@ -74,7 +74,7 @@ export class SettingsDialog implements AfterViewInit, OnDestroy {
     const panel = this.panel?.nativeElement;
     const focusTarget =
       panel?.querySelector<HTMLElement>(
-        'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+        'input:not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled])',
       ) ?? this.getFocusableElements()[0];
 
     (focusTarget ?? panel)?.focus();
@@ -83,7 +83,7 @@ export class SettingsDialog implements AfterViewInit, OnDestroy {
   private getFocusableElements(): HTMLElement[] {
     return [
       ...(this.panel?.nativeElement.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ) ?? []),
     ];
   }

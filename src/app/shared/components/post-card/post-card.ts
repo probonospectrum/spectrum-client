@@ -1,3 +1,4 @@
+import { UserAvatar } from '../user-avatar/user-avatar';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 import { CommonModule } from '@angular/common';
 import {
@@ -21,7 +22,7 @@ import { LoggedUser } from '../../../core/services/user/user.service';
 
 @Component({
   selector: 'app-post-card',
-  imports: [CommonModule, CommentSection],
+  imports: [UserAvatar, CommonModule, CommentSection],
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })

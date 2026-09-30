@@ -1,3 +1,4 @@
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,7 +24,7 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })

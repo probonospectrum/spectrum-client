@@ -227,7 +227,7 @@
       <div class="social-user" (click)="$event.stopPropagation()">
         <a class="social-user__profile" routerLink="/perfil">
           <span class="social-avatar">
-            {{ userInitial }}
+            <app-user-avatar [user]="user" [name]="displayName" />
           </span>
 
           <span class="social-user__text">

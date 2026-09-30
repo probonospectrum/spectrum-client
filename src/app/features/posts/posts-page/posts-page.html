@@ -23,13 +23,21 @@
 
   <section class="feed-categories" aria-label="Filtrar por categoria">
     <div class="feed-section-heading"><h2>O que acontece na cidade</h2><span>Explore por categoria</span></div>
-    <div class="feed-categories__list">
-      @for (category of categoryFilters; track category.value) {
-        <button type="button" [attr.aria-pressed]="selectedCategory() === category.value" (click)="selectedCategory.set(category.value)">
-          <span class="material-symbols-outlined" aria-hidden="true">{{ category.icon }}</span>
-          {{ category.label }}
-        </button>
-      }
+    <div class="feed-categories__carousel">
+      <button class="feed-categories__arrow" type="button" aria-label="Ver categorias anteriores" aria-controls="feed-category-list" [disabled]="!canScrollCategoriesBack() && !(loopCategories() && canScrollCategoriesForward())" (click)="scrollCategories(categoryList, -1)">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      </button>
+      <div #categoryList id="feed-category-list" class="feed-categories__list" (scroll)="updateCategoryScroll(categoryList)">
+        @for (category of categoryFilters; track category.value) {
+          <button type="button" [attr.aria-pressed]="selectedCategory() === category.value" (click)="selectedCategory.set(category.value)">
+            <span class="material-symbols-outlined" aria-hidden="true">{{ category.icon }}</span>
+            {{ category.label }}
+          </button>
+        }
+      </div>
+      <button class="feed-categories__arrow" type="button" aria-label="Ver próximas categorias" aria-controls="feed-category-list" [disabled]="!canScrollCategoriesForward() && !(loopCategories() && canScrollCategoriesBack())" (click)="scrollCategories(categoryList, 1)">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </button>
     </div>
   </section>
 
