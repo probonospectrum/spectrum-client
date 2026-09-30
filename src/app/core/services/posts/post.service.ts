@@ -283,6 +283,27 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  getModerationOccurrences(user: LoggedUser | null): Observable<SpectrumPost[]> {
+    return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`).pipe(
+      map(items => items.map(item => this.toSpectrumPost(item, user))),
+    );
+  }
+  updateOccurrence(post: SpectrumPost, payload: CreatePostPayload, user: LoggedUser | null, evidences: CreateOccurrenceEvidencePayload[] = []): Observable<SpectrumPost> {
+    if (!this.canModifyPost(post, user)) throw new Error('O período de edição de 15 minutos foi encerrado.');
+    if (!this.isApiId(post.id)) return of(this.updatePost(post.id, payload, user));
+    return this.http.patch<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}`, {
+      text: payload.content, description: payload.content, title: payload.title,
+      category: payload.category, importance: payload.importance, location: payload.location, evidences,
+    }).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
+
+  registerForwardingResponse(post: SpectrumPost, user: LoggedUser | null, forwardingId: string, responseReceived: string, responseCode: string, protocol: string): Observable<SpectrumPost> {
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR' || this.isRelatedAgency(post, user), ['ENCAMINHADA', 'EM_RESOLUCAO', 'RESPOSTA_EM_APURACAO', 'FALHA_NO_ENCAMINHAMENTO']);
+    if (!this.isApiId(post.id)) throw new Error('O registro de resposta exige uma ocorrência salva no servidor.');
+    return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/response`, {
+      forwardingId, responseReceived, responseCode: responseCode || undefined, protocol: protocol.trim() || undefined,
+    }).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
   getRegisteredAgencies(): Observable<{ _id: string; name: string; emails: string[] }[]> {
     return this.http.get<{ _id: string; name: string; emails: string[] }[]>(`${this.apiUrl}/agencies`);
   }
@@ -568,7 +589,7 @@ export class PostService {
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
-    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER' || this.isRelatedAgency(post, user), ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA']);
+    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER' || this.isRelatedAgency(post, user), ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA']);
     if (!statement.trim()) throw new Error('Descreva a solução observada.');
     const actorType = this.actorTypeForUser(user);
     const body = {

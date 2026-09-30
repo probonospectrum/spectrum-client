@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -7,6 +7,17 @@ import { PostService, SpectrumPost } from '../../../core/services/posts/post.ser
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { CommentSection } from '../comment-section/comment-section';
 import { OccurrenceDetailPage } from './occurrence-detail-page';
+import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+
+@Component({ selector: 'app-social-shell', template: '<ng-content />' })
+class StubSocialShell {
+  @Input() user: LoggedUser | null = null;
+  @Input() showContentHeader = false;
+  @Input() wideContent = true;
+  @Output() logout = new EventEmitter<void>();
+  @Output() postUpdated = new EventEmitter<SpectrumPost>();
+  openEditPost(_post: SpectrumPost) {}
+}
 
 @Component({ selector: 'app-comment-section', template: '' })
 class StubCommentSection {
@@ -64,6 +75,7 @@ describe('OccurrenceDetailPage actions', () => {
           provide: PostService,
           useValue: {
             getOccurrence: () => of(occurrence),
+            canModifyPost: () => false,
             getOccurrenceHistory: () => of([]),
             getRegisteredAgencies: () => of([{ _id: 'works', name: 'Obras', emails: ['works@example.com'] }]),
             getStatusLabel: (status: string) => status,
@@ -75,8 +87,8 @@ describe('OccurrenceDetailPage actions', () => {
       ],
     })
       .overrideComponent(OccurrenceDetailPage, {
-        remove: { imports: [CommentSection] },
-        add: { imports: [StubCommentSection] },
+        remove: { imports: [CommentSection, SocialShell] },
+        add: { imports: [StubCommentSection, StubSocialShell] },
       })
       .compileComponents();
   });
@@ -109,9 +121,10 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows only related agency actions at the same URL', () => {
-    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual([
-      'task_alt Informar resolução',
-    ]);
+    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual([]);
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
+    expect(fixture.componentInstance.canRegisterResponse).toBe(true);
+    expect(fixture.componentInstance.canResolve).toBe(false);
   });
 
   it('does not show agency controls to an unrelated agency', () => {
@@ -120,8 +133,7 @@ describe('OccurrenceDetailPage actions', () => {
 
   it('shows moderator operations at the same URL', () => {
     expect(actionsFor('MODERATOR')).toEqual([
-      'account_balance Associar órgão',
-      'send Registrar encaminhamento',
+      'send Encaminhar por e-mail',
     ]);
   });
 

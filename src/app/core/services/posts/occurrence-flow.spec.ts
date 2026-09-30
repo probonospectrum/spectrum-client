@@ -24,6 +24,31 @@ describe('Occurrence lifecycle', () => {
     return service.createPost({ title: 'Buraco na rua', content: 'Buraco em frente à escola municipal.', authorCity: 'São Paulo - SP', mediaType: 'text', tags: [], category: 'INFRAESTRUTURA', importance: 'ALTA', location: { label: 'São Paulo - SP', address: 'Rua da Escola, 10' } }, citizen);
   }
 
+  it('persists edited routing data and new evidence through the API before updating the cache', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const post = { ...create(), id: '66f1c0de0000000000000001' };
+    localStorage.setItem('spectrum-mock-posts', JSON.stringify([post]));
+    const payload = { title: 'Novo título', content: 'Descrição atualizada', authorCity: post.authorCity, mediaType: 'text' as const, tags: [], category: 'LIMPEZA_URBANA' as const, location: { label: 'Rua B', cityName: 'São Paulo', stateCode: 'SP' } };
+    const result = firstValueFrom(service.updateOccurrence(post, payload, citizen, [{ type: 'IMAGE', url: 'https://example.com/evidence.jpg' }]));
+    const request = http.expectOne(`${API_BASE_URL}/post/${post.id}`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toMatchObject({ title: payload.title, category: payload.category, location: payload.location, evidences: [{ type: 'IMAGE' }] });
+    expect(service.findPostById(post.id)?.title).toBe(post.title);
+    request.flush({ ...post, _id: post.id, text: payload.content, description: payload.content, title: payload.title, category: payload.category });
+    expect((await result).title).toBe(payload.title);
+    expect(service.findPostById(post.id)?.title).toBe(payload.title);
+  });
+
+  it('records the response as pending review instead of trusting the supplied resolution code', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const post = { ...create(), id: '66f1c0de0000000000000001', status: 'ENCAMINHADA' as const };
+    const result = firstValueFrom(service.registerForwardingResponse(post, moderator, 'delivery', 'Serviço concluído', '02', 'PROTO-1'));
+    const request = http.expectOne(`${API_BASE_URL}/post/${post.id}/forward/response`);
+    expect(request.request.body).toMatchObject({ forwardingId: 'delivery', responseCode: '02', protocol: 'PROTO-1' });
+    request.flush({ ...post, _id: post.id, text: post.content, status: 'RESPOSTA_EM_APURACAO' });
+    expect((await result).status).toBe('RESPOSTA_EM_APURACAO');
+  });
+
   it('keeps local occurrences pending and never simulates delivery', async () => {
     const post = await firstValueFrom(service.confirmOccurrence(create(), citizen));
     expect(post.status).toBe('AGUARDANDO_ENCAMINHAMENTO');

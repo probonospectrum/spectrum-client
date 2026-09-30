@@ -148,7 +148,13 @@
     <!-- MENU LATERAL -->
     <aside class="social-sidebar" aria-label="Navegacao principal">
 
-      <nav class="social-nav">
+      <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'">
+        @if (user?.occurrenceRole === 'MODERATOR') {
+          <a class="social-nav__item" routerLink="/moderacao" routerLinkActive="social-nav__item--active">
+            <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
+            Moderação
+          </a>
+        }
 
         <!-- INÍCIO -->
         <a

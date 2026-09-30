@@ -20,7 +20,6 @@ import {
   BrazilState,
   LocalityService,
 } from '../../../core/services/locality/locality.service';
-import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import {
   CreateOccurrenceEvidencePayload,
   OccurrenceCategory,
@@ -47,7 +46,6 @@ interface SelectedEvidence {
 export class CreatePostModal implements OnChanges {
   private readonly postService = inject(PostService);
   private readonly localityService = inject(LocalityService);
-  private readonly mockLoadingService = inject(MockLoadingService);
   private readonly destroyRef = inject(DestroyRef);
 
   @Input() user: LoggedUser | null = null;
@@ -322,9 +320,9 @@ export class CreatePostModal implements OnChanges {
     };
 
     this.isPublishing.set(true);
-    this.mockLoadingService
-      .load(() => this.postService.updatePost(this.editingPost!.id, payload, this.user))
+    this.uploadEvidenceFiles()
       .pipe(
+        switchMap(evidences => this.postService.updateOccurrence(this.editingPost!, payload, this.user, evidences)),
         finalize(() => this.isPublishing.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )

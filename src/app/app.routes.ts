@@ -1,8 +1,13 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, moderatorGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  {
+    path: 'moderacao',
+    loadComponent: () => import('./features/moderation/moderation-page').then(m => m.ModerationPage),
+    canActivate: [authGuard, moderatorGuard],
+  },
 
   {
     path: '',

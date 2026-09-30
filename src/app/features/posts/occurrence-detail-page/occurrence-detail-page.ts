@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, defer, finalize, forkJoin, switchMap } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
@@ -17,10 +17,12 @@ import {
 } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
+import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
+  | 'response'
   | 'evidence'
   | 'agency'
   | 'forward'
@@ -34,12 +36,13 @@ type ActionPanel =
 
 @Component({
   selector: 'app-occurrence-detail-page',
-  imports: [CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator],
+  imports: [CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell],
   templateUrl: './occurrence-detail-page.html',
   styleUrl: './occurrence-detail-page.scss',
 })
 export class OccurrenceDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly destroyRef = inject(DestroyRef);
@@ -64,6 +67,11 @@ export class OccurrenceDetailPage implements OnInit {
   forwardingChannel: OccurrenceForwardingChannel = 'EMAIL';
   registeredAgencies: { _id: string; name: string; emails: string[] }[] = [];
   responseCode = '02';
+  receivedResponseCode = '';
+  responseMessage = '';
+  responseProtocol = '';
+  agenciesLoading = false;
+  agenciesError = '';
   forwardingContent = '';
   forwardingProtocol = '';
   forwardingDeliveryConfirmed = false;
@@ -80,10 +88,55 @@ export class OccurrenceDetailPage implements OnInit {
     this.currentOccurrenceId = id ?? '';
 
     this.loadOccurrence();
-    if (this.isModerator) this.postService.getRegisteredAgencies().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    if (this.isModerator) this.loadAgencies();
+  }
+
+  loadAgencies(): void {
+    this.agenciesLoading = true;
+    this.agenciesError = '';
+    this.postService.getRegisteredAgencies().pipe(finalize(() => this.agenciesLoading = false), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: agencies => this.registeredAgencies = agencies,
-      error: error => this.errorMessage = this.getErrorMessage(error),
+      error: error => this.agenciesError = this.getErrorMessage(error),
     });
+  }
+
+  logout(): void { this.userService.logout(); void this.router.navigate(['/login']); }
+
+  onOccurrenceUpdated(post: SpectrumPost): void { this.afterAction(post, 'Alterações salvas. O encaminhamento usará as informações atualizadas.'); }
+
+  get canEdit(): boolean { return !!this.occurrence && this.postService.canModifyPost(this.occurrence, this.user); }
+
+  get canRegisterResponse(): boolean {
+    return (this.isModerator || this.isResponsibleAgencyForOccurrence) && !!this.latestForwarding &&
+      ['ENCAMINHADA', 'EM_RESOLUCAO', 'RESPOSTA_EM_APURACAO', 'FALHA_NO_ENCAMINHAMENTO'].includes(this.occurrence?.status ?? '');
+  }
+
+  submitResponse(): void {
+    if (!this.occurrence || !this.canRegisterResponse || !this.responseMessage.trim()) {
+      this.errorMessage = 'Informe a mensagem recebida do órgão.';
+      return;
+    }
+    this.runAction(() => this.postService.registerForwardingResponse(this.occurrence!, this.user, this.latestForwarding!.id,
+      this.responseMessage.trim(), this.receivedResponseCode, this.responseProtocol), 'Resposta registrada e disponível para análise da moderação.');
+  }
+
+  get nextStep(): string {
+    const messages: Record<string, string> = {
+      AGUARDANDO_ENCAMINHAMENTO: 'Após os 15 minutos de edição, o sistema buscará o órgão responsável e enviará a ocorrência.',
+      EM_ANALISE_DE_COMPETENCIA: 'O sistema está conferindo a localização e a categoria para identificar o órgão responsável.',
+      ENCAMINHADA: 'Aguardamos a resposta do órgão. Se não houver retorno em 15 dias, o sistema fará um único reenvio.',
+      FALHA_NO_ENCAMINHAMENTO: 'O envio não foi concluído. A moderação verificará o contato e a tentativa registrada.',
+      RESPOSTA_EM_APURACAO: 'A resposta foi recebida. A moderação verificará as informações antes de atualizar a situação.',
+      EM_RESOLUCAO: 'O órgão informou que está trabalhando na solução. Novas respostas serão avaliadas pela moderação.',
+      REJEITADA: 'A ocorrência foi rejeitada pelo órgão e está disponível para reavaliação da moderação.',
+      RESOLVIDA: 'A resolução foi validada pela moderação. Se o problema persistir, você pode registrar uma contestação.',
+    };
+    return this.moderationLabel ? `${this.moderationLabel}. A moderação verificará a ocorrência para dar continuidade ao acompanhamento.` :
+      messages[this.occurrence?.status ?? ''] || 'A comunidade pode contribuir com evidências. Todas as atualizações ficam registradas no histórico.';
+  }
+
+  evidenceUrl(evidence: OccurrenceEvidence): string | null {
+    return evidence.url && /^https?:\/\//i.test(evidence.url) ? evidence.url : null;
   }
 
   loadOccurrence(): void {
@@ -194,12 +247,12 @@ export class OccurrenceDetailPage implements OnInit {
   get canShowAgencyActions(): boolean {
     return (
       this.isResponsibleAgencyForOccurrence &&
-      (this.canAssumeResponsibility || this.canStartAnalysis || this.canInformResolution)
+      (this.canRegisterResponse || this.canInformResolution)
     );
   }
 
   get canShowModeratorActions(): boolean {
-    return this.canAssociateAgency || this.canForward || this.canRegisterForwardingFailure;
+    return this.canForward || this.canRegisterResponse;
   }
 
   get hasAvailableActions(): boolean {
@@ -215,11 +268,11 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canInformResolution(): boolean {
-    if (!this.isCommunityUser && !this.isResponsibleAgencyForOccurrence) {
+    if (!this.isCommunityUser) {
       return false;
     }
 
-    return ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA'].includes(
+    return ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA'].includes(
       this.occurrence?.status ?? '',
     );
   }
@@ -378,7 +431,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitForwarding(): void {
-    if (!this.occurrence || !this.canForward || !this.agencyId) {
+    if (!this.occurrence || !this.canForward || !this.agencyId || !this.agencyEmail || !this.registeredContacts.includes(this.agencyEmail)) {
       this.errorMessage = 'Selecione um órgão cadastrado e aguarde o período de edição.';
       return;
     }
@@ -711,6 +764,9 @@ export class OccurrenceDetailPage implements OnInit {
     this.successMessage = message;
     this.errorMessage = '';
     this.actionPanel = null;
+    this.responseMessage = '';
+    this.responseProtocol = '';
+    this.receivedResponseCode = '';
     this.evidenceFile = null;
     this.evidenceDescription = '';
     this.forwardingDeliveryConfirmed = false;

@@ -754,6 +754,7 @@
 
   .social-nav {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    &.social-nav--moderator { grid-template-columns: repeat(6, minmax(0, 1fr)); }
     gap: 2px;
     padding: 6px;
     border-radius: 18px;
