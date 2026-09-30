@@ -2,10 +2,13 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   DestroyRef,
+  ElementRef,
   HostListener,
   OnInit,
+  afterNextRender,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -82,9 +85,42 @@ export class PostsPage implements OnInit {
     this.selectedCategory.set('');
   }
 
+  private readonly categoryList = viewChild<ElementRef<HTMLElement>>('categoryList');
+  readonly canScrollCategoriesBack = signal(false);
+  readonly canScrollCategoriesForward = signal(false);
+  readonly loopCategories = signal(false);
+
+  constructor() {
+    afterNextRender(() => {
+      const list = this.categoryList()?.nativeElement;
+      if (!list) return;
+
+      const observer = new ResizeObserver(() => this.updateCategoryScroll(list));
+      observer.observe(list);
+      for (const category of Array.from(list.children)) observer.observe(category);
+      this.updateCategoryScroll(list);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
+
+  updateCategoryScroll(list: HTMLElement): void {
+    this.loopCategories.set(window.matchMedia('(max-width: 780px)').matches);
+    const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth);
+    this.canScrollCategoriesBack.set(list.scrollLeft > 1);
+    this.canScrollCategoriesForward.set(list.scrollLeft < maxScroll - 1);
+  }
+
   scrollCategories(list: HTMLElement, direction: -1 | 1): void {
-    list.scrollBy({
-      left: direction * list.clientWidth,
+    const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth);
+    let target = Math.max(0, Math.min(maxScroll, list.scrollLeft + direction * list.clientWidth));
+    if (this.loopCategories() && maxScroll > 1) {
+      if (direction === 1 && list.scrollLeft >= maxScroll - 1) target = 0;
+      if (direction === -1 && list.scrollLeft <= 1) target = maxScroll;
+    }
+    if (Math.abs(target - list.scrollLeft) <= 1) return;
+
+    list.scrollTo({
+      left: target,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
   }

@@ -309,7 +309,8 @@
 .feed-section-heading > span { color: var(--spectrum-text-muted); font-size: 11px; }
 .feed-categories__carousel { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; align-items: center; gap: 6px; }
 .feed-categories__arrow { display: grid; place-items: center; width: 36px; min-height: 44px; padding: 0; border: 1px solid var(--spectrum-border); border-radius: 12px; background: var(--spectrum-surface); color: var(--spectrum-primary-700); cursor: pointer; }
-.feed-categories__arrow:hover { background: var(--spectrum-accent-soft); border-color: var(--spectrum-primary-600); }
+.feed-categories__arrow:hover:not(:disabled) { background: var(--spectrum-accent-soft); border-color: var(--spectrum-primary-600); }
+.feed-categories__arrow:disabled { opacity: .4; cursor: default; }
 .feed-categories__arrow:focus-visible, .feed-categories__list button:focus-visible { outline: 2px solid var(--spectrum-primary-600); outline-offset: 2px; }
 .feed-categories__list { display: flex; min-width: 0; gap: 8px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
 .feed-categories__list::-webkit-scrollbar { display: none; }
