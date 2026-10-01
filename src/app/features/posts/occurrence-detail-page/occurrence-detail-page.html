@@ -1,7 +1,8 @@
-<main class="occurrence-detail">
+<app-social-shell #shell [user]="user" [showContentHeader]="false" [wideContent]="true" (logout)="logout()" (postUpdated)="onOccurrenceUpdated($event)">
+<div class="occurrence-detail">
   <a class="occurrence-detail__back" routerLink="/publicacoes">
     <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-    Voltar
+    Voltar para publicações
   </a>
 
   @if (isLoading()) {
@@ -11,31 +12,43 @@
   } @else if (occurrence) {
     <article class="occurrence-detail__hero">
       <div>
+        <p class="occurrence-detail__eyebrow">NOSSA CIDADE, EM ACOMPANHAMENTO</p>
         <div class="occurrence-detail__hero-actions">
           <span class="occurrence-detail__status" [attr.data-status]="occurrence.status">
-            {{ formatStatus() }}
+            {{ statusLabel() }}
           </span>
           <span class="occurrence-detail__status">Importância {{ formatImportance() }}</span>
           <span class="occurrence-detail__status">{{ formatCategory() }}</span>
-          <button type="button" (click)="shareOccurrence()">
+          @if (canEdit) {
+            <button type="button" class="occurrence-detail__secondary" (click)="shell.openEditPost(occurrence)"><span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar ocorrência</button>
+          }
+          <button type="button" class="occurrence-detail__secondary" (click)="shareOccurrence()">
             <span class="material-symbols-outlined" aria-hidden="true">ios_share</span>
             Compartilhar
           </button>
         </div>
         <h1>{{ occurrence.title }}</h1>
-        <p>{{ occurrence.content }}</p>
+        <p class="occurrence-detail__description">{{ occurrence.content }}</p>
+        <div class="occurrence-detail__byline">
+          <span class="occurrence-detail__avatar" aria-hidden="true">{{ occurrence.authorInitial }}</span>
+          <span><strong>{{ occurrence.authorName }}</strong><small>Publicada em {{ formatDate(occurrence.createdAt) }}</small></span>
+          <span class="occurrence-detail__place"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ occurrence.location?.cityName || occurrence.authorCity }}</span>
+        </div>
       </div>
     </article>
 
-    <section class="occurrence-detail__section" aria-label="Etapas da ocorrência">
-    <span class="community-hero__eyebrow"><span aria-hidden="true"></span> STATUS DA OCORRÊNCIA</span>
+    <section class="occurrence-detail__section occurrence-detail__progress" aria-label="Etapas da ocorrência">
+      <div class="occurrence-detail__section-head"><div><p class="occurrence-detail__eyebrow">PASSO A PASSO</p><h2>Acompanhe a evolução</h2></div>
+        <button class="occurrence-detail__text-button" type="button" (click)="loadOccurrence()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>Atualizar</button>
+      </div>
       <ol class="occurrence-detail__steps">
-        @for (stage of ['Aberta', 'Em andamento', 'Fechada']; track stage) {
-          <li [attr.aria-current]="formatStatus() === stage ? 'step' : null">{{ stage }}</li>
+        @for (stage of ['Aberta', 'Em andamento', 'Fechada']; track stage; let index = $index) {
+          <li [attr.aria-current]="formatStatus() === stage ? 'step' : null" [class.is-complete]="formatStatus() === 'Fechada' || (formatStatus() === 'Em andamento' && index === 0)"><span>{{ stage }}</span><small>{{ ['Relato registrado', 'Encaminhamento e análise', 'Resolução validada'][index] }}</small></li>
         }
       </ol>
-      <strong>{{ statusDetail }}</strong>
-      <p>Confirmações da comunidade ajudam a documentar o problema. Informar uma solução não fecha a ocorrência: um perfil autorizado precisa verificar o resultado. Se o problema persistir após o fechamento, a comunidade pode contestar e reabrir o acompanhamento.</p>
+      <div class="occurrence-detail__next-step"><span class="material-symbols-outlined" aria-hidden="true">{{ occurrence.status === 'RESOLVIDA' ? 'task_alt' : 'update' }}</span><div><strong>{{ statusDetail }}</strong><p>{{ nextStep }}</p>
+      @if (occurrence.forwardingDueAt && !moderationLabel) { <small>Próxima verificação a partir de {{ formatDate(occurrence.forwardingDueAt) }}</small> }
+      </div></div>
     </section>
 
     @if (successMessage) {
@@ -47,7 +60,7 @@
 
     <section class="occurrence-detail__grid">
       <section class="occurrence-detail__section">
-        <h2>Situação atual</h2>
+        <h2><span class="material-symbols-outlined" aria-hidden="true">assignment</span>Situação atual</h2>
         <dl class="occurrence-detail__facts">
           <div><dt>Status</dt><dd>{{ statusLabel() }}</dd></div>
           <div><dt>Órgão responsável</dt><dd>{{ responsibleAgencyLabel }}</dd></div>
@@ -58,7 +71,7 @@
       </section>
 
       <section class="occurrence-detail__section">
-        <h2>Localização</h2>
+        <h2><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Localização</h2>
         <dl class="occurrence-detail__facts">
           <div><dt>Cidade</dt><dd>{{ occurrence.location?.cityName || occurrence.location?.city || occurrence.authorCity }}</dd></div>
           <div><dt>Estado</dt><dd>{{ occurrence.location?.stateCode || occurrence.location?.state || 'Não informado' }}</dd></div>
@@ -75,7 +88,7 @@
 
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head">
-        <h2>Ações Disponíveis</h2>
+        <h2>Como você pode contribuir</h2>
         <span>{{ confirmationCount }} confirmações comunitárias</span>
       </div>
 
@@ -112,42 +125,19 @@
           }
 
           @if (canShowAgencyActions) {
-            <div class="occurrence-detail__action-group">
-              <span>Órgão responsável</span>
-              @if (canAssumeResponsibility) {
-                <button type="button" [disabled]="isSubmitting()" (click)="assumeResponsibility()">
-                  <span class="material-symbols-outlined" aria-hidden="true">assignment_turned_in</span>
-                  Assumir responsabilidade
-                </button>
-              }
-              @if (canStartAnalysis) {
-                <button type="button" [disabled]="isSubmitting()" (click)="openPanel('analysis')">
-                  <span class="material-symbols-outlined" aria-hidden="true">manage_search</span>
-                  Iniciar análise
-                </button>
-              }
-              @if (canInformResolution) {
-                <button type="button" (click)="openPanel('resolution')">
-                  <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
-                  Informar resolução
-                </button>
-              }
+            <div class="occurrence-detail__action-group"><span>Órgão responsável</span>
+              @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>Registrar resposta</button> }
             </div>
           }
 
           @if (canShowModeratorActions) {
             <div class="occurrence-detail__action-group">
               <span>Moderação</span>
-              @if (canAssociateAgency) {
-                <button type="button" (click)="openPanel('agency')">
-                  <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-                  Associar órgão
-                </button>
-              }
+              @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>Registrar resposta</button> }
               @if (canForward) {
                 <button type="button" (click)="openPanel('forward')">
                   <span class="material-symbols-outlined" aria-hidden="true">send</span>
-                  Registrar encaminhamento
+                  Encaminhar por e-mail
                 </button>
               }
               @if (canRegisterForwardingFailure) {
@@ -165,7 +155,7 @@
               @if (canResolve) {
                 <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
                   <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-                  Confirmar resolução
+                  Classificar resposta
                 </button>
               }
               @if (canContest) {
@@ -189,7 +179,7 @@
 
       @if (actionPanel) {
         <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
-          <fieldset class="occurrence-detail__action-fields" [class.occurrence-detail__action-fields--inline-actions]="actionPanel === 'evidence' || actionPanel === 'agency' || actionPanel === 'resolution'" [disabled]="isSubmitting()">
+          <fieldset class="occurrence-detail__action-fields"  [disabled]="isSubmitting()">
           @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest') {
             <div class="occurrence-detail__upload">
               <div class="occurrence-detail__upload-info">
@@ -223,44 +213,36 @@
             }
           }
 
-          @if (actionPanel === 'agency' || actionPanel === 'forward' || actionPanel === 'forwardFailure') {
-            <label>
-              <span>Identificador do órgão</span>
-              <input type="text" [(ngModel)]="agencyId" name="agencyId" />
-            </label>
-            <label>
-              <span>Órgão responsável</span>
-              <input type="text" [(ngModel)]="agencyName" name="agencyName" placeholder="Secretaria Municipal responsável" />
-            </label>
+          @if (actionPanel === 'response') {
+            <div class="occurrence-detail__form-heading"><h3>Resposta do órgão</h3><p>Registre a mensagem recebida. A situação só será classificada após a análise da moderação.</p></div>
+            <label><span>Código informado pelo órgão</span><select [(ngModel)]="receivedResponseCode" name="receivedResponseCode"><option value="">Não informado</option><option value="01">01 · Ocorrência rejeitada</option><option value="02">02 · Ocorrência resolvida</option><option value="03">03 · Ocorrência em resolução</option></select></label>
+            <label><span>Protocolo (opcional)</span><input type="text" maxlength="120" [(ngModel)]="responseProtocol" name="responseProtocol" /></label>
+            <label><span>Mensagem recebida</span><textarea [(ngModel)]="responseMessage" name="responseMessage" maxlength="4000" placeholder="Transcreva a resposta recebida do órgão responsável."></textarea></label>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !responseMessage.trim()" (click)="submitResponse()">{{ isSubmitting() ? 'Registrando…' : 'Registrar para análise' }}</button>
           }
-
-          @if (actionPanel === 'forward' || actionPanel === 'forwardFailure') {
-            <label>
-              <span>Canal</span>
-              <select [(ngModel)]="forwardingChannel" name="forwardingChannel">
-                <option value="WEBSITE">Site</option>
-                <option value="PHONE">Telefone</option>
-                <option value="IN_PERSON">Atendimento presencial</option>
-                <option value="OTHER">Outro</option>
+          @if ((actionPanel === 'agency' && isModerator) || actionPanel === 'forward') {
+            <div class="occurrence-detail__form-heading"><h3>Encaminhar ao órgão responsável</h3><p>Selecione o órgão e um de seus contatos cadastrados. O documento será gerado automaticamente.</p></div>
+            @if (agenciesLoading) { <p class="occurrence-detail__form-hint" role="status">Carregando órgãos cadastrados…</p> }
+            @if (agenciesError) { <div class="occurrence-detail__form-hint" role="alert"><p>{{ agenciesError }}</p><button type="button" class="occurrence-detail__secondary" (click)="loadAgencies()">Tentar novamente</button></div> }
+            @if (!agenciesLoading && !agenciesError && !registeredAgencies.length) { <p class="occurrence-detail__form-hint">Nenhum órgão cadastrado disponível. A ocorrência continuará aguardando a moderação.</p> }
+            <label><span>Órgão cadastrado</span>
+              <select [disabled]="agenciesLoading || !registeredAgencies.length" [(ngModel)]="agencyId" name="agencyId" (ngModelChange)="selectRegisteredAgency()">
+                <option value="">Selecione um órgão</option>
+                @for (agency of registeredAgencies; track agency._id) { <option [value]="agency._id">{{ agency.name }}</option> }
               </select>
             </label>
-            <label>
-              <span>Conteúdo enviado</span>
-              <textarea [(ngModel)]="forwardingContent" name="forwardingContent"></textarea>
+            <label><span>E-mail cadastrado</span>
+              <select [disabled]="!registeredContacts.length" [(ngModel)]="agencyEmail" name="agencyEmail"><option value="">Selecione um e-mail</option>
+                @for (email of registeredContacts; track email) { <option [value]="email">{{ email }}</option> }
+              </select>
             </label>
+            <p class="occurrence-detail__form-hint">O status será atualizado após a confirmação do envio. Caso o envio falhe, a tentativa ficará registrada para análise.</p>
           }
-
+          @if (actionPanel === 'agency' && !isModerator) {
+            <label><span>Órgão sugerido</span><input type="text" [(ngModel)]="agencyName" name="agencyName" /></label>
+          }
           @if (actionPanel === 'forward') {
-            <p>Registre uma ação já realizada. Informe o protocolo, quando disponível. Este registro não confirma recebimento nem execução do serviço pelo órgão.</p>
-              <label class="occurrence-detail__confirmation">
-                <input type="checkbox" [(ngModel)]="forwardingDeliveryConfirmed" name="forwardingDeliveryConfirmed" />
-                <span>O encaminhamento por este canal foi realizado</span>
-              </label>
-            <label>
-              <span>Protocolo, se existir</span>
-              <input type="text" [(ngModel)]="forwardingProtocol" name="forwardingProtocol" />
-            </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitForwarding()">Salvar registro</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || agenciesLoading || !agencyId || !agencyEmail" (click)="submitForwarding()">{{ isSubmitting() ? 'Enviando…' : 'Encaminhar por e-mail' }}</button>
           }
 
           @if (actionPanel === 'forwardFailure') {
@@ -299,11 +281,14 @@
           }
 
           @if (actionPanel === 'resolve') {
+            <label><span>Classificação após análise</span><select [(ngModel)]="responseCode" name="responseCode">
+              <option value="02">Ocorrência resolvida</option><option value="03">Ocorrência em resolução</option><option value="01">Ocorrência rejeitada</option>
+            </select></label>
             <label>
-              <span>Como a solução foi verificada? (mínimo de 20 caracteres)</span>
-              <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote"></textarea>
+              <span>Justificativa da análise (mínimo de 20 caracteres)</span>
+              <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote" maxlength="1000" placeholder="Explique como as informações do órgão foram verificadas."></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">Confirmar resolução</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">Classificar resposta</button>
           }
 
           @if (actionPanel === 'contest') {
@@ -321,15 +306,32 @@
             </label>
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitReopen()">Reabrir ocorrência</button>
           }
-          <button type="button" class="occurrence-detail__form-inline" (click)="openPanel(null)">Cancelar</button>
+          <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">Cancelar</button>
           </fieldset>
         </form>
       }
     </section>
 
 
+    <section class="occurrence-detail__section" aria-labelledby="evidence-title">
+      <div class="occurrence-detail__section-head"><h2 id="evidence-title">Evidências do relato</h2><span>{{ occurrence.evidences.length }} {{ occurrence.evidences.length === 1 ? 'anexo' : 'anexos' }}</span></div>
+      @if (occurrence.evidences.length) {
+        <div class="occurrence-detail__evidence-list">
+          @for (evidence of occurrence.evidences; track evidence.id) {
+            <article class="occurrence-detail__attachment">
+              @if (evidenceUrl(evidence); as url) {
+                @if (evidence.type === 'IMAGE') { <a [href]="url" target="_blank" rel="noopener noreferrer"><img [src]="url" [alt]="evidence.description || 'Evidência da ocorrência'" loading="lazy" /></a> }
+                @else if (evidence.type === 'VIDEO') { <video [src]="url" controls preload="metadata" [attr.aria-label]="evidence.description || 'Vídeo da ocorrência'"></video> }
+                <a class="occurrence-detail__attachment-caption" [href]="url" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined" aria-hidden="true">{{ evidence.type === 'IMAGE' ? 'image' : 'attach_file' }}</span><span>{{ evidence.description || 'Abrir evidência' }}</span><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span></a>
+              } @else { <p class="occurrence-detail__attachment-caption">{{ evidence.description || 'Evidência registrada sem arquivo' }}</p> }
+            </article>
+          }
+        </div>
+      } @else { <div class="occurrence-detail__empty-state"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span><div><strong>Ainda não há evidências</strong><p>Fotos e vídeos ajudam a documentar a situação e dão contexto ao órgão responsável.</p></div></div> }
+    </section>
+
     <section class="occurrence-detail__section">
-      <h2>Histórico da ocorrência</h2>
+      <div class="occurrence-detail__section-head"><h2>Histórico da ocorrência</h2><span>{{ timeline.length }} {{ timeline.length === 1 ? 'atualização' : 'atualizações' }}</span></div>
       <ol class="occurrence-detail__timeline">
         @for (event of timeline; track event.id) {
           <li [attr.data-origin]="eventOriginClass(event)">
@@ -337,6 +339,10 @@
             <strong>{{ formatEvent(event.eventType) }}</strong>
             <small class="occurrence-detail__actor">{{ eventActorLine(event) }}</small>
             <p>{{ eventDescription(event) }}</p>
+            @if (isModerator && event.metadata?.['responseReceived']) {
+              <p>{{ event.metadata?.['responseReceived'] }}</p>
+              <small>Código informado pelo órgão: {{ event.metadata?.['responseCode'] || 'Não informado' }}</small>
+            }
             @if (event.previousStatus || event.newStatus) {
               <small>{{ statusLabel(event.previousStatus) }} → {{ statusLabel(event.newStatus) }}</small>
             }
@@ -344,8 +350,8 @@
               @if (evidences.length) {
                 <div class="occurrence-detail__timeline-evidences">
                   @for (evidence of evidences; track evidence.id) {
-                    <a>
-                      Escolher arquivo
+                    <a [href]="evidenceUrl(evidence)" target="_blank" rel="noopener noreferrer">
+                      Abrir evidência
                       <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
                       {{ evidence.description || 'Evidência anexada' }}
                     </a>
@@ -380,4 +386,6 @@
       <button type="button" (click)="loadOccurrence()">Tentar novamente</button>
     </section>
   }
-</main>
+</div>
+
+</app-social-shell>

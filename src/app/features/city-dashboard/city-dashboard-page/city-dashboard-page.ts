@@ -335,6 +335,12 @@ export class CityDashboardPage implements OnInit {
 
   private statusColor(status: OccurrenceStatus): string {
     const colors: Record<OccurrenceStatus, string> = {
+      AGUARDANDO_ENCAMINHAMENTO: '#c9772b',
+      EM_ANALISE_DE_COMPETENCIA: '#6759a7',
+      FALHA_NO_ENCAMINHAMENTO: '#b64d45',
+      RESPOSTA_EM_APURACAO: '#6759a7',
+      EM_RESOLUCAO: '#27877f',
+      REJEITADA: '#b64d45',
       ABERTA: '#c9772b',
       ENCAMINHADA: '#347da8',
       EM_ANALISE: '#6759a7',

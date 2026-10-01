@@ -12,3 +12,10 @@ export const authGuard: CanActivateFn = () => {
 
   return router.createUrlTree(['/login']);
 };
+
+export const moderatorGuard: CanActivateFn = () => {
+  const user = inject(UserService);
+  const router = inject(Router);
+  return user.getCurrentUser()?.occurrenceRole === 'MODERATOR'
+    ? true : router.createUrlTree([user.isLoggedIn() ? '/publicacoes' : '/login']);
+};
