@@ -5,13 +5,16 @@
       type="text"
       placeholder="Adicionar comentário..."
       [(ngModel)]="newComment"
+      [disabled]="saving"
       (keyup.enter)="addComment()"
     />
-    <button type="button" aria-label="Enviar comentario" (click)="addComment()">
+    <button type="button" aria-label="Enviar comentario" [disabled]="saving || !newComment.trim()" (click)="addComment()">
       <span class="material-symbols-outlined" aria-hidden="true">send</span>
     </button>
   </div>
 
+  @if (error) { <p role="alert">{{ error }}</p> }
+  @if (loading) { <p role="status">Carregando comentários...</p> }
   @if (comments.length) {
     <ul class="comment-section__list">
       @for (comment of visibleComments; track comment.id) {
@@ -71,7 +74,7 @@
         {{ showAll ? 'Ver menos comentários' : 'Ver mais comentários (' + remainingCount + ')' }}
       </button>
     }
-  } @else {
+  } @else if (!loading && !error) {
     <p class="comment-section__empty">Seja o primeiro a comentar.</p>
   }
 </section>

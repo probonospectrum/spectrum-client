@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { SettingsPage } from './settings-page';
+import { DEFAULT_SETTINGS } from '../../../core/services/account/settings.service';
 import { API_BASE_URL } from '../../../core/constants/api-routes';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 
@@ -19,8 +20,13 @@ describe('SettingsPage', () => {
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
+    TestBed.inject(UserService).saveSession({ token: 'test', message: '', user: {
+      _id: 'ana', name: 'Ana', nickname: 'ana', email: 'ana@example.com', birthDate: '2000-01-01',
+    } });
     fixture = TestBed.createComponent(SettingsPage);
     component = fixture.componentInstance;
+    fixture.detectChanges();
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/settings').flush(DEFAULT_SETTINGS);
     fixture.detectChanges();
   });
 
@@ -29,98 +35,99 @@ describe('SettingsPage', () => {
     TestBed.inject(HttpTestingController).verify();
   });
 
-  it('should open the correct dialog when clicking account and security rows', () => {
+  it('opens real account controls and omits simulated security controls', () => {
     clickButton('Alterar nome');
     expect(component.activeDialog).toBe('name');
-
     component.closeDialog();
     clickButton('Username');
     expect(component.activeDialog).toBe('username');
-
-    component.closeDialog();
-    clickButton('E-mail principal');
-    expect(component.activeDialog).toBe('email');
-
     component.closeDialog();
     clickButton('Alterar senha');
     expect(component.activeDialog).toBe('password');
-
-    component.closeDialog();
-    clickButton('Sessões ativas');
-    expect(component.activeDialog).toBe('sessions');
+    expect(fixture.nativeElement.textContent).not.toContain('Sessões ativas');
+    expect(fixture.nativeElement.textContent).not.toContain('dois fatores');
   });
 
-  it('should cancel without saving and save mock account changes locally', () => {
+  it('keeps cancelled changes and only confirms a name after the server saves it', async () => {
     component.openDialog('name');
-    component.nameDraft = 'Nome Temporário';
+    component.nameDraft = 'Temporario';
     component.closeDialog();
-    expect(component.demoAccount.name).toBe('Samyra Fernandes');
-
+    expect(component.account.name).toBe('Ana');
     component.openDialog('name');
-    component.nameDraft = 'Samire Fernandes';
-    component.saveName();
-
-    expect(component.demoAccount.name).toBe('Samire Fernandes');
-    expect(component.activeDialog).toBeNull();
+    component.nameDraft = 'Ana Silva';
+    const saving = component.saveName();
+    expect(component.account.name).toBe('Ana');
+    const request = TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/account');
+    expect(request.request.body).toEqual({ name: 'Ana Silva' });
+    request.flush({ ...TestBed.inject(UserService).getCurrentUser(), name: 'Ana Silva' });
+    await saving;
+    expect(component.account.name).toBe('Ana Silva');
+    expect(TestBed.inject(UserService).getCurrentUser()?.name).toBe('Ana Silva');
   });
 
-  it('should validate and save mock username changes', () => {
+  it('validates usernames and reports conflicts returned by the server', async () => {
     component.openDialog('username');
-    component.usernameDraft = '@samire fernandes';
-    component.saveUsername();
+    component.usernameDraft = '@ana silva';
+    await component.saveUsername();
     expect(component.formError).toContain('não pode conter espaços');
-
-    component.usernameDraft = '@samire.fernandes';
-    component.onUsernameInput();
-    component.usernameStatus = 'available';
-    component.saveUsername();
-
-    expect(component.demoAccount.username).toBe('samire.fernandes');
+    component.usernameDraft = '@ana.silva';
+    const saving = component.saveUsername();
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/account')
+      .flush({}, { status: 400, statusText: 'Username in use' });
+    await saving;
+    expect(component.account.username).toBe('ana');
+    expect(component.formError).toContain('em uso');
+    expect(component.activeDialog).toBe('username');
   });
 
-  it('should keep email changes pending and remove mock sessions visually', () => {
-    component.openDialog('email');
-    component.emailDraft = 'novo.email@example.com';
-    component.saveEmail();
-    expect(component.demoAccount.pendingEmail).toBe('novo.email@example.com');
-
-    component.endSession('android-mobile');
-    expect(component.sessions.map((session) => session.id)).toEqual(['current-windows']);
-  });
-
-  it('should toggle mock preferences and complete two factor demo flow', () => {
-    component.setSetting('privateAccount', true);
-    component.setSetting('compactMode', true);
+  it('saves preferences to the authenticated account and retains other preferences', async () => {
+    const saving = component.setSetting('privateAccount', true);
+    expect(component.settings.privateAccount).toBe(false);
+    const request = TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/settings');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ privateAccount: true });
+    request.flush({ ...DEFAULT_SETTINGS, privateAccount: true, compactMode: true });
+    await saving;
     expect(component.settings.privateAccount).toBe(true);
     expect(component.settings.compactMode).toBe(true);
-
-    component.handleTwoFactorToggle(true);
-    expect(component.activeDialog).toBe('twoFactorEnable');
-
-    component.startTwoFactorVerification();
-    component.twoFactorCode = '123456';
-    component.confirmTwoFactorCode();
-
-    expect(component.settings.twoFactorAuth).toBe(true);
-    expect(component.twoFactorStep).toBe(3);
-
-    component.handleTwoFactorToggle(false);
-    component.disableTwoFactor();
-    expect(component.settings.twoFactorAuth).toBe(false);
+    expect(component.toastMessage).toContain('privada');
   });
 
-  it('should not send HTTP requests for settings actions', () => {
-    component.openDialog('name');
-    component.nameDraft = 'Samire Fernandes';
-    component.saveName();
-    component.setSetting('language', 'en-US');
-    component.endOtherSessions();
-    component.handleTwoFactorToggle(true);
-    component.startTwoFactorVerification();
-    component.twoFactorCode = '123456';
-    component.confirmTwoFactorCode();
+  it('keeps the last saved preference and allows retry after a server failure', async () => {
+    const saving = component.setSetting('news', true);
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/settings')
+      .flush({}, { status: 503, statusText: 'Unavailable' });
+    await saving;
+    expect(component.settings.news).toBe(false);
+    expect(component.settingsError()).toBeTruthy();
+    expect(component.settingsSaving()).toBe(false);
+    expect(component.toastMessage).toBe('');
+  });
 
-    TestBed.inject(HttpTestingController).expectNone(() => true);
+  it('keeps the checkbox at its persisted value when the server rejects a change', async () => {
+    const input = fixture.nativeElement.querySelector('app-toggle-switch input') as HTMLInputElement;
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(input.checked).toBe(false);
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/settings')
+      .flush({}, { status: 503, statusText: 'Unavailable' });
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(input.checked).toBe(false);
+    expect(component.settings.privateAccount).toBe(false);
+  });
+
+  it('sends current and new passwords and only confirms a successful server response', async () => {
+    component.openDialog('password');
+    component.currentPassword = 'current-password';
+    component.newPassword = component.confirmPassword = 'new-password-2026';
+    const saving = component.savePassword();
+    const request = TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/password');
+    expect(request.request.body).toEqual({ currentPassword: 'current-password', newPassword: 'new-password-2026' });
+    request.flush({ message: 'ok' });
+    await saving;
+    expect(component.activeDialog).toBeNull();
+    expect(component.toastMessage).toContain('Senha alterada');
   });
 
   it('should discard the photo draft when cancelling', () => {
@@ -130,7 +137,7 @@ describe('SettingsPage', () => {
     component.closeDialog();
     expect(component.avatarDraft()).toBe('');
     expect(component.avatarUrl).toBe('');
-    expect(localStorage.length).toBe(0);
+    expect(TestBed.inject(UserService).getCurrentUser()?._id).toBe('ana');
   });
 
   it('should reject unsupported and oversized photos', () => {

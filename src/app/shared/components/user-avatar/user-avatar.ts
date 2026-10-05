@@ -12,9 +12,11 @@ export class UserAvatar {
   private readonly accountService = inject(AccountMockService);
   @Input() user: LoggedUser | null = null;
   @Input() name = '';
+  @Input() imageUrl = '';
   readonly failedUrl = signal('');
 
   get avatarUrl(): string {
+    if (this.imageUrl) return this.imageUrl;
     const currentUser = this.userService.currentUser();
     const user = this.user && this.user._id === currentUser?._id ? currentUser : this.user;
     return this.accountService.getAvatarUrl(user);
