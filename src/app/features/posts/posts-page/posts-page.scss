@@ -347,3 +347,20 @@
   .community-hero h1 { font-size: clamp(25px, 6vw, 31px); }
   .community-hero button { min-height: 44px; }
 }
+.feed-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+
+  button {
+    padding: 10px 18px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+.feed-posts { display: grid; gap: 18px; }
+.feed-posts--compact { gap: 8px; }

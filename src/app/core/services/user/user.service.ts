@@ -50,6 +50,20 @@ export interface UpdateAvatarResponse extends MessageResponse {
   avatarUrl: string;
 }
 
+export interface PublicProfileResponse {
+  _id: string;
+  name: string;
+  nickname: string;
+  avatarUrl?: string;
+  cityUser: string;
+  isVerified?: boolean;
+  createdAt?: string;
+  followingCount: number;
+  followersCount: number;
+  isFollowing: boolean;
+  canViewPosts: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -62,6 +76,30 @@ export class UserService {
   readonly token = computed(() => this.session()?.token ?? null);
 
   constructor(private readonly http: HttpClient) {}
+
+  getPublicProfile(nickname: string): Observable<PublicProfileResponse> {
+    return this.http.get<PublicProfileResponse>(`${this.apiUrl}/profile/${encodeURIComponent(nickname)}`);
+  }
+
+  followUser(targetId: string, follow: boolean): Observable<{ user: LoggedUser; isFollowing: boolean }> {
+    const userId = this.currentUser()?._id;
+    return this.http.patch<{ user: LoggedUser; isFollowing: boolean }>(`${this.apiUrl}/${userId}/${follow ? 'follow' : 'unfollow'}/${targetId}`, {}).pipe(
+      tap((response) => this.updateSessionUser(response.user)),
+    );
+  }
+
+  updateAccount(patch: { name?: string; nickname?: string }): Observable<LoggedUser> {
+    return this.http.patch<LoggedUser>(`${this.apiUrl}/me/account`, patch).pipe(tap((user) => this.updateSessionUser(user)));
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<MessageResponse> {
+    return this.http.patch<MessageResponse>(`${this.apiUrl}/me/password`, { currentPassword, newPassword });
+  }
+
+  private updateSessionUser(user: LoggedUser): void {
+    const session = this.session();
+    if (session?.user._id === user._id) this.saveSession({ ...session, user: { ...session.user, ...user } });
+  }
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http

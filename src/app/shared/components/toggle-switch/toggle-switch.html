@@ -2,6 +2,6 @@
   @if (label) {
     <span>{{ label }}</span>
   }
-  <input type="checkbox" [checked]="checked" (change)="checkedChange.emit($any($event.target).checked)" />
+  <input type="checkbox" [checked]="checked" [disabled]="disabled" (change)="change($event)" />
   <i aria-hidden="true"></i>
 </label>

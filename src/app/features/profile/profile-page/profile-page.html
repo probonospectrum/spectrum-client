@@ -16,6 +16,8 @@
         <span class="profile-skeleton__line"></span>
       </div>
     </section>
+  } @else if (profileError()) {
+    <p role="alert">{{ profileError() }}</p>
   } @else {
   <section class="profile-header">
     <div class="profile-header__cover">
@@ -27,7 +29,7 @@
     </div>
 
     <div class="profile-header__info">
-      <span class="profile-header__avatar"><app-user-avatar [user]="isOwnProfile() ? user : null" [name]="displayName" /></span>
+      <span class="profile-header__avatar"><app-user-avatar [user]="isOwnProfile() ? user : null" [imageUrl]="isOwnProfile() ? '' : publicProfile()?.avatarUrl || ''" [name]="displayName" /></span>
 
       <div class="profile-header__details">
         <div class="profile-header__name-row">
@@ -67,6 +69,7 @@
                 [class.profile-header__follow-btn--following]="isFollowing()"
                 type="button"
                 (click)="toggleFollow()"
+                [disabled]="followSaving()"
               >
                 {{ isFollowing() ? 'Seguindo' : 'Seguir' }}
               </button>
