@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { PostService } from './post.service';
+import { SpectrumPost } from './post.service';
+import { LoggedUser } from '../user/user.service';
 
 describe('Occurrence feed API', () => {
   let posts: PostService;
@@ -14,6 +16,32 @@ describe('Occurrence feed API', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+
+  it('persists reactions before updating counts and does not add the local reaction twice', () => {
+    const id = '66f1c0de0000000000000001';
+    const post = { id, likes: 4, dislikes: 1, liked: false, disliked: false, evidences: [], history: [], tags: [] } as unknown as SpectrumPost;
+    const user = { _id: '66f1c0de0000000000000002' } as LoggedUser;
+    let result: SpectrumPost | undefined;
+    posts.setPostReaction(post, user, 'LIKE').subscribe(value => result = value);
+    const request = http.expectOne(API_BASE_URL + '/like/post/' + id);
+    expect(request.request.method).toBe('PUT');
+    expect(result).toBeUndefined();
+    request.flush({ likes: 5, dislikes: 1, liked: true, disliked: false });
+    expect(result?.likes).toBe(5);
+    expect(posts.findPostById(id, user)?.likes).toBe(5);
+    expect(posts.findPostById(id, user)?.liked).toBe(true);
+  });
+
+  it('preserves the old reaction state when persistence fails', () => {
+    const id = '66f1c0de0000000000000001';
+    const post = { id, likes: 4, liked: false } as SpectrumPost;
+    let failed = false;
+    posts.setPostReaction(post, { _id: 'user' } as LoggedUser, 'LIKE').subscribe({ error: () => failed = true });
+    http.expectOne(API_BASE_URL + '/like/post/' + id).flush({}, { status: 503, statusText: 'Unavailable' });
+    expect(failed).toBe(true);
+    expect(post.liked).toBe(false);
+    expect(localStorage.getItem('spectrum-post-interactions')).toBeNull();
+  });
 
   it('shows the real author and occurrence history and passes the pagination cursor', () => {
     const id = '66f1c0de0000000000000001';

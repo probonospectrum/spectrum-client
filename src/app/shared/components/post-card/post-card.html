@@ -3,6 +3,7 @@
   [class.post-card--clickable]="canOpenOccurrence"
   (click)="openOccurrenceFromCard($event)"
 >
+  @if (reactionError) { <p role="alert">{{ reactionError }}</p> }
   <header class="post-card__header">
     <button
       type="button"

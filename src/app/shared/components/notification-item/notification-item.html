@@ -1,4 +1,4 @@
-<article class="notification" [class.notification--unread]="!notification.read" (click)="onOpen()">
+<article class="notification" [class.notification--unread]="!notification.read" (click)="onOpen()" tabindex="0" role="button" (keydown.enter)="onKeyboard($event)" (keydown.space)="onKeyboard($event)">
   @if (notification.actorAvatarUrl) {
     <img class="notification__avatar" [src]="notification.actorAvatarUrl" [alt]="displayName" />
   } @else {
@@ -15,6 +15,7 @@
       }
     </p>
     <p class="notification__description">{{ notification.description }}</p>
+    <small>{{ notification.dateLabel }}</small>
   </div>
 
   <button
