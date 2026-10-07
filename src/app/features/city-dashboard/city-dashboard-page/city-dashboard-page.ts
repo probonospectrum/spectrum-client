@@ -4,7 +4,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, of, Subscription } from 'rxjs';
 import {
   CityDashboardResponse,
   CityDashboardService,
@@ -13,6 +13,7 @@ import {
   DashboardNeighborhoodOption,
   DashboardOccurrenceListResponse,
   DashboardOptionsResponse,
+  DashboardStateComparison,
 } from '../../../core/services/city-dashboard/city-dashboard.service';
 import {
   OccurrenceCategory,
@@ -23,11 +24,7 @@ import {
 import { UserService } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
-import {
-  DashboardBarChart,
-  DashboardBarItem,
-} from '../dashboard-bar-chart/dashboard-bar-chart';
-import { DashboardLineChart } from '../dashboard-line-chart/dashboard-line-chart';
+import { DashboardBarChart, DashboardBarItem } from '../dashboard-bar-chart/dashboard-bar-chart';
 
 interface PeriodOption {
   value: string;
@@ -44,7 +41,6 @@ interface PeriodOption {
     SocialShell,
     LoadingIndicator,
     DashboardBarChart,
-    DashboardLineChart,
   ],
   templateUrl: './city-dashboard-page.html',
   styleUrl: './city-dashboard-page.scss',
@@ -72,6 +68,20 @@ export class CityDashboardPage implements OnInit {
   occurrences = signal<DashboardOccurrenceListResponse | null>(null);
   loading = signal(true);
   errorMessage = signal('');
+  readonly appliedFilters = signal<DashboardFilters>({});
+  private dashboardSubscription?: Subscription;
+
+  get hasStateSelection(): boolean {
+    return Boolean(this.appliedFilters().state);
+  }
+
+  get hasCitySelection(): boolean {
+    return Boolean(this.appliedFilters().cityId);
+  }
+
+  get stateComparisons(): DashboardStateComparison[] {
+    return this.dashboard()?.states ?? [];
+  }
 
   selectedState = '';
   selectedCityId = '';
@@ -89,26 +99,32 @@ export class CityDashboardPage implements OnInit {
       .getOptions()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (options) => this.options.set(options),
+        next: (options) => {
+          this.options.set(options);
+          if (this.selectedCityId && !this.selectedState) {
+            this.onCityChanged();
+            if (this.selectedState) void this.navigateWithFilters(this.currentPage);
+          }
+        },
         error: (error: unknown) => this.errorMessage.set(this.errorFor(error)),
       });
 
-    this.route.queryParamMap
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((params) => {
-        this.selectedState = params.get('state') ?? '';
-        this.selectedCityId = params.get('cityId') ?? '';
-        this.selectedNeighborhoodName = params.get('neighborhoodName') ?? '';
-        this.selectedCategory = (params.get('category') as OccurrenceCategory | null) ?? '';
-        this.selectedImportance =
-          (params.get('importance') as OccurrenceImportance | null) ?? '';
-        this.selectedStatus = (params.get('status') as OccurrenceStatus | null) ?? '';
-        this.customFrom = params.get('from') ?? '';
-        this.customTo = params.get('to') ?? '';
-        this.selectedPeriod = this.customFrom ? 'custom' : (params.get('period') ?? '30');
-        this.currentPage = Math.max(Number(params.get('page') ?? 1), 1);
-        this.loadDashboard();
-      });
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.selectedCityId = params.get('cityId') ?? '';
+      this.selectedState =
+        params.get('state') ??
+        this.options()?.cities.find((city) => city.id === this.selectedCityId)?.stateCode ??
+        '';
+      this.selectedNeighborhoodName = params.get('neighborhoodName') ?? '';
+      this.selectedCategory = (params.get('category') as OccurrenceCategory | null) ?? '';
+      this.selectedImportance = (params.get('importance') as OccurrenceImportance | null) ?? '';
+      this.selectedStatus = (params.get('status') as OccurrenceStatus | null) ?? '';
+      this.customFrom = params.get('from') ?? '';
+      this.customTo = params.get('to') ?? '';
+      this.selectedPeriod = this.customFrom ? 'custom' : (params.get('period') ?? '30');
+      this.currentPage = Math.max(Number(params.get('page') ?? 1), 1);
+      this.loadDashboard();
+    });
   }
 
   get availableCities(): DashboardCityOption[] {
@@ -127,16 +143,6 @@ export class CityDashboardPage implements OnInit {
     });
   }
 
-  get statusChartItems(): DashboardBarItem[] {
-    return (this.dashboard()?.statusDistribution ?? []).map((item) => ({
-      key: item.key,
-      label: this.statusLabel(item.key),
-      value: item.count,
-      detail: `${this.number(item.percentage)}% do total`,
-      color: this.statusColor(item.key),
-    }));
-  }
-
   get categoryChartItems(): DashboardBarItem[] {
     return (this.dashboard()?.categoryDistribution ?? []).map((item) => ({
       key: item.key,
@@ -146,33 +152,14 @@ export class CityDashboardPage implements OnInit {
     }));
   }
 
-  get importanceChartItems(): DashboardBarItem[] {
-    return (this.dashboard()?.importanceDistribution ?? []).map((item) => ({
-      key: item.key,
-      label: this.importanceLabel(item.key),
-      value: item.count,
-      detail: `${this.number(item.percentage)}% do total`,
-      color: this.importanceColor(item.key),
-    }));
-  }
-
-  get cityChartItems(): DashboardBarItem[] {
-    return (this.dashboard()?.cities ?? []).slice(0, 10).map((city) => ({
-      key: city.cityId,
-      label: `${city.city} - ${city.state}`,
-      value: city.total,
-      detail: `${city.resolved} resolvidas · ${city.open} abertas`,
-    }));
-  }
-
   onStateChanged(): void {
-    if (!this.availableCities.some((city) => city.id === this.selectedCityId)) {
-      this.selectedCityId = '';
-    }
+    this.selectedCityId = '';
     this.selectedNeighborhoodName = '';
   }
 
   onCityChanged(): void {
+    const city = this.options()?.cities.find((item) => item.id === this.selectedCityId);
+    if (city) this.selectedState = city.stateCode;
     if (!this.availableNeighborhoods.some((item) => item.name === this.selectedNeighborhoodName)) {
       this.selectedNeighborhoodName = '';
     }
@@ -218,6 +205,18 @@ export class CityDashboardPage implements OnInit {
     void this.navigateWithFilters(1, true);
   }
 
+  selectState(stateCode: string): void {
+    if (!this.options()?.states.some((state) => state.code === stateCode)) return;
+    this.selectedState = stateCode;
+    this.selectedCityId = '';
+    this.selectedNeighborhoodName = '';
+    void this.navigateWithFilters(1);
+  }
+
+  stateName(stateCode: string, fallback: string): string {
+    return this.options()?.states.find((state) => state.code === stateCode)?.name ?? fallback;
+  }
+
   selectDate(date: string): void {
     this.selectedPeriod = 'custom';
     this.customFrom = `${date}T00:00:00.000Z`;
@@ -261,13 +260,18 @@ export class CityDashboardPage implements OnInit {
   }
 
   private loadDashboard(): void {
+    this.dashboardSubscription?.unsubscribe();
     this.loading.set(true);
     this.errorMessage.set('');
     const filters = this.currentFilters();
+    this.appliedFilters.set(filters);
+    this.occurrences.set(null);
 
-    forkJoin({
+    this.dashboardSubscription = forkJoin({
       dashboard: this.dashboardService.getDashboard(filters),
-      occurrences: this.dashboardService.getOccurrences(filters, this.currentPage),
+      occurrences: filters.cityId
+        ? this.dashboardService.getOccurrences(filters, this.currentPage)
+        : of(null),
     })
       .pipe(
         finalize(() => this.loading.set(false)),
@@ -331,35 +335,6 @@ export class CityDashboardPage implements OnInit {
     if (scrollToList) {
       setTimeout(() => document.getElementById('ocorrencias-recentes')?.scrollIntoView(), 0);
     }
-  }
-
-  private statusColor(status: OccurrenceStatus): string {
-    const colors: Record<OccurrenceStatus, string> = {
-      AGUARDANDO_ENCAMINHAMENTO: '#c9772b',
-      EM_ANALISE_DE_COMPETENCIA: '#6759a7',
-      FALHA_NO_ENCAMINHAMENTO: '#b64d45',
-      RESPOSTA_EM_APURACAO: '#6759a7',
-      EM_RESOLUCAO: '#27877f',
-      REJEITADA: '#b64d45',
-      ABERTA: '#c9772b',
-      ENCAMINHADA: '#347da8',
-      EM_ANALISE: '#6759a7',
-      RESOLUCAO_INFORMADA: '#27877f',
-      RESOLVIDA: '#287a55',
-      CONTESTADA: '#b64d45',
-      REABERTA: '#a35f28',
-      SEM_ORGAO_IDENTIFICADO: '#697782',
-    };
-    return colors[status];
-  }
-
-  private importanceColor(importance: OccurrenceImportance): string {
-    return {
-      BAIXA: '#668a72',
-      MEDIA: '#347da8',
-      ALTA: '#c9772b',
-      CRITICA: '#b64d45',
-    }[importance];
   }
 
   private errorFor(error: unknown): string {

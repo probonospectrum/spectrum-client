@@ -7,6 +7,7 @@
 .dashboard-averages,
 .city-focus,
 .city-comparison,
+.state-comparison,
 .recent-occurrences {
   border: 1px solid var(--spectrum-border);
   border-radius: var(--spectrum-radius-md);
@@ -32,6 +33,7 @@
 .dashboard-filters,
 .dashboard-summary,
 .city-comparison,
+.state-comparison,
 .recent-occurrences {
   padding: 20px;
 }
@@ -341,6 +343,112 @@
   font: 500 12px/1.4 var(--spectrum-font);
 }
 
+.state-ranking-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(220px, 2fr) minmax(100px, 0.7fr);
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0;
+  border-top: 1px solid var(--spectrum-border);
+}
+
+.state-ranking-row:first-of-type {
+  margin-top: 16px;
+}
+
+.state-ranking-row__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.state-ranking-row__position {
+  color: var(--spectrum-text-muted);
+  font: 600 14px/1.2 var(--spectrum-font);
+}
+
+.state-ranking-row__name button {
+  border: 0;
+  padding: 6px 0;
+  background: transparent;
+  color: var(--spectrum-primary-800);
+  text-align: left;
+  cursor: pointer;
+  font: 600 14px/1.3 var(--spectrum-font);
+}
+
+.state-ranking-row__bars,
+.state-ranking-row__bars label,
+.state-ranking-row__rate {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.state-ranking-row__bars {
+  gap: 12px;
+}
+
+.state-ranking-row__bars span,
+.state-ranking-row__rate span {
+  color: var(--spectrum-text-muted);
+  font: 500 12px/1.3 var(--spectrum-font);
+}
+
+.state-ranking-row progress {
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--spectrum-surface-muted);
+  color: var(--spectrum-primary-600);
+}
+
+.state-ranking-row progress::-webkit-progress-bar {
+  background: var(--spectrum-surface-muted);
+}
+
+.state-ranking-row progress::-webkit-progress-value {
+  background: var(--spectrum-primary-600);
+  border-radius: 999px;
+}
+
+.state-ranking-row progress::-moz-progress-bar {
+  background: var(--spectrum-primary-600);
+}
+
+.state-ranking-row__resolved {
+  color: #287a55 !important;
+}
+
+.state-ranking-row__resolved::-webkit-progress-value {
+  background: #287a55 !important;
+}
+
+.state-ranking-row__resolved::-moz-progress-bar {
+  background: #287a55 !important;
+}
+
+.state-ranking-row__rate strong {
+  color: var(--spectrum-text);
+  font: 650 24px/1.2 var(--spectrum-font);
+}
+
+@media (max-width: 700px) {
+  .state-ranking-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .state-ranking-row__bars {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .state-ranking-row__rate {
+    text-align: right;
+  }
+}
+
 .city-comparison__table-wrap {
   margin-top: 14px;
   overflow-x: auto;
@@ -587,18 +695,50 @@
   }
 }
 
-:host, .city-comparison, .city-comparison__table-wrap, .dashboard-summary, .recent-occurrences { min-width: 0; }
-.city-comparison__table-wrap { max-width: 100%; overscroll-behavior-x: contain; }
-.city-focus dd, .occurrence-row dd { overflow-wrap: anywhere; }
+:host,
+.city-comparison,
+.city-comparison__table-wrap,
+.dashboard-summary,
+.recent-occurrences {
+  min-width: 0;
+}
+.city-comparison__table-wrap {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+.city-focus dd,
+.occurrence-row dd {
+  overflow-wrap: anywhere;
+}
 @media (max-width: 860px) {
-  .dashboard-charts { grid-template-columns: minmax(0, 1fr); }
-  .chart-panel__heading { flex-wrap: wrap; }
+  .dashboard-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chart-panel__heading {
+    flex-wrap: wrap;
+  }
 }
 @media (max-width: 560px) {
-  .dashboard-filter-submit { width: 100%; min-height: 44px; }
-  .city-focus dl { grid-template-columns: minmax(0, 1fr); }
-  .occurrence-row { grid-template-columns: minmax(0, 1fr) 44px; gap: 12px; }
-  .occurrence-row h3 { white-space: normal; }
-  .occurrence-row > a, .dashboard-pagination button { width: 44px; height: 44px; }
-  .metric-card strong { font-size: clamp(20px, 6vw, 24px); }
+  .dashboard-filter-submit {
+    width: 100%;
+    min-height: 44px;
+  }
+  .city-focus dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .occurrence-row {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 12px;
+  }
+  .occurrence-row h3 {
+    white-space: normal;
+  }
+  .occurrence-row > a,
+  .dashboard-pagination button {
+    width: 44px;
+    height: 44px;
+  }
+  .metric-card strong {
+    font-size: clamp(20px, 6vw, 24px);
+  }
 }
