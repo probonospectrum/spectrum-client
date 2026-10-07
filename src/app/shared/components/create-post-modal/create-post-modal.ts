@@ -287,9 +287,9 @@ export class CreatePostModal implements OnChanges {
     }
 
     return forkJoin(
-      this.selectedEvidences.map(({ file, type }) =>
+      this.selectedEvidences.map(({ file }) =>
         this.postService.uploadEvidence(file).pipe(
-          map((upload) => ({ type, url: upload.url, description: file.name })),
+          map((upload) => ({ type: upload.type, url: upload.url, description: file.name })),
         ),
       ),
     );

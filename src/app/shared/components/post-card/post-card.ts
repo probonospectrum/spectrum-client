@@ -61,6 +61,7 @@ export class PostCard implements OnChanges, OnDestroy {
   addedCommentsCount = 0;
   menuOpen = false;
   now = Date.now();
+  failedCoverUrl?: string;
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -90,6 +91,27 @@ export class PostCard implements OnChanges, OnDestroy {
 
   get primaryImage(): string | undefined {
     return this.post.evidences.find(evidence => evidence.type === 'IMAGE' && evidence.url)?.url;
+  }
+
+  get coverImage(): string | undefined {
+    if (this.primaryImage) return this.primaryImage;
+
+    const videoUrl = this.post.evidences.find(evidence => evidence.type === 'VIDEO' && evidence.url)?.url;
+    if (!videoUrl) return undefined;
+
+    let url: URL;
+    try {
+      url = new URL(videoUrl);
+    } catch {
+      return undefined;
+    }
+    if (url.hostname !== 'res.cloudinary.com' || !url.pathname.includes('/video/upload/')) {
+      return undefined;
+    }
+
+    url.pathname = url.pathname.replace(/\.[^/.]+$/, '.jpg');
+    const thumbnailUrl = url.toString();
+    return thumbnailUrl === this.failedCoverUrl ? undefined : thumbnailUrl;
   }
 
   get importanceLabel(): string {

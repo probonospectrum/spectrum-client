@@ -131,8 +131,8 @@
 
     <p class="post-card__copy">{{ post.content }}</p>
 
-    @if (primaryImage; as imageUrl) {
-      <img class="post-card__evidence-image" [src]="imageUrl" [alt]="post.title" loading="lazy" />
+    @if (coverImage; as imageUrl) {
+      <img class="post-card__evidence-image" [src]="imageUrl" [alt]="post.title" loading="lazy" (error)="failedCoverUrl = imageUrl" />
     } @else if (post.mediaType !== 'text') {
       <div class="post-card__media" [class.post-card__media--image]="post.mediaType === 'image'">
         @if (post.mediaType === 'video') {
