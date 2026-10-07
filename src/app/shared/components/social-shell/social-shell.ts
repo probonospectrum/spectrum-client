@@ -21,6 +21,7 @@ import { PostService, SpectrumPost, SuggestedProfile } from '../../../core/servi
 import { LoggedUser } from '../../../core/services/user/user.service';
 import { CreatePostModal } from '../create-post-modal/create-post-modal';
 import { LogoutConfirm } from '../logout-confirm/logout-confirm';
+import { NotificationService } from '../../../core/services/notifications/notification.service';
 
 interface SearchResult {
   id: string;
@@ -46,6 +47,7 @@ interface SearchResult {
   styleUrl: './social-shell.scss',
 })
 export class SocialShell implements OnInit {
+  readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);

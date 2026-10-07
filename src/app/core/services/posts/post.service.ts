@@ -424,7 +424,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -444,7 +444,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -464,7 +464,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -484,7 +484,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -524,7 +524,7 @@ export class PostService {
     if (!this.isApiId(post.id)) throw new Error('O envio por e-mail exige uma ocorrência salva no servidor.');
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -549,7 +549,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -573,7 +573,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -600,7 +600,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -627,7 +627,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -653,7 +653,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -675,7 +675,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -807,6 +807,23 @@ export class PostService {
 
     localStorage.setItem(this.storageKey, JSON.stringify([post, ...this.getUserPosts()]));
     return post;
+  }
+
+  setPostReaction(post: SpectrumPost, user: LoggedUser | null, reaction: 'LIKE' | 'UNLIKE' | null): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para reagir.');
+    const postId = post.originalPostId ?? post.id;
+    return this.http.put<{ likes: number; dislikes: number; liked: boolean; disliked: boolean }>(
+      `${API_BASE_URL}/like/post/${postId}`, { reaction },
+    ).pipe(map(result => {
+      const records = this.getPostInteractionRecords();
+      const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
+      record.liked = result.liked;
+      record.disliked = result.disliked;
+      this.savePostInteractionRecords(records);
+      const updated = { ...post, ...result };
+      this.cacheOccurrence({ ...updated, id: postId });
+      return updated;
+    }));
   }
 
   togglePostLike(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
@@ -1274,8 +1291,8 @@ export class PostService {
 
     return {
       ...normalizedPost,
-      likes: normalizedPost.likes + postInteractions.filter((record) => record.liked).length,
-      dislikes: normalizedPost.dislikes + postInteractions.filter((record) => record.disliked).length,
+      likes: normalizedPost.likes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.liked).length),
+      dislikes: normalizedPost.dislikes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.disliked).length),
       liked: currentUserInteraction?.liked ?? false,
       disliked: currentUserInteraction?.disliked ?? false,
       saved: currentUserInteraction?.saved ?? normalizedPost.saved,
@@ -1343,8 +1360,8 @@ export class PostService {
 
     return {
       ...post,
-      likes: Math.max(0, post.likes - interactionLikes),
-      dislikes: Math.max(0, post.dislikes - interactionDislikes),
+      likes: Math.max(0, post.likes - (this.isApiId(postId) ? 0 : interactionLikes)),
+      dislikes: Math.max(0, post.dislikes - (this.isApiId(postId) ? 0 : interactionDislikes)),
       liked: false,
       disliked: false,
       reposts: Math.max(0, post.reposts - reposts),

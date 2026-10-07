@@ -9,6 +9,7 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  DestroyRef,
   Output,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -19,6 +20,8 @@ import {
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-post-card',
@@ -27,6 +30,19 @@ import { LoggedUser } from '../../../core/services/user/user.service';
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
+  reactionPending = false;
+  reactionError = '';
+
+  private saveReaction(reaction: 'LIKE' | 'UNLIKE' | null): void {
+    if (this.reactionPending) return;
+    this.reactionPending = true;
+    this.reactionError = '';
+    this.postService.setPostReaction(this.post, this.currentUser, reaction)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.reactionPending = false))
+      .subscribe({ next: post => this.post = post,
+        error: () => this.reactionError = 'Não foi possível salvar sua reação. Tente novamente.' });
+  }
   private readonly postService = inject(PostService);
   private readonly router = inject(Router);
 
@@ -160,6 +176,10 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleLike(): void {
+    if (/^[a-f0-9]{24}$/i.test(this.post.originalPostId ?? this.post.id)) {
+      this.saveReaction(this.post.liked ? null : 'LIKE');
+      return;
+    }
     const previousPost = this.post;
 
     const nextLiked = !this.post.liked;
@@ -183,6 +203,10 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleDislike(): void {
+    if (/^[a-f0-9]{24}$/i.test(this.post.originalPostId ?? this.post.id)) {
+      this.saveReaction(this.post.disliked ? null : 'UNLIKE');
+      return;
+    }
     const previousPost = this.post;
 
     const nextDisliked = !this.post.disliked;

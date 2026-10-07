@@ -4,6 +4,12 @@
   [showContentHeader]="false"
   (logout)="logout()"
 >
+  @if (service.error()) {
+    <p role="alert">{{ service.error() }} <button type="button" (click)="service.reload()">Tentar novamente</button></p>
+  }
+  @if (service.unreadCount()) {
+    <button type="button" (click)="markAllRead()">Marcar todas como lidas</button>
+  }
   @if (loading()) {
     <div class="notifications-loading" aria-label="Carregando notificacoes">
       @for (item of [1, 2, 3, 4]; track item) {
@@ -26,8 +32,12 @@
         />
       }
     </section>
-    <p class="notifications-end">Não há mais mensagens</p>
-  } @else {
+    @if (service.hasMore()) {
+      <button type="button" [disabled]="service.loadingMore()" (click)="service.loadMore()">Carregar mais</button>
+    } @else {
+      <p class="notifications-end">Não há mais mensagens</p>
+    }
+  } @else if (!service.error()) {
     <section class="notifications-empty">
       <h2>Tudo em dia</h2>
       <p>Nao existem notificacoes pendentes no momento.</p>
