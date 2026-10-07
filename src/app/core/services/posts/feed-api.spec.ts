@@ -69,4 +69,23 @@ describe('Occurrence feed API', () => {
     http.expectOne((r) => r.url === API_BASE_URL + '/feed').flush({}, { status: 503, statusText: 'Unavailable' });
     expect(failed).toBe(true);
   });
+
+  it('restores the reaction after reload without local storage and accepts removal from the server', () => {
+    const id = '66f1c0de0000000000000001';
+    const user = { _id: '66f1c0de0000000000000002' } as LoggedUser;
+    const response = { _id: id, text: 'Post', createdAt: '2026-10-06T12:00:00Z', likeCount: 3, unlikeCount: 1, reaction: 'LIKE' };
+    let loaded: SpectrumPost | undefined;
+    posts.getFeed(user).subscribe(page => loaded = page.data[0]);
+    http.expectOne(r => r.url === API_BASE_URL + '/feed').flush({ data: [response], nextCursor: null, hasMore: false });
+    expect(loaded).toMatchObject({ likes: 3, dislikes: 1, liked: true, disliked: false });
+    localStorage.clear();
+    posts.getFeed(user).subscribe(page => loaded = page.data[0]);
+    http.expectOne(r => r.url === API_BASE_URL + '/feed').flush({ data: [response], nextCursor: null, hasMore: false });
+    expect(loaded).toMatchObject({ likes: 3, liked: true });
+    posts.setPostReaction(loaded!, user, 'LIKE').subscribe();
+    http.expectOne(API_BASE_URL + '/like/post/' + id).flush({ likes: 3, dislikes: 1, liked: true, disliked: false });
+    posts.getFeed(user).subscribe(page => loaded = page.data[0]);
+    http.expectOne(r => r.url === API_BASE_URL + '/feed').flush({ data: [{ ...response, likeCount: 2, reaction: null }], nextCursor: null, hasMore: false });
+    expect(loaded).toMatchObject({ likes: 2, liked: false, disliked: false });
+  });
 });
