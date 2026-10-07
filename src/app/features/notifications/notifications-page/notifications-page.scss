@@ -19,7 +19,6 @@
   gap: 10px;
 }
 
-.notifications-empty,
 .notifications-loading {
   border: 1px solid var(--spectrum-border);
   border-radius: var(--spectrum-radius-md);
@@ -28,23 +27,11 @@
 }
 
 .notifications-empty {
-  display: grid;
-  gap: 8px;
-  padding: 28px;
-}
-
-.notifications-empty h2,
-.notifications-empty p {
-  margin: 0;
-}
-
-.notifications-empty h2 {
-  color: var(--spectrum-text);
-  font: 800 22px/1.2 var(--spectrum-font);
-}
-
-.notifications-empty p {
+  margin: 32px 0;
+  padding: 0 16px;
+  text-align: center;
   color: var(--spectrum-text-muted);
+  font: 400 13px/1.5 var(--spectrum-font);
 }
 
 .notifications-end {
