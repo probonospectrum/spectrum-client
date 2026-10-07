@@ -38,9 +38,6 @@
       <p class="notifications-end">Não há mais mensagens</p>
     }
   } @else if (!service.error()) {
-    <section class="notifications-empty">
-      <h2>Tudo em dia</h2>
-      <p>Nao existem notificacoes pendentes no momento.</p>
-    </section>
+    <p class="notifications-empty" role="status">Nenhuma notificação no momento.</p>
   }
 </app-social-shell>
