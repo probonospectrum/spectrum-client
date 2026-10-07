@@ -1,7 +1,8 @@
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 
@@ -21,6 +22,10 @@ export class CommentSection implements OnInit {
   comments: SpectrumComment[] = [];
   showAll = false;
   newComment = '';
+  loading = false;
+  saving = false;
+  error = '';
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private readonly postService: PostService,
@@ -28,7 +33,11 @@ export class CommentSection implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.comments = this.postService.getComments(this.postId, this.currentUser);
+    this.loading = true;
+    this.postService.loadComments(this.postId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (comments) => { this.comments = comments; this.loading = false; },
+      error: () => { this.error = 'Não foi possível carregar os comentários.'; this.loading = false; },
+    });
   }
 
   get visibleComments(): SpectrumComment[] {
@@ -57,28 +66,17 @@ export class CommentSection implements OnInit {
 
   addComment(): void {
     const content = this.newComment.trim();
-    if (!content) {
+    const user = this.currentUser ?? this.userService.getCurrentUser();
+    if (!content || !user || this.saving) {
       return;
     }
 
-    const newId = `local-${Date.now()}`;
-    this.comments = [
-      {
-        id: newId,
-        authorId: this.currentUser?._id ?? this.userService.getCurrentUser()?._id,
-        authorName: this.displayName,
-        authorInitial: this.userInitial,
-        content,
-        dateLabel: 'Agora',
-        likes: 0,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      ...this.comments,
-    ];
-    this.newComment = '';
-    this.commentAdded.emit();
+    this.saving = true;
+    this.error = '';
+    this.postService.createComment(this.postId, content, user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (comment) => { this.comments = [comment, ...this.comments]; this.newComment = ''; this.saving = false; this.commentAdded.emit(); },
+      error: () => { this.saving = false; this.error = 'Não foi possível enviar o comentário. Tente novamente.'; },
+    });
   }
 
   isLiked(commentId: string): boolean {

@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of, tap } from 'rxjs';
+import { Observable, map, of, tap, throwError } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
-import { LoggedUser } from '../user/user.service';
+import { LoggedUser, UserService } from '../user/user.service';
 
 export type OccurrenceStatus =
   | 'AGUARDANDO_ENCAMINHAMENTO'
@@ -135,6 +135,7 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
   forwardingDueAt?: string | null;
   id: string;
@@ -144,6 +145,7 @@ export interface SpectrumPost {
   authorNickname: string;
   authorInitial: string;
   authorCity: string;
+  authorAvatarUrl?: string;
   title: string;
   content: string;
   mediaType: 'video' | 'text' | 'image';
@@ -182,6 +184,16 @@ export interface SpectrumComment {
   dislikes: number;
   liked: boolean;
   disliked: boolean;
+}
+
+interface CommentApiResponse {
+  _id: string;
+  userId: string;
+  text: string;
+  createdAt: string;
+  likeCount?: number;
+  unlikeCount?: number;
+  author: { name: string; nickname: string; avatarUrl?: string };
 }
 
 export interface SuggestedProfile {
@@ -229,6 +241,9 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  reaction?: 'LIKE' | 'UNLIKE' | null;
+  author?: { _id: string; name: string; nickname: string; avatarUrl?: string; cityUser: string };
+  unlikeCount?: number;
   moderationReason?: string | null;
   forwardingDueAt?: string | null;
   _id: string;
@@ -256,6 +271,12 @@ export interface RepostRecord {
   userId: string;
   originalPostId: string;
   createdAt: string;
+}
+
+export interface FeedPage {
+  data: SpectrumPost[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 export interface RepostToggleResult {
@@ -291,7 +312,7 @@ export class PostService {
   }
   updateOccurrence(post: SpectrumPost, payload: CreatePostPayload, user: LoggedUser | null, evidences: CreateOccurrenceEvidencePayload[] = []): Observable<SpectrumPost> {
     if (!this.canModifyPost(post, user)) throw new Error('O período de edição de 15 minutos foi encerrado.');
-    if (!this.isApiId(post.id)) return of(this.updatePost(post.id, payload, user));
+    if (!this.isApiId(post.id)) return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     return this.http.patch<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}`, {
       text: payload.content, description: payload.content, title: payload.title,
       category: payload.category, importance: payload.importance, location: payload.location, evidences,
@@ -317,10 +338,42 @@ export class PostService {
   }
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${API_BASE_URL}/post`;
-  private readonly storageKey = 'spectrum-mock-posts';
+  private readonly users = inject(UserService);
+  private get storageKey(): string { return `spectrum-server-posts:${this.users.currentUser()?._id ?? 'anonymous'}`; }
   private readonly repostStorageKey = 'spectrum-reposts';
   private readonly postInteractionStorageKey = 'spectrum-post-interactions';
   private readonly commentInteractionStorageKey = 'spectrum-comment-interactions';
+
+  getFeed(user: LoggedUser | null, cursor?: string): Observable<FeedPage> {
+    return this.http.get<{ data: OccurrenceApiResponse[]; nextCursor: string | null; hasMore: boolean }>(`${API_BASE_URL}/feed`, {
+      params: { scope: 'all', limit: '20', ...(cursor ? { cursor } : {}) },
+    }).pipe(map((page) => ({ ...page, data: page.data.map((post) => this.withPostState(this.toSpectrumPost(post, user), user)) })),
+      tap((page) => {
+        page.data.forEach((post) => this.cacheOccurrence(post));
+        const authors = new Map(page.data.filter((post) => post.createdBy !== user?._id).map((post) => [post.authorNickname, {
+          name: post.authorName, nickname: post.authorNickname, initial: post.authorInitial, verified: false,
+        }]));
+        this.suggestions.splice(0, this.suggestions.length, ...Array.from(authors.values()).slice(0, 5));
+      }));
+  }
+
+  getAuthorPosts(author: Pick<LoggedUser, '_id' | 'name' | 'nickname' | 'cityUser' | 'avatarUrl'>, viewer: LoggedUser | null): Observable<SpectrumPost[]> {
+    return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/user/${author._id}`, { params: { limit: '50' } }).pipe(
+      map((posts) => posts.map((post) => this.withPostState(this.toSpectrumPost({ ...post, author: {
+        _id: author._id, name: author.name, nickname: author.nickname, cityUser: author.cityUser ?? '', avatarUrl: author.avatarUrl,
+      } }, viewer), viewer))), tap((posts) => posts.forEach((post) => this.cacheOccurrence(post))),
+    );
+  }
+
+  removeServerPost(post: SpectrumPost): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl}/${post.id}`);
+  }
+
+  toggleServerRepost(post: SpectrumPost, user: LoggedUser | null): Observable<RepostToggleResult> {
+    return this.http.post<{ post: OccurrenceApiResponse; reposted: boolean }>(`${this.apiUrl}/${post.id}/repost/toggle`, {}).pipe(
+      map((result) => ({ post: { ...this.toSpectrumPost(result.post, user), reposted: result.reposted }, reposted: result.reposted })),
+    );
+  }
 
   createOccurrence(
     payload: CreateOccurrencePayload,
@@ -343,13 +396,7 @@ export class PostService {
 
   getOccurrence(id: string, user: LoggedUser | null): Observable<SpectrumPost> {
     if (!this.isApiId(id)) {
-      const localOccurrence = this.findPostById(id, user);
-
-      if (!localOccurrence) {
-        throw new Error('Ocorrência não encontrada.');
-      }
-
-      return of(localOccurrence);
+      return throwError(() => new Error('Ocorrência não encontrada.'));
     }
 
     return this.http
@@ -362,8 +409,7 @@ export class PostService {
 
   getOccurrenceHistory(id: string): Observable<OccurrenceHistoryEvent[]> {
     if (!this.isApiId(id)) {
-      const localOccurrence = this.findPostById(id);
-      return of(localOccurrence?.history ?? []);
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http.get<OccurrenceHistoryEvent[]>(`${this.apiUrl}/${id}/history`, {
@@ -376,17 +422,11 @@ export class PostService {
     const payload = { note: 'Também identifiquei este problema.' };
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          eventType: 'OCORRENCIA_CONFIRMADA',
-          metadata: { note: 'Também identifiquei este problema.' },
-          confirmedById: userId,
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -402,11 +442,11 @@ export class PostService {
     const payload = { ...evidence };
 
     if (!this.isApiId(post.id)) {
-      return of(this.addEvidence(post, user, evidence));
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -422,18 +462,11 @@ export class PostService {
     const payload = { agency };
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO',
-          actorType: this.actorTypeForUser(user),
-          metadata: { agency, agencyName: agency.name },
-          responsibleAgency: agency,
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -449,16 +482,11 @@ export class PostService {
     const payload = { agency };
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
-          metadata: { agency, agencyName: agency.name },
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -469,14 +497,7 @@ export class PostService {
     this.requireUserKey(user, 'Entre na sua conta para assumir responsabilidade.');
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO',
-          actorType: 'RESPONSIBLE_AGENCY',
-          metadata: { agency: post.responsibleAgency },
-          responsibleAgency: post.responsibleAgency ?? null,
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
@@ -505,7 +526,7 @@ export class PostService {
     if (!this.isApiId(post.id)) throw new Error('O envio por e-mail exige uma ocorrência salva no servidor.');
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -526,26 +547,11 @@ export class PostService {
     const body = { ...payload };
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          eventType: 'ENCAMINHAMENTO_FALHOU',
-          metadata: { failureReason: payload.failureReason },
-          forwarding: {
-            id: this.createLocalId('forwarding'),
-            agency: payload.agency ?? post.responsibleAgency ?? undefined,
-            channel: payload.channel,
-            sentAt: new Date().toISOString(),
-            sentContent: payload.sentContent,
-            responsibleUserId: userId,
-            success: false,
-            failureReason: payload.failureReason,
-          },
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -565,18 +571,11 @@ export class PostService {
     if (note.trim().length < 20) throw new Error('Descreva a ação iniciada em pelo menos 20 caracteres.');
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          status: 'EM_ANALISE',
-          eventType: 'ANALISE_INICIADA',
-          actorType,
-          metadata: { note, reference },
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -599,11 +598,11 @@ export class PostService {
     };
 
     if (!this.isApiId(post.id)) {
-      return of(this.informResolution(post, user, statement));
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -626,18 +625,11 @@ export class PostService {
     };
 
     if (!this.isApiId(post.id)) {
-      return of(
-        this.updateLocalOccurrence(post.id, user, {
-          status: 'RESOLVIDA',
-          eventType: 'OCORRENCIA_RESOLVIDA',
-          actorType,
-          metadata: { note, source: 'authorized_review' },
-        }),
-      );
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -659,11 +651,11 @@ export class PostService {
     };
 
     if (!this.isApiId(post.id)) {
-      return of(this.contestResolution(post, user, reason));
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -681,156 +673,19 @@ export class PostService {
     const body = { reason };
 
     if (!this.isApiId(post.id)) {
-      return of(this.reopenOccurrence(post, user, reason));
+      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
       );
   }
 
-  readonly suggestions: SuggestedProfile[] = [
-    { name: 'Ana Martins', nickname: 'ana.martins', initial: 'A', verified: false },
-    { name: 'Lucas Oliveira', nickname: 'lucas.oliveira', initial: 'L', verified: false },
-    { name: 'Marina Costa', nickname: 'marina.costa', initial: 'M', verified: false },
-    { name: 'Beatriz Lima', nickname: 'beatriz.lima', initial: 'B', verified: false },
-  ];
-
-  private readonly commentsByPost: Record<string, SpectrumComment[]> = {
-    'mock-ana-1': [
-      {
-        id: 'c-ana-1',
-        authorName: 'Beatriz Lima',
-        authorInitial: 'B',
-        content:
-          'Passei por essa avenida ontem à noite e realmente está muito escuro. Principalmente perto do ponto de ônibus.',
-        dateLabel: 'Há 38 min',
-        likes: 6,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-ana-2',
-        authorName: 'Gabriel Santos',
-        authorInitial: 'G',
-        content:
-          'Seria importante registrar quais postes estão apagados. Isso pode facilitar bastante na hora de solicitar a manutenção.',
-        dateLabel: 'Há 1h',
-        likes: 4,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-    ],
-    'mock-lucas-1': [
-      {
-        id: 'c-lucas-1',
-        authorName: 'Marina Costa',
-        authorInitial: 'M',
-        content:
-          'Esse tipo de problema acaba obrigando muita gente a andar pela rua. Para quem usa cadeira de rodas fica ainda mais complicado.',
-        dateLabel: 'Há 2h',
-        likes: 9,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-lucas-2',
-        authorName: 'Rafael Nunes',
-        authorInitial: 'R',
-        content:
-          'Também acho importante indicar exatamente o trecho afetado. Assim fica mais fácil acompanhar se houve alguma manutenção depois.',
-        dateLabel: 'Há 3h',
-        likes: 3,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-    ],
-    'mock-marina-1': [
-      {
-        id: 'c-marina-1',
-        authorName: 'Ana Martins',
-        authorInitial: 'A',
-        content:
-          'Muito bom ver uma atualização positiva. Registrar quando o problema é resolvido ajuda a mostrar que houve uma mudança de verdade.',
-        dateLabel: 'Há 5h',
-        likes: 12,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-marina-2',
-        authorName: 'Lucas Oliveira',
-        authorInitial: 'L',
-        content:
-          'Tomara que façam o mesmo nos outros pontos da região. Ainda tem alguns trechos bem escuros por ali.',
-        dateLabel: 'Há 6h',
-        likes: 7,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-    ],
-    'mock-gabriel-1': [
-      {
-        id: 'c-gabriel-1',
-        authorName: 'Beatriz Lima',
-        authorInitial: 'B',
-        content:
-          'Esse cruzamento já alagou outras vezes. Parece que o problema realmente está na drenagem e não só na quantidade de chuva.',
-        dateLabel: 'Há 1d',
-        likes: 15,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-gabriel-2',
-        authorName: 'Ana Martins',
-        authorInitial: 'A',
-        content:
-          'Em dias de chuva forte fica quase impossível passar a pé por esse trecho. Seria importante uma manutenção antes do próximo período de chuvas.',
-        dateLabel: 'Há 1d',
-        likes: 8,
-        dislikes: 1,
-        liked: false,
-        disliked: false,
-      },
-    ],
-    'mock-beatriz-1': [
-      {
-        id: 'c-beatriz-1',
-        authorName: 'Gabriel Santos',
-        authorInitial: 'G',
-        content:
-          'Também acho que esse cruzamento precisa de uma faixa. No horário de pico fica ainda mais difícil atravessar.',
-        dateLabel: 'Há 2d',
-        likes: 10,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-      {
-        id: 'c-beatriz-2',
-        authorName: 'Marina Costa',
-        authorInitial: 'M',
-        content:
-          'Uma faixa de pedestres junto com sinalização melhor já deixaria o local muito mais seguro.',
-        dateLabel: 'Há 2d',
-        likes: 6,
-        dislikes: 0,
-        liked: false,
-        disliked: false,
-      },
-    ],
-  };
+  readonly suggestions: SuggestedProfile[] = [];
+  private readonly commentsByPost: Record<string, SpectrumComment[]> = {};
 
   getPosts(user: LoggedUser | null = null): SpectrumPost[] {
     return [...this.getUserPosts(), ...this.getDefaultPosts()]
@@ -880,6 +735,21 @@ export class PostService {
     return (this.commentsByPost[postId] ?? []).map((comment) =>
       this.withCommentState(comment, user),
     );
+  }
+
+  loadComments(postId: string): Observable<SpectrumComment[]> {
+    return this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`).pipe(map((comments) => comments.map((comment) => this.toComment(comment))));
+  }
+
+  createComment(postId: string, content: string, user: LoggedUser): Observable<SpectrumComment> {
+    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id }).pipe(map((comment) => this.toComment(comment)));
+  }
+
+  private toComment(comment: CommentApiResponse): SpectrumComment {
+    return { id: comment._id, authorId: comment.userId, authorName: comment.author.name,
+      authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
+      dateLabel: this.formatPublishedAt(new Date(comment.createdAt)), likes: comment.likeCount ?? 0,
+      dislikes: comment.unlikeCount ?? 0, liked: false, disliked: false };
   }
 
   createPost(payload: CreatePostPayload, user: LoggedUser | null): SpectrumPost {
@@ -939,6 +809,23 @@ export class PostService {
 
     localStorage.setItem(this.storageKey, JSON.stringify([post, ...this.getUserPosts()]));
     return post;
+  }
+
+  setPostReaction(post: SpectrumPost, user: LoggedUser | null, reaction: 'LIKE' | 'UNLIKE' | null): Observable<SpectrumPost> {
+    const userId = this.requireUserKey(user, 'Entre na sua conta para reagir.');
+    const postId = post.originalPostId ?? post.id;
+    return this.http.put<{ likes: number; dislikes: number; liked: boolean; disliked: boolean }>(
+      `${API_BASE_URL}/like/post/${postId}`, { reaction },
+    ).pipe(map(result => {
+      const records = this.getPostInteractionRecords();
+      const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
+      record.liked = result.liked;
+      record.disliked = result.disliked;
+      this.savePostInteractionRecords(records);
+      const updated = { ...post, ...result, reaction };
+      this.cacheOccurrence({ ...updated, id: postId });
+      return updated;
+    }));
   }
 
   togglePostLike(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
@@ -1310,7 +1197,7 @@ export class PostService {
     }
 
     try {
-      return (JSON.parse(rawPosts) as SpectrumPost[]).map((post) => this.normalizePost(post));
+      return (JSON.parse(rawPosts) as SpectrumPost[]).filter((post) => this.isApiId(post.id)).map((post) => this.normalizePost(post));
     } catch {
       localStorage.removeItem(this.storageKey);
       return [];
@@ -1386,173 +1273,9 @@ export class PostService {
     localStorage.setItem(this.commentInteractionStorageKey, JSON.stringify(records));
   }
 
-private getDefaultPosts(): SpectrumPost[] {
-  return [
-    {
-      id: 'mock-ana-1',
-      createdAt: '2026-09-16T17:42:00.000Z',
-      authorName: 'Ana Martins',
-      authorNickname: 'ana.martins',
-      authorInitial: 'A',
-      authorCity: 'São Paulo - SP',
-      title: 'Iluminação pública apagada há vários dias',
-      content:
-        'Os postes de uma parte da Avenida Central estão apagados há quase uma semana. Durante a noite o trecho fica muito escuro, principalmente perto do ponto de ônibus. Alguém sabe se já existe alguma solicitação de manutenção para essa região?',
-      mediaType: 'text',
-      publishedAt: '2026-09-16T17:42:00.000Z',
-      publishedAtLabel: 'Publicado em 16/09/2026, às 14:42',
-      likes: 38,
-      liked: false,
-      dislikes: 0,
-      disliked: false,
-      comments: 11,
-      reposts: 4,
-      reposted: false,
-      saved: false,
-      tags: ['iluminação', 'segurança', 'infraestrutura'],
-      status: 'ENCAMINHADA',
-      category: 'ILUMINACAO_PUBLICA',
-      importance: 'ALTA',
-      responsibleAgency: {
-        name: 'Secretaria Municipal de Iluminacao Publica',
-        hasIntegration: false,
-        email: 'atendimento@prefeitura.example',
-      },
-      evidences: [],
-      forwardingHistory: [],
-      confirmedByIds: [],
-      history: [],
-    },
-    {
-      id: 'mock-lucas-1',
-      createdAt: '2026-09-15T21:18:00.000Z',
-      authorName: 'Lucas Oliveira',
-      authorNickname: 'lucas.oliveira',
-      authorInitial: 'L',
-      authorCity: 'Guarulhos - SP',
-      title: 'Calçada sem acessibilidade perto do terminal',
-      content:
-        'Tem um trecho perto do terminal em que a calçada está muito danificada e praticamente impossível de utilizar com cadeira de rodas ou carrinho de bebê. Em alguns pontos as pessoas acabam precisando andar pela rua. Seria importante uma manutenção nesse local.',
-      mediaType: 'image',
-      publishedAt: '2026-09-15T21:18:00.000Z',
-      publishedAtLabel: 'Publicado em 15/09/2026, às 18:18',
-      likes: 64,
-      liked: false,
-      dislikes: 0,
-      disliked: false,
-      comments: 19,
-      reposts: 7,
-      reposted: false,
-      saved: false,
-      tags: ['acessibilidade', 'calçada', 'mobilidade'],
-      status: 'ABERTA',
-      category: 'ACESSIBILIDADE',
-      importance: 'ALTA',
-      evidences: [],
-      forwardingHistory: [],
-      confirmedByIds: [],
-      history: [],
-    },
-    {
-      id: 'mock-marina-1',
-      createdAt: '2026-09-14T23:07:00.000Z',
-      authorName: 'Marina Costa',
-      authorNickname: 'marina.costa',
-      authorInitial: 'M',
-      authorCity: 'Recife - PE',
-      title: 'A iluminação do ponto finalmente foi consertada',
-      content:
-        'Há algumas semanas publiquei aqui sobre a falta de iluminação perto do ponto de ônibus. Ontem instalaram novas lâmpadas e o local ficou muito melhor durante a noite. É importante registrar os problemas, mas também mostrar quando eles são resolvidos.',
-      mediaType: 'text',
-      publishedAt: '2026-09-14T23:07:00.000Z',
-      publishedAtLabel: 'Publicado em 14/09/2026, às 20:07',
-      likes: 51,
-      liked: false,
-      dislikes: 0,
-      disliked: false,
-      comments: 8,
-      reposts: 3,
-      reposted: false,
-      saved: true,
-      tags: ['iluminação', 'resultado', 'melhoria'],
-      status: 'RESOLUCAO_INFORMADA',
-      category: 'ILUMINACAO_PUBLICA',
-      importance: 'MEDIA',
-      responsibleAgency: {
-        name: 'Departamento de Iluminacao Publica',
-        hasIntegration: true,
-      },
-      evidences: [],
-      forwardingHistory: [],
-      confirmedByIds: [],
-      history: [],
-    },
-    {
-      id: 'mock-gabriel-1',
-      createdAt: '2026-09-13T15:26:00.000Z',
-      authorName: 'Gabriel Santos',
-      authorNickname: 'gabriel.santos',
-      authorInitial: 'G',
-      authorCity: 'Campinas - SP',
-      title: 'Alagamento volta a acontecer depois da chuva',
-      content:
-        'Depois da chuva de hoje, o cruzamento da Avenida das Flores voltou a ficar completamente alagado. Esse problema acontece praticamente toda vez que chove mais forte e dificulta bastante a passagem de carros e pedestres. Parece que a drenagem do local precisa de manutenção.',
-      mediaType: 'image',
-      publishedAt: '2026-09-13T15:26:00.000Z',
-      publishedAtLabel: 'Publicado em 13/09/2026, às 12:26',
-      likes: 72,
-      liked: false,
-      dislikes: 0,
-      disliked: false,
-      comments: 24,
-      reposts: 9,
-      reposted: false,
-      saved: false,
-      tags: ['alagamento', 'drenagem', 'infraestrutura'],
-      status: 'REABERTA',
-      category: 'INFRAESTRUTURA',
-      importance: 'CRITICA',
-      responsibleAgency: {
-        name: 'Secretaria de Obras e Drenagem',
-        hasIntegration: false,
-      },
-      evidences: [],
-      forwardingHistory: [],
-      confirmedByIds: [],
-      history: [],
-    },
-    {
-      id: 'mock-beatriz-1',
-      createdAt: '2026-09-11T19:53:00.000Z',
-      authorName: 'Beatriz Lima',
-      authorNickname: 'beatriz.lima',
-      authorInitial: 'B',
-      authorCity: 'São Paulo - SP',
-      title: 'Faixa de pedestres faria diferença neste cruzamento',
-      content:
-        'Esse cruzamento tem bastante movimento durante o dia, mas não existe nenhuma faixa de pedestres próxima. Nos horários de pico fica difícil atravessar com segurança. Acho que uma faixa e uma sinalização melhor já ajudariam bastante quem passa por aqui diariamente.',
-      mediaType: 'text',
-      publishedAt: '2026-09-11T19:53:00.000Z',
-      publishedAtLabel: 'Publicado em 11/09/2026, às 16:53',
-      likes: 43,
-      liked: false,
-      dislikes: 0,
-      disliked: false,
-      comments: 9,
-      reposts: 4,
-      reposted: false,
-      saved: false,
-      tags: ['trânsito', 'pedestres', 'sinalização'],
-      status: 'SEM_ORGAO_IDENTIFICADO',
-      category: 'TRANSITO',
-      importance: 'MEDIA',
-      evidences: [],
-      forwardingHistory: [],
-      confirmedByIds: [],
-      history: [],
-    },
-  ];
-}
+  private getDefaultPosts(): SpectrumPost[] {
+    return [];
+  }
 
   private withPostState(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
     const normalizedPost = this.normalizePost(post);
@@ -1570,10 +1293,10 @@ private getDefaultPosts(): SpectrumPost[] {
 
     return {
       ...normalizedPost,
-      likes: normalizedPost.likes + postInteractions.filter((record) => record.liked).length,
-      dislikes: normalizedPost.dislikes + postInteractions.filter((record) => record.disliked).length,
-      liked: currentUserInteraction?.liked ?? false,
-      disliked: currentUserInteraction?.disliked ?? false,
+      likes: normalizedPost.likes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.liked).length),
+      dislikes: normalizedPost.dislikes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.disliked).length),
+      liked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'LIKE' : currentUserInteraction?.liked ?? false,
+      disliked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'UNLIKE' : currentUserInteraction?.disliked ?? false,
       saved: currentUserInteraction?.saved ?? normalizedPost.saved,
       reposts: normalizedPost.reposts + reposts.length,
       reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
@@ -1639,8 +1362,8 @@ private getDefaultPosts(): SpectrumPost[] {
 
     return {
       ...post,
-      likes: Math.max(0, post.likes - interactionLikes),
-      dislikes: Math.max(0, post.dislikes - interactionDislikes),
+      likes: Math.max(0, post.likes - (this.isApiId(postId) ? 0 : interactionLikes)),
+      dislikes: Math.max(0, post.dislikes - (this.isApiId(postId) ? 0 : interactionDislikes)),
       liked: false,
       disliked: false,
       reposts: Math.max(0, post.reposts - reposts),
@@ -1755,7 +1478,7 @@ private getDefaultPosts(): SpectrumPost[] {
     const cached = this.getUserPosts().find((post) => post.id === occurrence._id);
     const creation = occurrence.history?.find((event) => event.eventType === 'OCORRENCIA_CRIADA');
     const isAuthor = user?._id === occurrence.createdBy;
-    const authorName = creation?.actorName || cached?.authorName || (isAuthor ? user?.name : '') || 'Usuário Spectrum';
+    const authorName = occurrence.author?.name || creation?.actorName || cached?.authorName || (isAuthor ? user?.name : '') || 'Usuário Spectrum';
 
 return {
   id: occurrence._id,
@@ -1763,18 +1486,20 @@ return {
   createdBy: occurrence.createdBy,
   originalPostId: occurrence.originalPostId,
   authorName,
-  authorNickname: cached?.authorNickname || (isAuthor ? user?.nickname : '') || 'spectrum',
+  authorNickname: occurrence.author?.nickname || cached?.authorNickname || (isAuthor ? user?.nickname : '') || '',
+  authorAvatarUrl: occurrence.author?.avatarUrl || cached?.authorAvatarUrl,
   authorInitial: authorName.charAt(0).toUpperCase(),
-  authorCity: occurrence.location.label,
+  authorCity: occurrence.author?.cityUser || occurrence.location?.label || '',
   title: occurrence.title || occurrence.text,
   content: occurrence.description || occurrence.text,
   mediaType,
   publishedAt: createdAt,
   publishedAtLabel: this.formatPublishedAt(new Date(createdAt)),
   likes: occurrence.likeCount ?? 0,
-  liked: false,
-  dislikes: 0,
-  disliked: false,
+  reaction: occurrence.reaction,
+  liked: occurrence.reaction === 'LIKE',
+  dislikes: occurrence.unlikeCount ?? 0,
+  disliked: occurrence.reaction === 'UNLIKE',
   comments: 0,
   reposts: 0,
   reposted: false,

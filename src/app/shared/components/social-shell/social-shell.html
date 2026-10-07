@@ -178,6 +178,9 @@
             notifications
           </span>
           Notificações
+          @if (notificationService.unreadCount()) {
+            <span aria-label="Notificações não lidas">({{ notificationService.unreadCount() }})</span>
+          }
         </a>
 
         <a

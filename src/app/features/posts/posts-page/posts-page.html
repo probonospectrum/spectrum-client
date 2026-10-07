@@ -71,7 +71,14 @@
         </article>
       }
     </section>
+  } @else if (feedError()) {
+    <section class="posts-empty" role="alert">
+      <h2>Não foi possível carregar o feed</h2>
+      <p>{{ feedError() }}</p>
+      <button type="button" (click)="refreshPosts()">Tentar novamente</button>
+    </section>
   } @else {
+    <div class="feed-posts" [class.feed-posts--compact]="settingsService.preferences().compactMode">
     @for (post of posts; track post.id) {
       <app-post-card
         [post]="post"
@@ -96,6 +103,12 @@
           <button type="button" (click)="socialShell.openCreatePost()">Criar a primeira ocorrência</button>
         }
       </section>
+    }
+    </div>
+    @if (hasMore()) {
+      <div class="feed-pagination">
+        <button type="button" [disabled]="loadingMore()" (click)="loadMore()">{{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}</button>
+      </div>
     }
   }
 

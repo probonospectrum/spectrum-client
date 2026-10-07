@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { firstValueFrom } from 'rxjs';
-import { PostService } from './post.service';
+import { PostService, SpectrumPost } from './post.service';
 import { occurrenceStage } from './occurrence-flow';
 import { LoggedUser } from '../user/user.service';
 
@@ -21,13 +21,15 @@ describe('Occurrence lifecycle', () => {
   afterEach(() => { TestBed.inject(HttpTestingController).verify(); localStorage.clear(); });
 
   function create() {
-    return service.createPost({ title: 'Buraco na rua', content: 'Buraco em frente à escola municipal.', authorCity: 'São Paulo - SP', mediaType: 'text', tags: [], category: 'INFRAESTRUTURA', importance: 'ALTA', location: { label: 'São Paulo - SP', address: 'Rua da Escola, 10' } }, citizen);
+    const post: SpectrumPost = { id: '66f1c0de0000000000000001', createdBy: citizen._id, createdAt: new Date().toISOString(), publishedAt: new Date().toISOString(), publishedAtLabel: 'Agora', authorName: citizen.name, authorNickname: citizen.nickname, authorInitial: 'M', title: 'Buraco na rua', content: 'Buraco em frente à escola municipal.', authorCity: 'São Paulo - SP', mediaType: 'text', tags: [], category: 'INFRAESTRUTURA', importance: 'ALTA', location: { label: 'São Paulo - SP', address: 'Rua da Escola, 10' }, status: 'AGUARDANDO_ENCAMINHAMENTO', likes: 0, dislikes: 0, liked: false, disliked: false, comments: 0, reposts: 0, reposted: false, saved: false, evidences: [], history: [], confirmedByIds: [], forwardingHistory: [] };
+    localStorage.setItem('spectrum-server-posts:anonymous', JSON.stringify([post]));
+    return post;
   }
 
   it('persists edited routing data and new evidence through the API before updating the cache', async () => {
     const http = TestBed.inject(HttpTestingController);
     const post = { ...create(), id: '66f1c0de0000000000000001' };
-    localStorage.setItem('spectrum-mock-posts', JSON.stringify([post]));
+    localStorage.setItem('spectrum-server-posts:anonymous', JSON.stringify([post]));
     const payload = { title: 'Novo título', content: 'Descrição atualizada', authorCity: post.authorCity, mediaType: 'text' as const, tags: [], category: 'LIMPEZA_URBANA' as const, location: { label: 'Rua B', cityName: 'São Paulo', stateCode: 'SP' } };
     const result = firstValueFrom(service.updateOccurrence(post, payload, citizen, [{ type: 'IMAGE', url: 'https://example.com/evidence.jpg' }]));
     const request = http.expectOne(`${API_BASE_URL}/post/${post.id}`);
@@ -49,18 +51,16 @@ describe('Occurrence lifecycle', () => {
     expect((await result).status).toBe('RESPOSTA_EM_APURACAO');
   });
 
-  it('keeps local occurrences pending and never simulates delivery', async () => {
-    const post = await firstValueFrom(service.confirmOccurrence(create(), citizen));
-    expect(post.status).toBe('AGUARDANDO_ENCAMINHAMENTO');
-    expect(() => service.forwardOccurrence(post, moderator, { agency: { id: 'works', name: 'Obras' }, channel: 'EMAIL', sentContent: '' })).toThrow('servidor');
-    expect(post.forwardingHistory).toEqual([]);
-    expect(post.history.map(event => event.eventType)).toEqual(['OCORRENCIA_CRIADA', 'OCORRENCIA_CONFIRMADA']);
+  it('rejects actions on occurrences that were not saved on the server', async () => {
+    const post = { ...create(), id: 'local-invalid' };
+    await expect(firstValueFrom(service.confirmOccurrence(post, citizen))).rejects.toThrow('servidor');
+    await expect(firstValueFrom(service.getOccurrence(post.id, citizen))).rejects.toThrow('não encontrada');
   });
 
   it('waits for the server before accepting email delivery and preserves pending status on failure', async () => {
     const http = TestBed.inject(HttpTestingController);
     const post = { ...create(), id: '66f1c0de0000000000000001' };
-    localStorage.setItem('spectrum-mock-posts', JSON.stringify([post]));
+    localStorage.setItem('spectrum-server-posts:anonymous', JSON.stringify([post]));
     const result = firstValueFrom(service.forwardOccurrence(post, moderator, { agency: { id: 'works', name: 'Obras', email: 'works@example.com' }, channel: 'EMAIL', sentContent: '' }));
     const rejected = expect(result).rejects.toMatchObject({ status: 502 });
     const request = http.expectOne(API_BASE_URL + '/post/' + post.id + '/forward');
@@ -88,7 +88,7 @@ describe('Occurrence lifecycle', () => {
   it('updates the feed only after the server accepts a transition', async () => {
     const http = TestBed.inject(HttpTestingController);
     const post = { ...create(), id: '66f1c0de0000000000000001', status: 'RESOLUCAO_INFORMADA' as const };
-    localStorage.setItem('spectrum-mock-posts', JSON.stringify([post]));
+    localStorage.setItem('spectrum-server-posts:anonymous', JSON.stringify([post]));
     const result = firstValueFrom(service.resolveOccurrence(post, moderator, 'Verificação presencial confirmou o reparo.'));
     expect(service.findPostById(post.id)?.status).toBe('RESOLUCAO_INFORMADA');
     const request = http.expectOne(`${API_BASE_URL}/post/${post.id}/resolve`);
@@ -102,7 +102,7 @@ describe('Occurrence lifecycle', () => {
   it('does not close the occurrence when the API rejects verification', async () => {
     const http = TestBed.inject(HttpTestingController);
     const post = { ...create(), id: '66f1c0de0000000000000001', status: 'RESOLUCAO_INFORMADA' as const };
-    localStorage.setItem('spectrum-mock-posts', JSON.stringify([post]));
+    localStorage.setItem('spectrum-server-posts:anonymous', JSON.stringify([post]));
     const result = firstValueFrom(service.resolveOccurrence(post, moderator, 'Verificação presencial confirmou o reparo.'));
     const rejected = expect(result).rejects.toMatchObject({ status: 403 });
     http.expectOne(`${API_BASE_URL}/post/${post.id}/resolve`).flush({ message: 'Não autorizado' }, { status: 403, statusText: 'Forbidden' });

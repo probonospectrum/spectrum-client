@@ -9,6 +9,7 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  DestroyRef,
   Output,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -19,6 +20,8 @@ import {
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-post-card',
@@ -27,6 +30,19 @@ import { LoggedUser } from '../../../core/services/user/user.service';
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
+  reactionPending = false;
+  reactionError = '';
+
+  private saveReaction(reaction: 'LIKE' | 'UNLIKE' | null): void {
+    if (this.reactionPending) return;
+    this.reactionPending = true;
+    this.reactionError = '';
+    this.postService.setPostReaction(this.post, this.currentUser, reaction)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.reactionPending = false))
+      .subscribe({ next: post => this.post = post,
+        error: () => this.reactionError = 'Não foi possível salvar sua reação. Tente novamente.' });
+  }
   private readonly postService = inject(PostService);
   private readonly router = inject(Router);
 
@@ -45,6 +61,7 @@ export class PostCard implements OnChanges, OnDestroy {
   addedCommentsCount = 0;
   menuOpen = false;
   now = Date.now();
+  failedCoverUrl?: string;
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -74,6 +91,27 @@ export class PostCard implements OnChanges, OnDestroy {
 
   get primaryImage(): string | undefined {
     return this.post.evidences.find(evidence => evidence.type === 'IMAGE' && evidence.url)?.url;
+  }
+
+  get coverImage(): string | undefined {
+    if (this.primaryImage) return this.primaryImage;
+
+    const videoUrl = this.post.evidences.find(evidence => evidence.type === 'VIDEO' && evidence.url)?.url;
+    if (!videoUrl) return undefined;
+
+    let url: URL;
+    try {
+      url = new URL(videoUrl);
+    } catch {
+      return undefined;
+    }
+    if (url.hostname !== 'res.cloudinary.com' || !url.pathname.includes('/video/upload/')) {
+      return undefined;
+    }
+
+    url.pathname = url.pathname.replace(/\.[^/.]+$/, '.jpg');
+    const thumbnailUrl = url.toString();
+    return thumbnailUrl === this.failedCoverUrl ? undefined : thumbnailUrl;
   }
 
   get importanceLabel(): string {
@@ -160,6 +198,10 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleLike(): void {
+    if (/^[a-f0-9]{24}$/i.test(this.post.originalPostId ?? this.post.id)) {
+      this.saveReaction(this.post.liked ? null : 'LIKE');
+      return;
+    }
     const previousPost = this.post;
 
     const nextLiked = !this.post.liked;
@@ -183,6 +225,10 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleDislike(): void {
+    if (/^[a-f0-9]{24}$/i.test(this.post.originalPostId ?? this.post.id)) {
+      this.saveReaction(this.post.disliked ? null : 'UNLIKE');
+      return;
+    }
     const previousPost = this.post;
 
     const nextDisliked = !this.post.disliked;
