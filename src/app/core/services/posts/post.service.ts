@@ -135,6 +135,7 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
   forwardingDueAt?: string | null;
   id: string;
@@ -240,6 +241,7 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  reaction?: 'LIKE' | 'UNLIKE' | null;
   author?: { _id: string; name: string; nickname: string; avatarUrl?: string; cityUser: string };
   unlikeCount?: number;
   moderationReason?: string | null;
@@ -820,7 +822,7 @@ export class PostService {
       record.liked = result.liked;
       record.disliked = result.disliked;
       this.savePostInteractionRecords(records);
-      const updated = { ...post, ...result };
+      const updated = { ...post, ...result, reaction };
       this.cacheOccurrence({ ...updated, id: postId });
       return updated;
     }));
@@ -1293,8 +1295,8 @@ export class PostService {
       ...normalizedPost,
       likes: normalizedPost.likes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.liked).length),
       dislikes: normalizedPost.dislikes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.disliked).length),
-      liked: currentUserInteraction?.liked ?? false,
-      disliked: currentUserInteraction?.disliked ?? false,
+      liked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'LIKE' : currentUserInteraction?.liked ?? false,
+      disliked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'UNLIKE' : currentUserInteraction?.disliked ?? false,
       saved: currentUserInteraction?.saved ?? normalizedPost.saved,
       reposts: normalizedPost.reposts + reposts.length,
       reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
@@ -1494,9 +1496,10 @@ return {
   publishedAt: createdAt,
   publishedAtLabel: this.formatPublishedAt(new Date(createdAt)),
   likes: occurrence.likeCount ?? 0,
-  liked: false,
+  reaction: occurrence.reaction,
+  liked: occurrence.reaction === 'LIKE',
   dislikes: occurrence.unlikeCount ?? 0,
-  disliked: false,
+  disliked: occurrence.reaction === 'UNLIKE',
   comments: 0,
   reposts: 0,
   reposted: false,
