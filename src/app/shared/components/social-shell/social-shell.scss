@@ -924,3 +924,27 @@
 @media (max-height: 500px) and (max-width: 780px) {
   .social-header { position: relative; }
 }
+.social-nav__notification-icon {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.social-nav__notification-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font: 700 10px/1 var(--spectrum-font);
+  white-space: nowrap;
+  pointer-events: none;
+}

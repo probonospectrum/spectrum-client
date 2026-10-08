@@ -174,13 +174,15 @@
           routerLink="/notificacoes"
           routerLinkActive="social-nav__item--active"
         >
-          <span class="material-symbols-outlined">
-            notifications
+          <span class="social-nav__notification-icon">
+            <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+            @if (notificationService.unreadCount()) {
+              <span class="social-nav__notification-badge" [attr.aria-label]="notificationService.unreadCount() + ' notificações não lidas'">
+                {{ notificationService.unreadCount() > 99 ? '99+' : notificationService.unreadCount() }}
+              </span>
+            }
           </span>
           Notificações
-          @if (notificationService.unreadCount()) {
-            <span aria-label="Notificações não lidas">({{ notificationService.unreadCount() }})</span>
-          }
         </a>
 
         <a

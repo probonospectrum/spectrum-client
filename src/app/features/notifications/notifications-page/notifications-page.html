@@ -8,7 +8,12 @@
     <p role="alert">{{ service.error() }} <button type="button" (click)="service.reload()">Tentar novamente</button></p>
   }
   @if (service.unreadCount()) {
-    <button type="button" (click)="markAllRead()">Marcar todas como lidas</button>
+    <div class="notifications-toolbar">
+      <button class="notifications-action" type="button" (click)="markAllRead()">
+        <span class="material-symbols-outlined" aria-hidden="true">done_all</span>
+        Marcar todas como lidas
+      </button>
+    </div>
   }
   @if (loading()) {
     <div class="notifications-loading" aria-label="Carregando notificacoes">
