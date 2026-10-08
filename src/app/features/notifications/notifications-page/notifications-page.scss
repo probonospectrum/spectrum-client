@@ -1,12 +1,37 @@
+.notifications-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 .notifications-action {
-  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 36px;
   border: 0;
-  border-radius: var(--spectrum-radius-sm);
-  padding: 0 16px;
-  background: var(--spectrum-primary-800);
-  color: #ffffff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--spectrum-accent-soft);
+  color: var(--spectrum-primary-800);
   cursor: pointer;
-  font: 800 13px/1 var(--spectrum-font);
+  font: 600 12px/1.4 var(--spectrum-font);
+  transition: background-color var(--spectrum-transition);
+}
+
+.notifications-action:hover {
+  background: var(--spectrum-surface-muted);
+}
+
+.notifications-action:focus-visible {
+  outline: 2px solid var(--spectrum-primary-600);
+  outline-offset: 3px;
+}
+
+.notifications-action .material-symbols-outlined {
+  font-size: 18px;
 }
 
 .notifications-action:disabled {
@@ -97,11 +122,5 @@
 
   100% {
     background-position: -120% 0;
-  }
-}
-
-@media (max-width: 540px) {
-  .notifications-action {
-    width: 100%;
   }
 }
