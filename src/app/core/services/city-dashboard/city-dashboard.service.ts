@@ -2,11 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { Observable } from 'rxjs';
-import {
-  OccurrenceCategory,
-  OccurrenceImportance,
-  OccurrenceStatus,
-} from '../posts/post.service';
+import { OccurrenceCategory, OccurrenceImportance, OccurrenceStatus } from '../posts/post.service';
 
 export interface DashboardFilters {
   state?: string;
@@ -41,6 +37,16 @@ export interface DashboardCityComparison {
   topCategory: OccurrenceCategory | null;
 }
 
+export interface DashboardStateComparison {
+  stateCode: string;
+  state: string;
+  total: number;
+  resolved: number;
+  createdPercentage: number;
+  resolvedPercentage: number;
+  resolutionRate: number;
+}
+
 export interface CityDashboardResponse {
   period: { from: string; to: string; days: number };
   summary: {
@@ -68,6 +74,7 @@ export interface CityDashboardResponse {
   importanceDistribution: DashboardDistributionItem<OccurrenceImportance>[];
   timeline: Array<{ date: string; count: number }>;
   cities: DashboardCityComparison[];
+  states: DashboardStateComparison[];
 }
 
 export interface DashboardCityOption {
@@ -138,13 +145,21 @@ export class CityDashboardService {
     return this.http.get<DashboardOptionsResponse>(`${this.url}/options`);
   }
 
-  getOccurrences(filters: DashboardFilters, page: number, limit = 10): Observable<DashboardOccurrenceListResponse> {
+  getOccurrences(
+    filters: DashboardFilters,
+    page: number,
+    limit = 10,
+  ): Observable<DashboardOccurrenceListResponse> {
     return this.http.get<DashboardOccurrenceListResponse>(`${this.url}/occurrences`, {
       params: { ...this.params(filters), page: String(page), limit: String(limit) },
     });
   }
 
   private params(filters: DashboardFilters): Record<string, string> {
-    return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined && value !== '').map(([key, value]) => [key, String(value)]));
+    return Object.fromEntries(
+      Object.entries(filters)
+        .filter(([, value]) => value !== undefined && value !== '')
+        .map(([key, value]) => [key, String(value)]),
+    );
   }
 }
