@@ -74,23 +74,6 @@
     <app-settings-section title="Preferências">
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Conta privada</strong>
-          <small>
-            {{
-              settings.privateAccount
-                ? 'Publicações visíveis apenas para você e seguidores atuais'
-                : 'Exibir publicações no feed público'
-            }}
-          </small>
-        </span>
-        <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
-          [checked]="settings.privateAccount"
-          (checkedChange)="setSetting('privateAccount', $event)"
-        />
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row__content">
           <strong>Tema claro/escuro</strong>
           <small>{{ settings.darkTheme ? 'Tema escuro ativo' : 'Tema claro ativo' }}</small>
         </span>

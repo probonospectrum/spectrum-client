@@ -114,7 +114,7 @@ describe('SettingsPage', () => {
     await Promise.resolve();
     fixture.detectChanges();
     expect(input.checked).toBe(false);
-    expect(component.settings.privateAccount).toBe(false);
+    expect(component.settings.darkTheme).toBe(false);
   });
 
   it('sends current and new passwords and only confirms a successful server response', async () => {
