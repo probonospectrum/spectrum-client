@@ -76,6 +76,9 @@
 .occurrence-detail__action-group > span { width: 100%; margin-bottom: 2px; color: var(--spectrum-text-muted); font-size: 10px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
 .occurrence-detail__form { border-top: 1px solid var(--spectrum-border); padding-top: 22px; }
 .occurrence-detail__action-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 18px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.occurrence-detail__action-fields > button { align-self: end; }
+.occurrence-detail__suggestion-actions { display: flex; align-self: end; gap: 9px; min-width: 0; }
+.occurrence-detail__suggestion-actions > button { flex: 1; min-width: 0; }
 .occurrence-detail__form-heading, .occurrence-detail__form-hint { grid-column: 1 / -1; }
 .occurrence-detail__form-heading h3 { margin: 0; font-size: 15px; font-weight: 650; }
 .occurrence-detail__form-heading p, .occurrence-detail__form-hint { margin: 6px 0 0; color: var(--spectrum-text-muted); font-size: 12px; line-height: 1.75; }

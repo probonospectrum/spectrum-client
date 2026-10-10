@@ -51,6 +51,13 @@
   margin-left: auto;
 }
 
+.media-lightbox__zoom { min-width: 45px; text-align: center; font-size: 13px; }
+.media-lightbox__zoom-controls { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 0 20px 16px; flex-shrink: 0; }
+.media-lightbox__close:disabled { opacity: .4; cursor: default; }
+.media-lightbox__content--zoomable { overflow: hidden; }
+.media-lightbox__img--zoomed { cursor: grab; touch-action: none; }
+.media-lightbox__img--zoomed:active { cursor: grabbing; }
+
 .media-lightbox__close {
   display: grid;
   place-items: center;
