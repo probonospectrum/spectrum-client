@@ -60,7 +60,7 @@
           <div class="comment-section__actions">
             <button
               type="button"
-              [class.comment-section__action--active]="isLiked(comment.id)"
+              [class.comment-section__action--liked]="isLiked(comment.id)"
               [attr.aria-label]="'Curtir comentario' | translate"
               (click)="toggleLike(comment.id)"
             >
@@ -72,7 +72,7 @@
 
             <button
               type="button"
-              [class.comment-section__action--active]="isDisliked(comment.id)"
+              [class.comment-section__action--disliked]="isDisliked(comment.id)"
               [attr.aria-label]="'Descurtir comentario' | translate"
               (click)="toggleDislike(comment.id)"
             >

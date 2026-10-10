@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { PostService } from './post.service';
-import { SpectrumPost } from './post.service';
+import { SpectrumComment, SpectrumPost } from './post.service';
 import { LoggedUser } from '../user/user.service';
 
 describe('Occurrence feed API', () => {
@@ -50,6 +50,29 @@ describe('Occurrence feed API', () => {
     posts.toggleServerRepost(post, null).subscribe({ error: () => {} });
     http.expectOne(API_BASE_URL + '/post/' + post.id + '/repost/toggle').flush({}, { status: 500, statusText: 'Error' });
     expect(post).toMatchObject({ reposts: 2, reposted: false, liked: true, saved: true });
+  });
+
+  it('sends comment reactions to the backend and uses the saved state', () => {
+    const comment = { id: 'comment', likes: 2, dislikes: 1, liked: false, disliked: true } as SpectrumComment;
+    let result: SpectrumComment | undefined;
+    posts.setCommentReaction(comment, 'LIKE').subscribe(value => result = value);
+    const request = http.expectOne(API_BASE_URL + '/like/comment/comment');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ reaction: 'LIKE' });
+    expect(result).toBeUndefined();
+    request.flush({ likes: 3, dislikes: 0, liked: true, disliked: false });
+    expect(result).toMatchObject({ likes: 3, dislikes: 0, liked: true, disliked: false });
+    expect(comment.liked).toBe(false);
+  });
+
+  it('loads comment reactions from the backend after reopening comments', () => {
+    let result: SpectrumComment[] = [];
+    posts.loadComments('post').subscribe(value => result = value);
+    http.expectOne(API_BASE_URL + '/comment/post/post').flush([
+      { _id: 'comment', userId: 'owner', text: 'Comentário', createdAt: '2026-10-10T12:00:00Z', author: { name: 'Ana' } },
+    ]);
+    http.expectOne(API_BASE_URL + '/like/comment/post/post').flush({ comment: { likes: 3, dislikes: 0, liked: true, disliked: false } });
+    expect(result[0]).toMatchObject({ id: 'comment', likes: 3, liked: true });
   });
 
   it('persists reactions before updating counts and does not add the local reaction twice', () => {
@@ -108,7 +131,7 @@ describe('Occurrence feed API', () => {
   it('restores the reaction after reload without local storage and accepts removal from the server', () => {
     const id = '66f1c0de0000000000000001';
     const user = { _id: '66f1c0de0000000000000002' } as LoggedUser;
-    const response = { _id: id, text: 'Post', createdAt: '2026-10-06T12:00:00Z', likeCount: 3, unlikeCount: 1, reaction: 'LIKE' };
+    const response = { _id: id, text: 'Post', createdAt: '2026-10-06T12:00:00Z', likeCount: 3, unlikeCount: 1, reaction: 'LIKE', commentCount: 1 };
     let loaded: SpectrumPost | undefined;
     posts.getFeed(user).subscribe(page => loaded = page.data[0]);
     http.expectOne(r => r.url === API_BASE_URL + '/feed').flush({ data: [response], nextCursor: null, hasMore: false });
@@ -116,7 +139,7 @@ describe('Occurrence feed API', () => {
     localStorage.clear();
     posts.getFeed(user).subscribe(page => loaded = page.data[0]);
     http.expectOne(r => r.url === API_BASE_URL + '/feed').flush({ data: [response], nextCursor: null, hasMore: false });
-    expect(loaded).toMatchObject({ likes: 3, liked: true });
+    expect(loaded).toMatchObject({ likes: 3, liked: true, comments: 1 });
     posts.setPostReaction(loaded!, user, 'LIKE').subscribe();
     http.expectOne(API_BASE_URL + '/like/post/' + id).flush({ likes: 3, dislikes: 1, liked: true, disliked: false });
     posts.getFeed(user).subscribe(page => loaded = page.data[0]);

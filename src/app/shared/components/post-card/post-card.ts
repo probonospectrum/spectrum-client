@@ -5,6 +5,7 @@ import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/servic
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  ChangeDetectorRef,
   EventEmitter,
   HostListener,
   inject,
@@ -36,15 +37,19 @@ import { LightboxMediaItem, MediaLightbox } from '../media-lightbox/media-lightb
 export class PostCard implements OnChanges, OnDestroy {
   readonly i18n = inject(I18nService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   reactionPending = false;
   reactionError = '';
 
   private saveReaction(reaction: 'LIKE' | 'UNLIKE' | null): void {
-    if (this.reactionPending) return;
+    if (this.reactionPending || !this.currentUser) return;
     this.reactionPending = true;
     this.reactionError = '';
     this.postService.setPostReaction(this.post, this.currentUser, reaction)
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.reactionPending = false))
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+        this.reactionPending = false;
+        this.changeDetector.markForCheck();
+      }))
       .subscribe({ next: post => this.post = post,
         error: () => this.reactionError = 'Não foi possível salvar sua reação. Tente novamente.' });
   }
@@ -64,7 +69,6 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() copyLink = new EventEmitter<SpectrumPost>();
 
   commentsOpen = false;
-  addedCommentsCount = 0;
   menuOpen = false;
   now = Date.now();
   failedCoverUrl?: string;
@@ -76,7 +80,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   get commentsCount(): number {
-    return this.post.comments + this.addedCommentsCount;
+    return this.post.comments;
   }
 
   get reposts(): number {
@@ -248,57 +252,11 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleLike(): void {
-    if (/^[a-f0-9]{24}$/i.test(this.post.originalPostId ?? this.post.id)) {
-      this.saveReaction(this.post.liked ? null : 'LIKE');
-      return;
-    }
-    const previousPost = this.post;
-
-    const nextLiked = !this.post.liked;
-
-    this.post = {
-      ...this.post,
-      liked: nextLiked,
-      disliked: nextLiked ? false : this.post.disliked,
-      likes: this.post.likes + (nextLiked ? 1 : -1),
-      dislikes:
-        this.post.disliked && nextLiked
-          ? this.post.dislikes - 1
-          : this.post.dislikes,
-    };
-
-    try {
-      this.post = this.postService.togglePostLike(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
-    }
+    this.saveReaction(this.post.liked ? null : 'LIKE');
   }
 
   toggleDislike(): void {
-    if (/^[a-f0-9]{24}$/i.test(this.post.originalPostId ?? this.post.id)) {
-      this.saveReaction(this.post.disliked ? null : 'UNLIKE');
-      return;
-    }
-    const previousPost = this.post;
-
-    const nextDisliked = !this.post.disliked;
-
-    this.post = {
-      ...this.post,
-      disliked: nextDisliked,
-      liked: nextDisliked ? false : this.post.liked,
-      dislikes: this.post.dislikes + (nextDisliked ? 1 : -1),
-      likes:
-        this.post.liked && nextDisliked
-          ? this.post.likes - 1
-          : this.post.likes,
-    };
-
-    try {
-      this.post = this.postService.togglePostDislike(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
-    }
+    this.saveReaction(this.post.disliked ? null : 'UNLIKE');
   }
 
   toggleSaved(): void {
@@ -348,8 +306,9 @@ export class PostCard implements OnChanges, OnDestroy {
     this.goToOccurrence();
   }
 
-  onCommentAdded(): void {
-    this.addedCommentsCount++;
+  onCommentCountChanged(count: number): void {
+    this.post = { ...this.post, comments: count };
+    this.changeDetector.markForCheck();
   }
 
   formatHistoryEvent(eventType: string): string {

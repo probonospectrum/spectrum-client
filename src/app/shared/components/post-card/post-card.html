@@ -232,6 +232,7 @@
         type="button"
         [class.post-card__action--liked]="post.liked"
         [attr.aria-label]="'Curtir publicacao' | translate"
+        [disabled]="reactionPending"
         (click)="toggleLike()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
@@ -244,6 +245,7 @@
         type="button"
         [class.post-card__action--disliked]="post.disliked"
         [attr.aria-label]="'Descurtir publicacao' | translate"
+        [disabled]="reactionPending"
         (click)="toggleDislike()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
@@ -282,7 +284,7 @@
     <app-comment-section
       [postId]="post.id"
       [currentUser]="currentUser"
-      (commentAdded)="onCommentAdded()"
+      (commentCountChanged)="onCommentCountChanged($event)"
     />
   }
 
