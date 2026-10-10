@@ -629,6 +629,10 @@
   color: var(--spectrum-primary-800) !important;
 }
 
+.post-card__actions button.post-card__action--active {
+  color: #2563eb;
+}
+
 .post-card__action--disliked {
   color: #e91e63 !important;
 }
