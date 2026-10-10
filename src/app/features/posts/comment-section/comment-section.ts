@@ -32,6 +32,7 @@ export class CommentSection implements OnInit {
   deleteTarget: SpectrumComment | null = null;
   actionPending = false;
   actionMessage = '';
+  private readonly pendingReactions = new Set<string>();
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
@@ -113,6 +114,7 @@ export class CommentSection implements OnInit {
   }
 
   toggleLike(commentId: string): void {
+    if (!this.currentUser || this.pendingReactions.has(commentId)) return;
     const comment = this.findComment(commentId);
 
     if (!comment) {
@@ -131,14 +133,11 @@ export class CommentSection implements OnInit {
 
     this.replaceComment(optimisticComment);
 
-    try {
-      this.replaceComment(this.postService.toggleCommentLike(previousComment, this.currentUser));
-    } catch {
-      this.replaceComment(previousComment);
-    }
+    this.saveReaction(previousComment, nextLiked ? 'LIKE' : null);
   }
 
   toggleDislike(commentId: string): void {
+    if (!this.currentUser || this.pendingReactions.has(commentId)) return;
     const comment = this.findComment(commentId);
 
     if (!comment) {
@@ -157,11 +156,19 @@ export class CommentSection implements OnInit {
 
     this.replaceComment(optimisticComment);
 
-    try {
-      this.replaceComment(this.postService.toggleCommentDislike(previousComment, this.currentUser));
-    } catch {
-      this.replaceComment(previousComment);
-    }
+    this.saveReaction(previousComment, nextDisliked ? 'UNLIKE' : null);
+  }
+
+  private saveReaction(previous: SpectrumComment, reaction: 'LIKE' | 'UNLIKE' | null): void {
+    this.pendingReactions.add(previous.id);
+    this.postService.setCommentReaction(previous, reaction).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: comment => { this.replaceComment(comment); this.pendingReactions.delete(previous.id); },
+      error: () => {
+        this.replaceComment(previous);
+        this.pendingReactions.delete(previous.id);
+        this.error = 'Não foi possível salvar a reação. Tente novamente.';
+      },
+    });
   }
 
   @HostListener('document:click')

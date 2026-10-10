@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { PostService } from './post.service';
-import { SpectrumPost } from './post.service';
+import { SpectrumComment, SpectrumPost } from './post.service';
 import { LoggedUser } from '../user/user.service';
 
 describe('Occurrence feed API', () => {
@@ -16,6 +16,29 @@ describe('Occurrence feed API', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+
+  it('sends comment reactions to the backend and uses the saved state', () => {
+    const comment = { id: 'comment', likes: 2, dislikes: 1, liked: false, disliked: true } as SpectrumComment;
+    let result: SpectrumComment | undefined;
+    posts.setCommentReaction(comment, 'LIKE').subscribe(value => result = value);
+    const request = http.expectOne(API_BASE_URL + '/like/comment/comment');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ reaction: 'LIKE' });
+    expect(result).toBeUndefined();
+    request.flush({ likes: 3, dislikes: 0, liked: true, disliked: false });
+    expect(result).toMatchObject({ likes: 3, dislikes: 0, liked: true, disliked: false });
+    expect(comment.liked).toBe(false);
+  });
+
+  it('loads comment reactions from the backend after reopening comments', () => {
+    let result: SpectrumComment[] = [];
+    posts.loadComments('post').subscribe(value => result = value);
+    http.expectOne(API_BASE_URL + '/comment/post/post').flush([
+      { _id: 'comment', userId: 'owner', text: 'Comentário', createdAt: '2026-10-10T12:00:00Z', author: { name: 'Ana' } },
+    ]);
+    http.expectOne(API_BASE_URL + '/like/comment/post/post').flush({ comment: { likes: 3, dislikes: 0, liked: true, disliked: false } });
+    expect(result[0]).toMatchObject({ id: 'comment', likes: 3, liked: true });
+  });
 
   it('persists reactions before updating counts and does not add the local reaction twice', () => {
     const id = '66f1c0de0000000000000001';
