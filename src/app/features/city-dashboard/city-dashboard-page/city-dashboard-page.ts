@@ -1,3 +1,5 @@
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
@@ -34,7 +36,7 @@ interface PeriodOption {
 
 @Component({
   selector: 'app-city-dashboard-page',
-  imports: [
+  imports: [TranslatePipe,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -46,6 +48,7 @@ interface PeriodOption {
   styleUrl: './city-dashboard-page.scss',
 })
 export class CityDashboardPage implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly dashboardService = inject(CityDashboardService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
@@ -148,7 +151,7 @@ export class CityDashboardPage implements OnInit {
       key: item.key,
       label: this.categoryLabel(item.key),
       value: item.count,
-      detail: `${this.number(item.percentage)}% do total`,
+      detail: `${this.number(item.percentage)}${this.i18n.translate('% do total')}`,
     }));
   }
 
@@ -248,11 +251,11 @@ export class CityDashboardPage implements OnInit {
   }
 
   number(value: number): string {
-    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
+    return new Intl.NumberFormat(this.i18n.language(), { maximumFractionDigits: 1 }).format(value);
   }
 
   date(value: string): string {
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(this.i18n.language(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -39,7 +40,7 @@ interface FeedAlert {
 
 @Component({
   selector: 'app-posts-page',
-  imports: [
+  imports: [TranslatePipe,
     CommonModule,
     SocialShell,
     PostCard,

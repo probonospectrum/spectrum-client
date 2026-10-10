@@ -7,7 +7,7 @@
   (postUpdated)="onPostUpdated()"
 >
   @if (profileLoading()) {
-    <section class="profile-loading" aria-label="Carregando perfil">
+    <section class="profile-loading" [attr.aria-label]="'Carregando perfil' | translate">
       <div class="profile-skeleton__cover"></div>
       <div class="profile-skeleton__body">
         <span class="profile-skeleton__avatar"></span>
@@ -17,13 +17,13 @@
       </div>
     </section>
   } @else if (profileError()) {
-    <p role="alert">{{ profileError() }}</p>
+    <p role="alert">{{ (profileError()) | translate }}</p>
   } @else {
   <section class="profile-header">
     <div class="profile-header__cover">
       <img
         [src]="coverUrl"
-        alt="Capa do perfil"
+        [alt]="'Capa do perfil' | translate"
         class="profile-header__cover-img"
       />
     </div>
@@ -40,14 +40,14 @@
           <div class="profile-header__actions">
             @if (isOwnProfile()) {
               <button class="profile-header__config-btn" type="button" (click)="goToSettings()">
-                Configurações de perfil
+                {{ 'Configurações de perfil' | translate }}
               </button>
             } @else {
               <div class="profile-header__menu-wrap" (click)="$event.stopPropagation()">
                 <button
                   class="profile-header__report-btn"
                   type="button"
-                  aria-label="Abrir opções do perfil"
+                  [attr.aria-label]="'Abrir opções do perfil' | translate"
                   [attr.aria-expanded]="reportMenuOpen"
                   (click)="toggleReportMenu($event)"
                 >
@@ -58,7 +58,7 @@
                   <div class="profile-header__menu" role="menu">
                     <button type="button" role="menuitem" (click)="openReport()">
                       <span class="material-symbols-outlined" aria-hidden="true">flag</span>
-                      Denunciar perfil
+                      {{ 'Denunciar perfil' | translate }}
                     </button>
                   </div>
                 }
@@ -71,7 +71,7 @@
                 (click)="toggleFollow()"
                 [disabled]="followSaving()"
               >
-                {{ isFollowing() ? 'Seguindo' : 'Seguir' }}
+                {{ (isFollowing() ? 'Seguindo' : 'Seguir') | translate }}
               </button>
             }
           </div>
@@ -96,25 +96,25 @@
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            Entrou em {{ joinedDate }}
+            {{ 'Entrou em' | translate }} {{ joinedDate }}
           </span>
         </div>
 
         <div class="profile-header__stats">
-          <span>Seguindo <strong>{{ followingCount }}</strong></span>
-          <span>Seguidores <strong>{{ followersCount }}</strong></span>
+          <span>{{ 'Seguindo' | translate }} <strong>{{ followingCount }}</strong></span>
+          <span>{{ 'Seguidores' | translate }} <strong>{{ followersCount }}</strong></span>
         </div>
       </div>
     </div>
   </section>
 
-  <nav class="profile-tabs" aria-label="Abas do perfil">
+  <nav class="profile-tabs" [attr.aria-label]="'Abas do perfil' | translate">
     <button
       class="profile-tabs__tab"
       [class.profile-tabs__tab--active]="activeTab === 'posts'"
       type="button"
       (click)="activeTab = 'posts'"
-      aria-label="Publicações"
+      [attr.aria-label]="'Publicações' | translate"
     >
       <svg
         class="profile-tabs__icon"
@@ -139,7 +139,7 @@
       [class.profile-tabs__tab--active]="activeTab === 'reposts'"
       type="button"
       (click)="activeTab = 'reposts'"
-      aria-label="Reposts"
+      [attr.aria-label]="'Reposts' | translate"
     >
       <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
       <span class="profile-tabs__count">{{ reposts.length }}</span>
@@ -150,7 +150,7 @@
         [class.profile-tabs__tab--active]="activeTab === 'saved'"
         type="button"
         (click)="activeTab = 'saved'"
-        aria-label="Posts salvos"
+        [attr.aria-label]="'Posts salvos' | translate"
       >
         <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
         <span class="profile-tabs__count">{{ savedPosts.length }}</span>
@@ -177,7 +177,7 @@
 
       @if (userPosts.length === 0) {
         <div class="profile-feed__empty">
-          <p>Nenhuma publicação ainda.</p>
+          <p>{{ 'Nenhuma publicação ainda.' | translate }}</p>
         </div>
       }
     } @else if (activeTab === 'reposts') {
@@ -198,7 +198,7 @@
 
       @if (visibleReposts.length === 0) {
         <div class="profile-feed__empty">
-          <p>Nenhum repost ainda.</p>
+          <p>{{ 'Nenhum repost ainda.' | translate }}</p>
         </div>
       }
     } @else if (isOwnProfile()) {
@@ -219,12 +219,12 @@
 
       @if (visibleSavedPosts.length === 0) {
         <div class="profile-feed__empty">
-          <p>Nenhum post salvo ainda.</p>
+          <p>{{ 'Nenhum post salvo ainda.' | translate }}</p>
         </div>
       }
     } @else {
       <div class="profile-feed__empty">
-        <p>Posts salvos são privados.</p>
+        <p>{{ 'Posts salvos são privados.' | translate }}</p>
       </div>
     }
   </div>
@@ -233,16 +233,16 @@
   @if (profileAlert(); as currentProfileAlert) {
     <app-alert-popup
       [type]="currentProfileAlert.type"
-      [title]="currentProfileAlert.title"
-      [message]="currentProfileAlert.message"
-      actionLabel="Ok"
+      [title]="(currentProfileAlert.title) | translate"
+      [message]="(currentProfileAlert.message) | translate"
+      [actionLabel]="'Ok' | translate"
       (dismissed)="profileAlert.set(null)"
     />
   }
 
   @if (reportingProfile) {
     <app-report-modal
-      title="O que está sendo reportado?"
+      [title]="'O que está sendo reportado?' | translate"
       (close)="reportingProfile = false"
       (confirm)="confirmReport()"
     />

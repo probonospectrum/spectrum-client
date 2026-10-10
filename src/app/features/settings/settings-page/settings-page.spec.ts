@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { SettingsPage } from './settings-page';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { DEFAULT_SETTINGS } from '../../../core/services/account/settings.service';
 import { API_BASE_URL } from '../../../core/constants/api-routes';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
@@ -33,6 +34,32 @@ describe('SettingsPage', () => {
   afterEach(() => {
     component.ngOnDestroy();
     TestBed.inject(HttpTestingController).verify();
+  });
+
+  it('saves Spanish through the existing dropdown and updates the interface without reloading preferences', async () => {
+    const select = fixture.nativeElement.querySelector('select[name="language"]') as HTMLSelectElement;
+    expect([...select.options].map(option => option.value)).toEqual(['pt-BR', 'en-US', 'es']);
+    select.value = 'es';
+    component.changeLanguage({ target: select } as unknown as Event);
+    const request = TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/settings');
+    expect(request.request.body).toEqual({ language: 'es' });
+    request.flush({ ...DEFAULT_SETTINGS, language: 'es' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(TestBed.inject(I18nService).language()).toBe('es');
+    expect(fixture.nativeElement.textContent).toContain('Preferencias');
+    expect(select.value).toBe('es');
+    expect(localStorage.getItem('spectrum.language')).toBe('es');
+    TestBed.inject(HttpTestingController).expectNone(API_BASE_URL + '/user/me/settings');
+  });
+
+  it('keeps the previous language when saving fails', async () => {
+    const saving = component.setSetting('language', 'es');
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/me/settings')
+      .flush({}, { status: 503, statusText: 'Unavailable' });
+    await saving;
+    expect(TestBed.inject(I18nService).language()).toBe('pt-BR');
+    expect(component.settings.language).toBe('pt-BR');
   });
 
   it('opens real account controls and omits simulated security controls', () => {

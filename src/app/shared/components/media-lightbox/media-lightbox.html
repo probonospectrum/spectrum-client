@@ -2,7 +2,7 @@
   class="media-lightbox"
   role="dialog"
   aria-modal="true"
-  aria-label="Visualizador de mídia"
+  [attr.aria-label]="'Visualizador de mídia' | translate"
   (click)="onBackdropClick($event)"
 >
   <header class="media-lightbox__header" (click)="onContentClick($event)">
@@ -17,7 +17,7 @@
       <button
         type="button"
         class="media-lightbox__close"
-        aria-label="Fechar visualizador"
+        [attr.aria-label]="'Fechar visualizador' | translate"
         (click)="close.emit()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">close</span>
@@ -30,7 +30,7 @@
       <button
         type="button"
         class="media-lightbox__nav media-lightbox__nav--prev"
-        aria-label="Mídia anterior"
+        [attr.aria-label]="'Mídia anterior' | translate"
         (click)="prev($event)"
       >
         <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
@@ -51,7 +51,7 @@
           <img
             class="media-lightbox__img"
             [src]="item.url"
-            [alt]="item.alt || 'Imagem expandida'"
+            [alt]="(item.alt || ('Imagem expandida' | translate))"
             loading="eager"
           />
         }
@@ -62,7 +62,7 @@
       <button
         type="button"
         class="media-lightbox__nav media-lightbox__nav--next"
-        aria-label="Próxima mídia"
+        [attr.aria-label]="'Próxima mídia' | translate"
         (click)="next($event)"
       >
         <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
@@ -78,7 +78,7 @@
             type="button"
             class="media-lightbox__thumb-btn"
             [class.is-active]="idx === currentIndex"
-            [attr.aria-label]="'Ir para mídia ' + (idx + 1)"
+            [attr.aria-label]="(('Ir para mídia ' | translate) + (idx + 1)) | translate"
             (click)="goTo(idx, $event)"
           >
             @if (item.type === 'VIDEO') {

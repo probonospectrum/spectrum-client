@@ -10,49 +10,49 @@
 
   <section class="community-hero" aria-labelledby="community-title">
     <div class="community-hero__copy">
-      <span class="community-hero__eyebrow"><span aria-hidden="true"></span> SUA VOZ. NOSSA CIDADE.</span>
-      <h1 id="community-title">Pequenas atitudes.<br><em>Uma cidade melhor.</em></h1>
-      <p>Registre um problema, conecte sua comunidade e acompanhe cada passo da solução.</p>
-      <button type="button" (click)="socialShell.openCreatePost()">Registrar ocorrência <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+      <span class="community-hero__eyebrow"><span aria-hidden="true"></span> {{ 'SUA VOZ. NOSSA CIDADE.' | translate }}</span>
+      <h1 id="community-title">{{ 'Pequenas atitudes.' | translate }}<br><em>{{ 'Uma cidade melhor.' | translate }}</em></h1>
+      <p>{{ 'Registre um problema, conecte sua comunidade e acompanhe cada passo da solução.' | translate }}</p>
+      <button type="button" (click)="socialShell.openCreatePost()">{{ 'Registrar ocorrência' | translate }} <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
     </div>
     <div class="community-hero__visual" aria-hidden="true">
       <img src="/city-grid.svg" alt="" />
-      <span class="community-hero__map-note"><span class="material-symbols-outlined">location_on</span> Seu bairro em movimento</span>
+      <span class="community-hero__map-note"><span class="material-symbols-outlined">location_on</span> {{ 'Seu bairro em movimento' | translate }}</span>
     </div>
   </section>
 
-  <section class="feed-categories" aria-label="Filtrar por categoria">
-    <div class="feed-section-heading"><h2>O que acontece na cidade</h2><span>Explore por categoria</span></div>
+  <section class="feed-categories" [attr.aria-label]="'Filtrar por categoria' | translate">
+    <div class="feed-section-heading"><h2>{{ 'O que acontece na cidade' | translate }}</h2><span>{{ 'Explore por categoria' | translate }}</span></div>
     <div class="feed-categories__carousel">
-      <button class="feed-categories__arrow" type="button" aria-label="Ver categorias anteriores" aria-controls="feed-category-list" [disabled]="!canScrollCategoriesBack() && !(loopCategories() && canScrollCategoriesForward())" (click)="scrollCategories(categoryList, -1)">
+      <button class="feed-categories__arrow" type="button" [attr.aria-label]="'Ver categorias anteriores' | translate" aria-controls="feed-category-list" [disabled]="!canScrollCategoriesBack() && !(loopCategories() && canScrollCategoriesForward())" (click)="scrollCategories(categoryList, -1)">
         <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
       </button>
       <div #categoryList id="feed-category-list" class="feed-categories__list" (scroll)="updateCategoryScroll(categoryList)">
         @for (category of categoryFilters; track category.value) {
           <button type="button" [attr.aria-pressed]="selectedCategory() === category.value" (click)="selectedCategory.set(category.value)">
             <span class="material-symbols-outlined" aria-hidden="true">{{ category.icon }}</span>
-            {{ category.label }}
+            {{ (category.label) | translate }}
           </button>
         }
       </div>
-      <button class="feed-categories__arrow" type="button" aria-label="Ver próximas categorias" aria-controls="feed-category-list" [disabled]="!canScrollCategoriesForward() && !(loopCategories() && canScrollCategoriesBack())" (click)="scrollCategories(categoryList, 1)">
+      <button class="feed-categories__arrow" type="button" [attr.aria-label]="'Ver próximas categorias' | translate" aria-controls="feed-category-list" [disabled]="!canScrollCategoriesForward() && !(loopCategories() && canScrollCategoriesBack())" (click)="scrollCategories(categoryList, 1)">
         <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
       </button>
     </div>
   </section>
 
   <div class="feed-heading">
-    <div><span class="feed-eyebrow">ACOMPANHE E PARTICIPE</span><h2>Relatos da comunidade</h2></div>
-    @if (!feedLoading()) { <span class="feed-count" role="status">{{ posts.length }} {{ posts.length === 1 ? 'ocorrência' : 'ocorrências' }}</span> }
+    <div><span class="feed-eyebrow">{{ 'ACOMPANHE E PARTICIPE' | translate }}</span><h2>{{ 'Relatos da comunidade' | translate }}</h2></div>
+    @if (!feedLoading()) { <span class="feed-count" role="status">{{ posts.length }} {{ (posts.length === 1 ? 'ocorrência' : 'ocorrências') | translate }}</span> }
   </div>
-  <div class="feed-tabs" aria-label="Filtrar por situação">
+  <div class="feed-tabs" [attr.aria-label]="'Filtrar por situação' | translate">
     @for (stage of stages; track stage) {
-      <button type="button" [attr.aria-pressed]="selectedStage() === stage" (click)="selectedStage.set(stage)">{{ stage }}</button>
+      <button type="button" [attr.aria-pressed]="selectedStage() === stage" (click)="selectedStage.set(stage)">{{ (stage) | translate }}</button>
     }
   </div>
 
   @if (feedLoading()) {
-    <section class="posts-loading" aria-label="Carregando publicacoes">
+    <section class="posts-loading" [attr.aria-label]="'Carregando publicacoes' | translate">
       @for (item of [1, 2, 3]; track item) {
         <article class="post-skeleton">
           <div class="post-skeleton__header">
@@ -73,9 +73,9 @@
     </section>
   } @else if (feedError()) {
     <section class="posts-empty" role="alert">
-      <h2>Não foi possível carregar o feed</h2>
-      <p>{{ feedError() }}</p>
-      <button type="button" (click)="refreshPosts()">Tentar novamente</button>
+      <h2>{{ 'Não foi possível carregar o feed' | translate }}</h2>
+      <p>{{ (feedError()) | translate }}</p>
+      <button type="button" (click)="refreshPosts()">{{ 'Tentar novamente' | translate }}</button>
     </section>
   } @else {
     <div class="feed-posts" [class.feed-posts--compact]="settingsService.preferences().compactMode">
@@ -95,19 +95,19 @@
     } @empty {
       <section class="posts-empty">
         <span class="material-symbols-outlined posts-empty__icon" aria-hidden="true">{{ hasFilters ? 'filter_alt_off' : 'location_city' }}</span>
-        <h2>{{ hasFilters ? 'Nenhum relato com esses filtros' : 'Sua cidade tem espaço para a sua voz' }}</h2>
-        <p>{{ hasFilters ? 'Experimente outra categoria ou situação para explorar os relatos.' : 'Um registro pode ser o primeiro passo para melhorar o seu bairro.' }}</p>
+        <h2>{{ (hasFilters ? 'Nenhum relato com esses filtros' : 'Sua cidade tem espaço para a sua voz') | translate }}</h2>
+        <p>{{ (hasFilters ? 'Experimente outra categoria ou situação para explorar os relatos.' : 'Um registro pode ser o primeiro passo para melhorar o seu bairro.') | translate }}</p>
         @if (hasFilters) {
-          <button type="button" (click)="clearFilters()">Limpar filtros</button>
+          <button type="button" (click)="clearFilters()">{{ 'Limpar filtros' | translate }}</button>
         } @else {
-          <button type="button" (click)="socialShell.openCreatePost()">Criar a primeira ocorrência</button>
+          <button type="button" (click)="socialShell.openCreatePost()">{{ 'Criar a primeira ocorrência' | translate }}</button>
         }
       </section>
     }
     </div>
     @if (hasMore()) {
       <div class="feed-pagination">
-        <button type="button" [disabled]="loadingMore()" (click)="loadMore()">{{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}</button>
+        <button type="button" [disabled]="loadingMore()" (click)="loadMore()">{{ (loadingMore() ? 'Carregando...' : 'Carregar mais') | translate }}</button>
       </div>
     }
   }
@@ -116,7 +116,7 @@
 
 @if (reportPost) {
   <app-report-modal
-    title="O que está sendo reportado?"
+    [title]="'O que está sendo reportado?' | translate"
     (close)="reportPost = null"
     (confirm)="confirmReport()"
   />
@@ -124,9 +124,9 @@
 @if (feedAlert(); as currentFeedAlert) {
   <app-alert-popup
     [type]="currentFeedAlert.type"
-    [title]="currentFeedAlert.title"
-    [message]="currentFeedAlert.message"
-    actionLabel="Ok"
+    [title]="(currentFeedAlert.title) | translate"
+    [message]="(currentFeedAlert.message) | translate"
+    [actionLabel]="'Ok' | translate"
     (dismissed)="feedAlert.set(null)"
   />
 }

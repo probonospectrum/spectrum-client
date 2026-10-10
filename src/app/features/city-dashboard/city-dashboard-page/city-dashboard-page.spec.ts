@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
@@ -103,7 +104,7 @@ describe('City dashboard geographic views', () => {
         },
       ],
     }).overrideComponent(CityDashboardPage, {
-      set: { imports: [CommonModule, FormsModule], schemas: [NO_ERRORS_SCHEMA] },
+      set: { imports: [TranslatePipe, CommonModule, FormsModule], schemas: [NO_ERRORS_SCHEMA] },
     });
   });
 

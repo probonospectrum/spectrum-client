@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -13,7 +14,7 @@ import { SocialShell } from '../../../shared/components/social-shell/social-shel
 
 @Component({
   selector: 'app-city-page',
-  imports: [CommonModule, SocialShell, PostCard, LoadingIndicator],
+  imports: [TranslatePipe, CommonModule, SocialShell, PostCard, LoadingIndicator],
   templateUrl: './city-page.html',
   styleUrl: './city-page.scss',
 })

@@ -1,3 +1,4 @@
+import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Subject, Subscription, catchError, debounceTime, of, switchMap, timeout } from 'rxjs';
@@ -21,6 +22,7 @@ interface NotificationPage {
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
+  readonly i18n = inject(I18nService);
   private readonly http = inject(HttpClient);
   private readonly users = inject(UserService);
   private readonly url = API_BASE_URL + '/notifications';
@@ -142,7 +144,7 @@ export class NotificationService {
     return {
       ...item,
       type: 'confirmation',
-      dateLabel: new Date(item.createdAt).toLocaleString('pt-BR'),
+      dateLabel: new Date(item.createdAt).toLocaleString(this.i18n.language()),
     };
   }
 }

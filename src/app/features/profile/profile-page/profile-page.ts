@@ -1,3 +1,5 @@
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
@@ -19,11 +21,12 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
 export class ProfilePage implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly route = inject(ActivatedRoute);
@@ -135,7 +138,7 @@ export class ProfilePage implements OnInit {
 
   get joinedDate(): string {
     const createdAt = this.publicProfile()?.createdAt;
-    return createdAt ? new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(createdAt)) : '';
+    return createdAt ? new Intl.DateTimeFormat(this.i18n.language(), { month: 'long', year: 'numeric' }).format(new Date(createdAt)) : '';
   }
 
   get followingCount(): number {

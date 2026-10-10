@@ -5,10 +5,10 @@
     [class.alert-popup--error]="type === 'error'"
     role="alertdialog"
     aria-modal="true"
-    [attr.aria-label]="title"
+    [attr.aria-label]="(title) | translate"
     (click)="$event.stopPropagation()"
   >
-    <button class="alert-popup__close" type="button" aria-label="Fechar alerta" (click)="dismiss()">
+    <button class="alert-popup__close" type="button" [attr.aria-label]="'Fechar alerta' | translate" (click)="dismiss()">
       <span class="material-symbols-outlined" aria-hidden="true">close</span>
     </button>
 
@@ -19,12 +19,12 @@
     </div>
 
     <div class="alert-popup__content">
-      <h2>{{ title }}</h2>
-      <p>{{ message }}</p>
+      <h2>{{ (title) | translate }}</h2>
+      <p>{{ (message) | translate }}</p>
     </div>
 
     <button class="alert-popup__action" type="button" (click)="dismiss()">
-      {{ actionLabel }}
+      {{ (actionLabel) | translate }}
     </button>
   </section>
 </div>

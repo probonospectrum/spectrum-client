@@ -4,13 +4,13 @@
   [showContentHeader]="false"
   (logout)="logout()"
 >
-  @if (settingsError() || preferencesService.error()) { <p class="settings-form__error" role="alert">{{ settingsError() || preferencesService.error() }}</p> }
+  @if (settingsError() || preferencesService.error()) { <p class="settings-form__error" role="alert">{{ (settingsError() || preferencesService.error()) | translate }}</p> }
   <div class="settings-list" [class.settings-list--compact]="settings.compactMode">
-    <app-settings-section title="Conta">
+    <app-settings-section [title]="'Conta' | translate">
       <button class="settings-row settings-row--button" type="button" (click)="openDialog('avatar')">
         <span class="settings-row__content">
-          <strong>Foto de perfil</strong>
-          <small>{{ avatarUrl ? 'Alterar foto' : 'Adicionar foto' }}</small>
+          <strong>{{ 'Foto de perfil' | translate }}</strong>
+          <small>{{ (avatarUrl ? 'Alterar foto' : 'Adicionar foto') | translate }}</small>
         </span>
         <span class="settings-row__avatar" aria-hidden="true">
           <app-user-avatar [user]="user" />
@@ -19,7 +19,7 @@
 
       <button class="settings-row settings-row--button" type="button" (click)="openDialog('name')">
         <span class="settings-row__content">
-          <strong>Alterar nome</strong>
+          <strong>{{ 'Alterar nome' | translate }}</strong>
           <small>{{ account.name }}</small>
         </span>
         <span class="settings-row__arrow" aria-hidden="true"></span>
@@ -31,18 +31,18 @@
         (click)="openDialog('username')"
       >
         <span class="settings-row__content">
-          <strong>Username</strong>
+          <strong>{{ 'Username' | translate }}</strong>
           <small>@{{ account.username }}</small>
         </span>
         <span class="settings-row__arrow" aria-hidden="true"></span>
       </button>
 
-      <div class="settings-row"><span class="settings-row__content"><strong>E-mail principal</strong><small>{{ user?.email }}</small></span></div>
+      <div class="settings-row"><span class="settings-row__content"><strong>{{ 'E-mail principal' | translate }}</strong><small>{{ user?.email }}</small></span></div>
 
       <label class="settings-row">
         <span class="settings-row__content">
-          <strong>Idioma</strong>
-          <small>Idioma usado na interface</small>
+          <strong>{{ 'Idioma' | translate }}</strong>
+          <small>{{ 'Idioma usado na interface' | translate }}</small>
         </span>
         <select
           [disabled]="settingsSaving() || preferencesService.loading()"
@@ -50,32 +50,33 @@
           (change)="changeLanguage($event)"
           name="language"
         >
-          <option value="pt-BR">Português - Brasil</option>
-          <option value="en-US">English</option>
+          <option value="pt-BR">{{ 'Português - Brasil' | translate }}</option>
+          <option value="en-US">{{ 'English' | translate }}</option>
+          <option value="es">{{ 'Español' | translate }}</option>
         </select>
       </label>
     </app-settings-section>
 
-    <app-settings-section title="Segurança">
+    <app-settings-section [title]="'Segurança' | translate">
       <button
         class="settings-row settings-row--button"
         type="button"
         (click)="openDialog('password')"
       >
         <span class="settings-row__content">
-          <strong>Alterar senha</strong>
-          <small>Atualizar senha da conta</small>
+          <strong>{{ 'Alterar senha' | translate }}</strong>
+          <small>{{ 'Atualizar senha da conta' | translate }}</small>
         </span>
         <span class="settings-row__arrow" aria-hidden="true"></span>
       </button>
 
     </app-settings-section>
 
-    <app-settings-section title="Preferências">
+    <app-settings-section [title]="'Preferências' | translate">
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Tema claro/escuro</strong>
-          <small>{{ settings.darkTheme ? 'Tema escuro ativo' : 'Tema claro ativo' }}</small>
+          <strong>{{ 'Tema claro/escuro' | translate }}</strong>
+          <small>{{ (settings.darkTheme ? 'Tema escuro ativo' : 'Tema claro ativo') | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
           [checked]="settings.darkTheme"
@@ -85,8 +86,8 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Modo compacto</strong>
-          <small>{{ settings.compactMode ? 'Espaçamento reduzido ativo' : 'Reduzir espaçamentos no feed' }}</small>
+          <strong>{{ 'Modo compacto' | translate }}</strong>
+          <small>{{ (settings.compactMode ? 'Espaçamento reduzido ativo' : 'Reduzir espaçamentos no feed') | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
           [checked]="settings.compactMode"
@@ -96,18 +97,18 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Receber novidades</strong>
-          <small>Comunicados sobre recursos e melhorias</small>
+          <strong>{{ 'Receber novidades' | translate }}</strong>
+          <small>{{ 'Comunicados sobre recursos e melhorias' | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()" [checked]="settings.news" (checkedChange)="setSetting('news', $event)" />
       </div>
     </app-settings-section>
 
-    <app-settings-section title="Notificações">
+    <app-settings-section [title]="'Notificações' | translate">
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Notificações dentro do app</strong>
-          <small>Alertas enquanto você usa o Spectrum</small>
+          <strong>{{ 'Notificações dentro do app' | translate }}</strong>
+          <small>{{ 'Alertas enquanto você usa o Spectrum' | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
           [checked]="settings.inAppNotifications"
@@ -117,8 +118,8 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>E-mails</strong>
-          <small>Receber notificações no e-mail principal</small>
+          <strong>{{ 'E-mails' | translate }}</strong>
+          <small>{{ 'Receber notificações no e-mail principal' | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
           [checked]="settings.emailNotifications"
@@ -128,8 +129,8 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Atualizações importantes</strong>
-          <small>Priorizar avisos de alta relevância</small>
+          <strong>{{ 'Atualizações importantes' | translate }}</strong>
+          <small>{{ 'Priorizar avisos de alta relevância' | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
           [checked]="settings.importantUpdates"
@@ -139,8 +140,8 @@
 
       <div class="settings-row">
         <span class="settings-row__content">
-          <strong>Alertas de segurança</strong>
-          <small>Notificar sobre acessos e atividades sensíveis</small>
+          <strong>{{ 'Alertas de segurança' | translate }}</strong>
+          <small>{{ 'Notificar sobre acessos e atividades sensíveis' | translate }}</small>
         </span>
         <app-toggle-switch [disabled]="settingsSaving() || preferencesService.loading()"
           [checked]="settings.securityAlerts"
@@ -153,27 +154,27 @@
   @if (toastMessage) {
     <div class="settings-toast" role="status" aria-live="polite">
       <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-      <span>{{ toastMessage }}</span>
+      <span>{{ (toastMessage) | translate }}</span>
     </div>
   }
 
   @if (activeDialog === 'name') {
-    <app-settings-dialog title="Alterar nome" (closed)="closeDialog()">
+    <app-settings-dialog [title]="'Alterar nome' | translate" (closed)="closeDialog()">
       <form class="settings-form" (ngSubmit)="saveName()">
         <label>
-          Nome
+          {{ 'Nome' | translate }}
           <input type="text" name="name" [(ngModel)]="nameDraft" autocomplete="name" />
         </label>
 
         @if (formError) {
-          <p class="settings-form__error">{{ formError }}</p>
+          <p class="settings-form__error">{{ (formError) | translate }}</p>
         }
 
         <div class="settings-dialog-actions">
           <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
-            Cancelar
+            {{ 'Cancelar' | translate }}
           </button>
-          <button class="settings-dialog-actions__primary" type="submit">Salvar alterações</button>
+          <button class="settings-dialog-actions__primary" type="submit">{{ 'Salvar alterações' | translate }}</button>
         </div>
       </form>
     </app-settings-dialog>
@@ -181,12 +182,12 @@
 
   @if (activeDialog === 'username') {
     <app-settings-dialog
-      title="Alterar username"
+      [title]="'Alterar username' | translate"
       (closed)="closeDialog()"
     >
       <form class="settings-form" (ngSubmit)="saveUsername()">
         <label>
-          Username
+          {{ 'Username' | translate }}
           <input
             type="text"
             name="username"
@@ -201,18 +202,18 @@
           [class.settings-form__hint--checking]="usernameFeedbackKind === 'checking'"
           [class.settings-form__hint--success]="usernameFeedbackKind === 'success'"
         >
-          {{ usernameFeedback }}
+          {{ (usernameFeedback) | translate }}
         </p>
 
         @if (formError) {
-          <p class="settings-form__error">{{ formError }}</p>
+          <p class="settings-form__error">{{ (formError) | translate }}</p>
         }
 
         <div class="settings-dialog-actions">
           <button class="settings-dialog-actions__ghost" type="button" (click)="closeDialog()">
-            Cancelar
+            {{ 'Cancelar' | translate }}
           </button>
-          <button class="settings-dialog-actions__primary" type="submit">Salvar alterações</button>
+          <button class="settings-dialog-actions__primary" type="submit">{{ 'Salvar alterações' | translate }}</button>
         </div>
       </form>
     </app-settings-dialog>
@@ -220,27 +221,27 @@
 
   @if (activeDialog === 'password') {
     <app-settings-dialog
-      title="Alterar senha"
+      [title]="'Alterar senha' | translate"
       (closed)="closeDialog()"
     >
       <form class="settings-form" (ngSubmit)="savePassword()">
         <label>
-          Senha atual
+          {{ 'Senha atual' | translate }}
           <input type="password" name="currentPassword" [(ngModel)]="currentPassword" />
         </label>
 
         <label>
-          Nova senha
+          {{ 'Nova senha' | translate }}
           <input type="password" name="newPassword" [(ngModel)]="newPassword" />
         </label>
 
         <label>
-          Confirmar nova senha
+          {{ 'Confirmar nova senha' | translate }}
           <input type="password" name="confirmPassword" [(ngModel)]="confirmPassword" />
         </label>
 
         @if (formError) {
-          <p class="settings-form__error">{{ formError }}</p>
+          <p class="settings-form__error">{{ (formError) | translate }}</p>
         }
 
         <div class="settings-dialog-actions">
@@ -250,10 +251,10 @@
             [disabled]="passwordSaving"
             (click)="closeDialog()"
           >
-            Cancelar
+            {{ 'Cancelar' | translate }}
           </button>
           <button class="settings-dialog-actions__primary" type="submit" [disabled]="passwordSaving">
-            {{ passwordSaving ? 'Salvando...' : 'Salvar alterações' }}
+            {{ (passwordSaving ? 'Salvando...' : 'Salvar alterações') | translate }}
           </button>
         </div>
       </form>
@@ -261,15 +262,15 @@
   }
 
   @if (activeDialog === 'avatar') {
-    <app-settings-dialog title="Foto de perfil" (closed)="closeDialog()">
+    <app-settings-dialog [title]="'Foto de perfil' | translate" (closed)="closeDialog()">
       <form class="settings-form" (ngSubmit)="saveAvatar()">
         @if (avatarDraft()) {
           <div class="settings-avatar-crop" tabindex="0" role="group"
-            aria-label="Enquadramento da foto" aria-describedby="avatar-crop-hint"
+            [attr.aria-label]="'Enquadramento da foto' | translate" aria-describedby="avatar-crop-hint"
             (pointerdown)="startAvatarDrag($event)" (pointermove)="moveAvatarDrag($event)"
             (pointerup)="endAvatarDrag($event)" (pointercancel)="endAvatarDrag($event)"
             (lostpointercapture)="endAvatarDrag($event)" (keydown)="moveAvatarWithKeyboard($event)">
-            <img #avatarImage [src]="avatarDraft()" alt="Prévia da foto de perfil"
+            <img #avatarImage [src]="avatarDraft()" [alt]="'Prévia da foto de perfil' | translate"
               draggable="false"
               [style.width.%]="avatarWidth * avatarZoom * 100"
               [style.height.%]="avatarHeight * avatarZoom * 100"
@@ -281,16 +282,15 @@
             <span class="settings-avatar-crop__grid" aria-hidden="true"></span>
           </div>
           <p id="avatar-crop-hint" class="settings-form__hint">
-            Arraste a foto para enquadrar. O círculo mostra como ela ficará no perfil.
-            Você também pode usar as setas do teclado.
+            {{ 'Arraste a foto para enquadrar. O círculo mostra como ela ficará no perfil. Você também pode usar as setas do teclado.' | translate }}
           </p>
           <div class="settings-avatar-actions">
-            <button class="settings-avatar-action" type="button" aria-label="Diminuir zoom"
+            <button class="settings-avatar-action" type="button" [attr.aria-label]="'Diminuir zoom' | translate"
               [disabled]="avatarSaving() || !avatarReady() || avatarZoom <= 1" (click)="zoomAvatar(-0.1)">
               <span class="material-symbols-outlined" aria-hidden="true">remove</span>
             </button>
             <span class="settings-avatar-zoom" aria-live="polite">{{ (avatarZoom * 100).toFixed(0) }}%</span>
-            <button class="settings-avatar-action" type="button" aria-label="Aumentar zoom"
+            <button class="settings-avatar-action" type="button" [attr.aria-label]="'Aumentar zoom' | translate"
               [disabled]="avatarSaving() || !avatarReady() || avatarZoom >= 3" (click)="zoomAvatar(0.1)">
               <span class="material-symbols-outlined" aria-hidden="true">add</span>
             </button>
@@ -301,38 +301,38 @@
           </span>
         }
         <input #avatarInput class="settings-avatar-input" type="file" tabindex="-1"
-          aria-label="Selecionar foto" accept="image/jpeg,image/png,image/webp"
+          [attr.aria-label]="'Selecionar foto' | translate" accept="image/jpeg,image/png,image/webp"
           [disabled]="avatarSaving()" (change)="selectAvatar($event)" />
         <div class="settings-avatar-actions">
           <button class="settings-avatar-action" type="button" aria-describedby="avatar-hint"
             [disabled]="avatarSaving()" (click)="avatarInput.click()">
             <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
-            Selecionar foto
+            {{ 'Selecionar foto' | translate }}
           </button>
           @if (avatarUrl) {
             <button class="settings-avatar-action" type="button"
               [disabled]="avatarSaving()" (click)="removeAvatar()">
               <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-              Remover foto de perfil
+              {{ 'Remover foto de perfil' | translate }}
             </button>
           }
         </div>
-        <p id="avatar-hint" class="settings-form__hint">JPG, PNG ou WebP de até 2 MB.</p>
+        <p id="avatar-hint" class="settings-form__hint">{{ 'JPG, PNG ou WebP de até 2 MB.' | translate }}</p>
         @if (avatarSaving()) {
-          <p class="settings-form__hint" role="status">Salvando foto...</p>
+          <p class="settings-form__hint" role="status">{{ 'Salvando foto...' | translate }}</p>
         }
         @if (avatarReading()) {
-          <p class="settings-form__hint" role="status">Carregando imagem...</p>
+          <p class="settings-form__hint" role="status">{{ 'Carregando imagem...' | translate }}</p>
         }
         @if (formError) {
-          <p class="settings-form__error" role="alert">{{ formError }}</p>
+          <p class="settings-form__error" role="alert">{{ (formError) | translate }}</p>
         }
         <div class="settings-dialog-actions">
           <button class="settings-dialog-actions__ghost" type="button" [disabled]="avatarSaving()" (click)="closeDialog()">
-            Cancelar
+            {{ 'Cancelar' | translate }}
           </button>
           <button class="settings-dialog-actions__primary" type="submit"
-            [disabled]="avatarSaving() || !avatarDraft() || avatarReading() || !avatarReady()">{{ avatarSaving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+            [disabled]="avatarSaving() || !avatarDraft() || avatarReading() || !avatarReady()">{{ (avatarSaving() ? 'Salvando...' : 'Salvar alterações') | translate }}</button>
         </div>
       </form>
     </app-settings-dialog>

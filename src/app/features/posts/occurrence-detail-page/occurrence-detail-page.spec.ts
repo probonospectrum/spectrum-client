@@ -83,7 +83,7 @@ describe('OccurrenceDetailPage actions', () => {
             getImportanceLabel: (importance: string) => importance,
           },
         },
-        { provide: UserService, useValue: { getCurrentUser: () => user } },
+        { provide: UserService, useValue: { getCurrentUser: () => user, currentUser: () => user } },
       ],
     })
       .overrideComponent(OccurrenceDetailPage, {

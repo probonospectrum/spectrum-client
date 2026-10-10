@@ -1,10 +1,11 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { AlertPopup } from '../alert-popup/alert-popup';
 
 @Component({
   selector: 'app-report-modal',
-  imports: [CommonModule, AlertPopup],
+  imports: [TranslatePipe, CommonModule, AlertPopup],
   templateUrl: './report-modal.html',
   styleUrl: './report-modal.scss',
 })

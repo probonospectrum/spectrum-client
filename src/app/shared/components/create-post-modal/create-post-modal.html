@@ -15,49 +15,49 @@
         </div>
       </div>
 
-      <button class="create-post-modal__close" type="button" aria-label="Fechar" (click)="closeModal()">
+      <button class="create-post-modal__close" type="button" [attr.aria-label]="'Fechar' | translate" (click)="closeModal()">
         <span class="material-symbols-outlined" aria-hidden="true">close</span>
       </button>
     </header>
-    <p class="create-post-modal__flow-note">A ocorrência começa aberta. A comunidade pode confirmar o problema e adicionar evidências; a solução precisa ser verificada antes do fechamento.</p>
+    <p class="create-post-modal__flow-note">{{ 'A ocorrência começa aberta. A comunidade pode confirmar o problema e adicionar evidências; a solução precisa ser verificada antes do fechamento.' | translate }}</p>
 
     <label class="create-post-modal__field">
-      <span class="create-post-modal__label">Problema</span>
+      <span class="create-post-modal__label">{{ 'Problema' | translate }}</span>
       <input
         class="create-post-modal__input"
         [(ngModel)]="problemTitle"
-        placeholder="Título da ocorrência"
+        [placeholder]="'Título da ocorrência' | translate"
         maxlength="140"
-        aria-label="Título curto da ocorrência"
+        [attr.aria-label]="'Título curto da ocorrência' | translate"
       />
       <small>{{ problemTitle.length }}/140</small>
     </label>
 
     <label class="create-post-modal__field">
-      <span class="create-post-modal__label">Descrição detalhada</span>
+      <span class="create-post-modal__label">{{ 'Descrição detalhada' | translate }}</span>
       <textarea
         class="create-post-modal__textarea"
         [(ngModel)]="newPostContent"
-        placeholder="O que está acontecendo?"
+        [placeholder]="'O que está acontecendo?' | translate"
         maxlength="1200"
-        aria-label="Descrição detalhada da ocorrência"
+        [attr.aria-label]="'Descrição detalhada da ocorrência' | translate"
       ></textarea>
       <small>{{ newPostContent.length }}/1200</small>
     </label>
 
     <div class="create-post-modal__classification">
       <label class="create-post-modal__select-field">
-        <span class="create-post-modal__label">Categoria</span>
-        <select [(ngModel)]="selectedCategory" aria-label="Categoria da ocorrência">
-          <option value="" disabled>Selecione uma categoria</option>
+        <span class="create-post-modal__label">{{ 'Categoria' | translate }}</span>
+        <select [(ngModel)]="selectedCategory" [attr.aria-label]="'Categoria da ocorrência' | translate">
+          <option value="" disabled>{{ 'Selecione uma categoria' | translate }}</option>
           @for (category of categories; track category.value) {
-            <option [value]="category.value">{{ category.label }}</option>
+            <option [value]="category.value">{{ (category.label) | translate }}</option>
           }
         </select>
       </label>
 
       <fieldset class="create-post-modal__importance">
-        <legend class="create-post-modal__label">Importância</legend>
+        <legend class="create-post-modal__label">{{ 'Importância' | translate }}</legend>
         <div class="create-post-modal__importance-options">
           @for (option of importanceOptions; track option.value) {
             <label [class.create-post-modal__importance-option--selected]="selectedImportance === option.value">
@@ -68,7 +68,7 @@
                 [attr.aria-describedby]="'importance-tip-' + option.value"
                 [(ngModel)]="selectedImportance"
               />
-              <span>{{ option.label }}</span>
+              <span>{{ (option.label) | translate }}</span>
               <span
                 class="create-post-modal__importance-tooltip"
                 role="tooltip"
@@ -83,23 +83,23 @@
 
     <section class="create-post-modal__section" aria-labelledby="occurrence-location-label">
       <div class="create-post-modal__section-heading">
-        <span id="occurrence-location-label" class="create-post-modal__label">Localização</span>
+        <span id="occurrence-location-label" class="create-post-modal__label">{{ 'Localização' | translate }}</span>
         @if (selectedStateId || selectedCityId) {
-          <button type="button" (click)="removeLocation()">Limpar</button>
+          <button type="button" (click)="removeLocation()">{{ 'Limpar' | translate }}</button>
         }
       </div>
 
       <div class="create-post-modal__location-grid">
         <label class="create-post-modal__select-field">
-          <span class="create-post-modal__label">Estado*</span>
+          <span class="create-post-modal__label">{{ 'Estado*' | translate }}</span>
           <select
             [(ngModel)]="selectedStateId"
             (ngModelChange)="onStateChanged()"
             [disabled]="isLoadingStates()"
-            aria-label="Estado da ocorrência"
+            [attr.aria-label]="'Estado da ocorrência' | translate"
           >
             <option value="">
-              {{ isLoadingStates() ? 'Carregando estados...' : 'Selecione o estado' }}
+              {{ (isLoadingStates() ? 'Carregando estados...' : 'Selecione o estado') | translate }}
             </option>
             @for (state of states(); track state.id) {
               <option [value]="state.id">{{ state.nome }} - {{ state.sigla }}</option>
@@ -108,15 +108,15 @@
         </label>
 
         <label class="create-post-modal__select-field">
-          <span class="create-post-modal__label">Cidade*</span>
+          <span class="create-post-modal__label">{{ 'Cidade*' | translate }}</span>
           <select
             [(ngModel)]="selectedCityId"
             (ngModelChange)="onCityChanged()"
             [disabled]="!selectedStateId || isLoadingCities()"
-            aria-label="Cidade da ocorrência"
+            [attr.aria-label]="'Cidade da ocorrência' | translate"
           >
             <option value="">
-              {{ isLoadingCities() ? 'Carregando cidades...' : 'Selecione a cidade' }}
+              {{ (isLoadingCities() ? 'Carregando cidades...' : 'Selecione a cidade') | translate }}
             </option>
             @for (city of cities(); track city.id) {
               <option [value]="city.id">{{ city.nome }}</option>
@@ -127,25 +127,25 @@
       </div>
 
       <label class="create-post-modal__field">
-        <span class="create-post-modal__label">Endereço ou ponto de referência*</span>
-        <input class="create-post-modal__input" [(ngModel)]="address" maxlength="240" placeholder="Rua das Flores, em frente ao número 120" />
+        <span class="create-post-modal__label">{{ 'Endereço ou ponto de referência*' | translate }}</span>
+        <input class="create-post-modal__input" [(ngModel)]="address" maxlength="240" [placeholder]="'Rua das Flores, em frente ao número 120' | translate" />
       </label>
       <label class="create-post-modal__field">
-        <span class="create-post-modal__label">Bairro (opcional)</span>
+        <span class="create-post-modal__label">{{ 'Bairro (opcional)' | translate }}</span>
         <input class="create-post-modal__input" [(ngModel)]="neighborhood" maxlength="100" />
       </label>
       @if (locationErrorMessage) {
         <div class="create-post-modal__location-warning" role="alert">
-          <span>{{ locationErrorMessage }}</span>
-          <button type="button" (click)="retryLocationLoad()">Tentar novamente</button>
+          <span>{{ (locationErrorMessage) | translate }}</span>
+          <button type="button" (click)="retryLocationLoad()">{{ 'Tentar novamente' | translate }}</button>
         </div>
       }
 
       @if (selectedCity) {
-        <div class="create-post-modal__location" aria-label="Localização selecionada">
+        <div class="create-post-modal__location" [attr.aria-label]="'Localização selecionada' | translate">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-          <strong>{{ locationLabel }}</strong>
-          <button type="button" aria-label="Remover localização" (click)="removeLocation()">
+          <strong>{{ (locationLabel) | translate }}</strong>
+          <button type="button" [attr.aria-label]="'Remover localização' | translate" (click)="removeLocation()">
             <span class="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
         </div>
@@ -155,11 +155,11 @@
     <section class="create-post-modal__section" aria-labelledby="occurrence-evidence-label">
       <div class="create-post-modal__toolbar">
         <div>
-          <span id="occurrence-evidence-label" class="create-post-modal__label">Adicionar evidências</span>
-          <small>Até 4 arquivos, 25 MB cada</small>
+          <span id="occurrence-evidence-label" class="create-post-modal__label">{{ 'Adicionar evidências' | translate }}</span>
+          <small>{{ 'Até 4 arquivos, 25 MB cada' | translate }}</small>
         </div>
         <div class="create-post-modal__actions">
-          <button type="button" aria-label="Adicionar imagens" (click)="imageInput.click()">
+          <button type="button" [attr.aria-label]="'Adicionar imagens' | translate" (click)="imageInput.click()">
             <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
           </button>
           <input
@@ -168,10 +168,10 @@
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple
-            aria-label="Selecionar imagens"
+            [attr.aria-label]="'Selecionar imagens' | translate"
             (change)="selectAttachments($event, 'IMAGE')"
           />
-          <button type="button" aria-label="Adicionar vídeos" (click)="videoInput.click()">
+          <button type="button" [attr.aria-label]="'Adicionar vídeos' | translate" (click)="videoInput.click()">
             <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
           </button>
           <input
@@ -180,21 +180,21 @@
             type="file"
             accept="video/mp4,video/webm,video/quicktime"
             multiple
-            aria-label="Selecionar vídeos"
+            [attr.aria-label]="'Selecionar vídeos' | translate"
             (change)="selectAttachments($event, 'VIDEO')"
           />
         </div>
       </div>
 
       @if (selectedEvidences.length) {
-        <div class="create-post-modal__attachments" aria-label="Evidências adicionadas">
+        <div class="create-post-modal__attachments" [attr.aria-label]="'Evidências adicionadas' | translate">
           @for (evidence of selectedEvidences; track evidence.file.name + $index) {
             <div class="create-post-modal__attachment">
               <span class="material-symbols-outlined" aria-hidden="true">
                 {{ evidence.type === 'VIDEO' ? 'videocam' : 'image' }}
               </span>
               <strong>{{ evidence.file.name }}</strong>
-              <button type="button" [attr.aria-label]="'Remover ' + evidence.file.name" (click)="removeAttachment($index)">
+              <button type="button" [attr.aria-label]="(('Remover ' | translate) + evidence.file.name) | translate" (click)="removeAttachment($index)">
                 <span class="material-symbols-outlined" aria-hidden="true">close</span>
               </button>
             </div>
@@ -204,7 +204,7 @@
     </section>
 
     @if (errorMessage) {
-      <p class="create-post-modal__error" role="alert">{{ errorMessage }}</p>
+      <p class="create-post-modal__error" role="alert">{{ (errorMessage) | translate }}</p>
     }
 
     <button
@@ -214,9 +214,9 @@
       (click)="publishPost()"
     >
       @if (isPublishing()) {
-        <app-loading-indicator [label]="isEditing ? 'Salvando' : 'Publicando ocorrência'" />
+        <app-loading-indicator [label]="(isEditing ? 'Salvando' : 'Publicando ocorrência') | translate" />
       } @else {
-        {{ submitLabel }}
+        {{ (submitLabel) | translate }}
       }
     </button>
   </section>

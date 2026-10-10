@@ -1,3 +1,5 @@
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -38,11 +40,12 @@ type ActionPanel =
 
 @Component({
   selector: 'app-occurrence-detail-page',
-  imports: [UserAvatar, CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell, MediaLightbox],
+  imports: [TranslatePipe, UserAvatar, CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell, MediaLightbox],
   templateUrl: './occurrence-detail-page.html',
   styleUrl: './occurrence-detail-page.scss',
 })
 export class OccurrenceDetailPage implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly postService = inject(PostService);
@@ -623,7 +626,7 @@ export class OccurrenceDetailPage implements OnInit {
       return 'Não informado';
     }
 
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(this.i18n.language(), {
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(new Date(date));
@@ -636,8 +639,8 @@ export class OccurrenceDetailPage implements OnInit {
     if (event.eventType === 'OCORRENCIA_ENCAMINHADA') {
       const agencyName = String(metadata['agencyName'] ?? 'órgão responsável');
       return metadata['protocol']
-        ? `Encaminhada para ${agencyName}. Protocolo: ${metadata['protocol']}.`
-        : `Encaminhada para ${agencyName}.`;
+        ? this.i18n.translate('Encaminhada para {agency}. Protocolo: {protocol}.', { agency: agencyName, protocol: metadata['protocol'] })
+        : this.i18n.translate('Encaminhada para {agency}.', { agency: agencyName });
     }
 
     if (event.eventType === 'ENCAMINHAMENTO_FALHOU') {
@@ -646,27 +649,27 @@ export class OccurrenceDetailPage implements OnInit {
 
     if (event.eventType === 'RESOLUCAO_INFORMADA') {
       const source = event.actorType === 'RESPONSIBLE_AGENCY' ? 'O órgão responsável' : 'A comunidade';
-      return `${source} informou que o problema foi solucionado. ${String(metadata['statement'] ?? '')}`.trim();
+      return `${this.i18n.translate('{source} informou que o problema foi solucionado.', { source: this.i18n.translate(source) })} ${String(metadata['statement'] ?? '')}`.trim();
     }
 
     if (event.eventType === 'ANALISE_INICIADA') {
-      return [event.description, metadata['note'], metadata['reference'] ? `Referência: ${metadata['reference']}` : ''].filter(Boolean).join(' ') || 'O órgão responsável iniciou a análise.';
+      return [this.i18n.translate(event.description), metadata['note'], metadata['reference'] ? this.i18n.translate('Referência: {reference}', { reference: metadata['reference'] }) : ''].filter(Boolean).join(' ') || this.i18n.translate('O órgão responsável iniciou a análise.');
     }
 
     if (event.eventType === 'OCORRENCIA_RESOLVIDA') {
-      return metadata['note'] ? `A ocorrência foi marcada como resolvida. ${metadata['note']}` : 'A ocorrência foi marcada como resolvida.';
+      return metadata['note'] ? `${this.i18n.translate('A ocorrência foi marcada como resolvida.')} ${metadata['note']}` : 'A ocorrência foi marcada como resolvida.';
     }
 
     if (event.eventType === 'OCORRENCIA_CRIADA') {
-      return `${event.actorName ?? this.occurrence?.authorName ?? 'Um usuário'} criou esta ocorrência.`;
+      return this.i18n.translate('{actor} criou esta ocorrência.', { actor: event.actorName ?? this.occurrence?.authorName ?? this.i18n.translate('Um usuário') });
     }
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_IDENTIFICADO') {
-      return `${String(metadata['agencyName'] ?? 'Um órgão')} foi identificado como responsável pela ocorrência.`;
+      return this.i18n.translate('{agency} foi identificado como responsável pela ocorrência.', { agency: metadata['agencyName'] ?? this.i18n.translate('Um órgão') });
     }
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO') {
-      return `${String(metadata['agencyName'] ?? 'Um órgão')} foi sugerido pela comunidade.`;
+      return this.i18n.translate('{agency} foi sugerido pela comunidade.', { agency: metadata['agencyName'] ?? this.i18n.translate('Um órgão') });
     }
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {
@@ -708,7 +711,7 @@ export class OccurrenceDetailPage implements OnInit {
       (event.actorType === 'RESPONSIBLE_AGENCY' ? this.occurrence?.responsibleAgency?.name : '') ||
       (event.eventType === 'OCORRENCIA_CRIADA' ? this.occurrence?.authorName : '');
 
-    return actorName ? `${actorName} · ${this.eventOrigin(event)}` : this.eventOrigin(event);
+    return actorName ? `${actorName} · ${this.i18n.translate(this.eventOrigin(event))}` : this.eventOrigin(event);
   }
 
   eventEvidences(event: OccurrenceHistoryEvent): OccurrenceEvidence[] {

@@ -3,19 +3,19 @@
     <span class="comment-section__avatar"><app-user-avatar [user]="currentUser" [name]="displayName" /></span>
     <input
       type="text"
-      placeholder="Adicionar comentário..."
+      [placeholder]="'Adicionar comentário...' | translate"
       [(ngModel)]="newComment"
       [disabled]="saving"
       (keyup.enter)="addComment()"
     />
-    <button type="button" aria-label="Enviar comentario" [disabled]="saving || !newComment.trim()" (click)="addComment()">
+    <button type="button" [attr.aria-label]="'Enviar comentario' | translate" [disabled]="saving || !newComment.trim()" (click)="addComment()">
       <span class="material-symbols-outlined" aria-hidden="true">send</span>
     </button>
   </div>
 
-  @if (error) { <p role="alert">{{ error }}</p> }
-  @if (actionMessage) { <p role="status">{{ actionMessage }}</p> }
-  @if (loading) { <p role="status">Carregando comentários...</p> }
+  @if (error) { <p role="alert">{{ (error) | translate }}</p> }
+  @if (actionMessage) { <p role="status">{{ (actionMessage) | translate }}</p> }
+  @if (loading) { <p role="status">{{ 'Carregando comentários...' | translate }}</p> }
   @if (comments.length) {
     <ul class="comment-section__list">
       @for (comment of visibleComments; track comment.id) {
@@ -28,10 +28,10 @@
             </span>
             <div class="comment-section__author">
               <strong>{{ comment.authorName }}</strong>
-              <span class="comment-section__date">{{ comment.dateLabel }}</span>
+              <span class="comment-section__date">{{ comment.createdAt | localizedDate:comment.dateLabel }}</span>
             </div>
             <div class="comment-section__menu-wrap" (click)="$event.stopPropagation()">
-              <button type="button" class="comment-section__more" aria-label="Mais opções do comentário"
+              <button type="button" class="comment-section__more" [attr.aria-label]="'Mais opções do comentário' | translate"
                 aria-haspopup="menu" [attr.aria-expanded]="menuCommentId === comment.id"
                 (click)="toggleMenu(comment.id, $event)">
                 <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
@@ -39,15 +39,15 @@
               @if (menuCommentId === comment.id) {
                 <div class="comment-section__menu" role="menu">
                   <button type="button" role="menuitem" (click)="copyCommentLink(comment)">
-                    <span class="material-symbols-outlined" aria-hidden="true">link</span>Copiar link
+                    <span class="material-symbols-outlined" aria-hidden="true">link</span>{{ 'Copiar link' | translate }}
                   </button>
                   @if (isOwnComment(comment)) {
                     <button type="button" role="menuitem" (click)="requestDelete(comment)">
-                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>Excluir comentário
+                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>{{ 'Excluir comentário' | translate }}
                     </button>
                   } @else {
                     <button type="button" role="menuitem" (click)="reportComment(comment)">
-                      <span class="material-symbols-outlined" aria-hidden="true">flag</span>Denunciar comentário
+                      <span class="material-symbols-outlined" aria-hidden="true">flag</span>{{ 'Denunciar comentário' | translate }}
                     </button>
                   }
                 </div>
@@ -61,7 +61,7 @@
             <button
               type="button"
               [class.comment-section__action--active]="isLiked(comment.id)"
-              aria-label="Curtir comentario"
+              [attr.aria-label]="'Curtir comentario' | translate"
               (click)="toggleLike(comment.id)"
             >
               <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
@@ -73,7 +73,7 @@
             <button
               type="button"
               [class.comment-section__action--active]="isDisliked(comment.id)"
-              aria-label="Descurtir comentario"
+              [attr.aria-label]="'Descurtir comentario' | translate"
               (click)="toggleDislike(comment.id)"
             >
               <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
@@ -88,24 +88,24 @@
 
     @if (hasMoreComments) {
       <button type="button" class="comment-section__toggle" (click)="toggleShowAll()">
-        {{ showAll ? 'Ver menos comentários' : 'Ver mais comentários (' + remainingCount + ')' }}
+        {{ (showAll ? 'Ver menos comentários' : ('Ver mais comentários (' | translate) + remainingCount + ')') | translate }}
       </button>
     }
   } @else if (!loading && !error) {
-    <p class="comment-section__empty">Seja o primeiro a comentar.</p>
+    <p class="comment-section__empty">{{ 'Seja o primeiro a comentar.' | translate }}</p>
   }
 </section>
 
 @if (reportTarget) {
-  <app-report-modal title="Denunciar comentário"
+  <app-report-modal [title]="'Denunciar comentário' | translate"
     (close)="reportTarget = null" (confirm)="reportTarget = null" />
 }
 @if (deleteTarget) {
   <div class="comment-section__confirm-backdrop" (click)="!actionPending && (deleteTarget = null)">
-  <div class="comment-section__confirm" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Excluir comentário">
-    <p>Excluir seu comentário?</p>
-    <button type="button" [disabled]="actionPending" (click)="confirmDelete()">{{ actionPending ? 'Excluindo...' : 'Excluir' }}</button>
-    <button type="button" [disabled]="actionPending" (click)="deleteTarget = null">Cancelar</button>
+  <div class="comment-section__confirm" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Excluir comentário' | translate">
+    <p>{{ 'Excluir seu comentário?' | translate }}</p>
+    <button type="button" [disabled]="actionPending" (click)="confirmDelete()">{{ (actionPending ? 'Excluindo...' : 'Excluir') | translate }}</button>
+    <button type="button" [disabled]="actionPending" (click)="deleteTarget = null">{{ 'Cancelar' | translate }}</button>
   </div>
   </div>
 }

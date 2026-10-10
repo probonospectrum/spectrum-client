@@ -9,21 +9,21 @@
 
   <div class="notification__body">
     <p class="notification__headline">
-      <strong>{{ displayName }}</strong>
+      <strong>{{ notification.actorName || (notification.title | translate) }}</strong>
       @if (notification.actorHandle) {
         <span class="notification__handle">&#64;{{ notification.actorHandle }}</span>
       }
     </p>
-    <p class="notification__description">{{ notification.description }}</p>
-    <small>{{ notification.dateLabel }}</small>
+    <p class="notification__description">{{ notification.description | translate }}</p>
+    <small>{{ notification.createdAt | localizedDate:notification.dateLabel }}</small>
   </div>
 
   <button
     class="notification__remove"
     type="button"
-    aria-label="Remover notificacao"
+    [attr.aria-label]="'Remover notificacao' | translate"
     (click)="onRemove($event)"
   >
-    &times;
+    {{ '×' | translate }}
   </button>
 </article>

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
@@ -7,7 +8,7 @@ import { NotificationItem } from '../../../shared/components/notification-item/n
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 @Component({
   selector: 'app-notifications-page',
-  imports: [SocialShell, NotificationItem],
+  imports: [TranslatePipe, SocialShell, NotificationItem],
   templateUrl: './notifications-page.html',
   styleUrl: './notifications-page.scss',
 })

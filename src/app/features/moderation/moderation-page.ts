@@ -1,3 +1,4 @@
+import { LocalizedDatePipe, TranslatePipe } from '../../core/i18n/translate.pipe';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +11,7 @@ import { UserService } from '../../core/services/user/user.service';
 
 @Component({
   selector: 'app-moderation-page',
-  imports: [CommonModule, FormsModule, RouterLink, SocialShell],
+  imports: [LocalizedDatePipe, TranslatePipe, CommonModule, FormsModule, RouterLink, SocialShell],
   templateUrl: './moderation-page.html',
   styleUrl: './moderation-page.scss',
 })
