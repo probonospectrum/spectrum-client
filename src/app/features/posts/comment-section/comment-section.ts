@@ -1,14 +1,15 @@
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, DestroyRef, Injector, afterNextRender, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 
 @Component({
   selector: 'app-comment-section',
-  imports: [UserAvatar, CommonModule, FormsModule],
+  imports: [ReportModal, UserAvatar, CommonModule, FormsModule],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
@@ -25,7 +26,13 @@ export class CommentSection implements OnInit {
   loading = false;
   saving = false;
   error = '';
+  menuCommentId: string | null = null;
+  reportTarget: SpectrumComment | null = null;
+  deleteTarget: SpectrumComment | null = null;
+  actionPending = false;
+  actionMessage = '';
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   constructor(
     private readonly postService: PostService,
@@ -35,7 +42,16 @@ export class CommentSection implements OnInit {
   ngOnInit(): void {
     this.loading = true;
     this.postService.loadComments(this.postId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (comments) => { this.comments = comments; this.loading = false; },
+      next: (comments) => {
+        this.comments = comments;
+        this.loading = false;
+        const target = comments.find(comment => window.location.hash === '#comment-' + comment.id);
+        if (target) {
+          this.showAll = true;
+          afterNextRender(() => document.getElementById('comment-' + target.id)?.scrollIntoView({ block: 'center' }),
+            { injector: this.injector });
+        }
+      },
       error: () => { this.error = 'Não foi possível carregar os comentários.'; this.loading = false; },
     });
   }
@@ -147,8 +163,59 @@ export class CommentSection implements OnInit {
     }
   }
 
-  reportComment(commentId: string): void {
-    return;
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  closeMenu(): void { this.menuCommentId = null; }
+
+  toggleMenu(commentId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuCommentId = this.menuCommentId === commentId ? null : commentId;
+  }
+
+  isOwnComment(comment: SpectrumComment): boolean {
+    const user = this.currentUser ?? this.userService.getCurrentUser();
+    return !!user && comment.authorId === user._id;
+  }
+
+  async copyCommentLink(comment: SpectrumComment): Promise<void> {
+    this.closeMenu();
+    this.error = '';
+    this.actionMessage = '';
+    try {
+      await navigator.clipboard.writeText(window.location.origin + '/occurrences/' +
+        encodeURIComponent(this.postId) + '#comment-' + encodeURIComponent(comment.id));
+      this.actionMessage = 'Link do comentário copiado.';
+    } catch { this.error = 'Não foi possível copiar o link. Tente novamente.'; }
+  }
+
+  reportComment(comment: SpectrumComment): void {
+    this.closeMenu();
+    this.reportTarget = comment;
+  }
+
+  requestDelete(comment: SpectrumComment): void {
+    this.closeMenu();
+    if (this.isOwnComment(comment)) this.deleteTarget = comment;
+  }
+
+  confirmDelete(): void {
+    const target = this.deleteTarget;
+    if (!target || !this.isOwnComment(target) || this.actionPending) return;
+    this.actionPending = true;
+    this.error = '';
+    this.actionMessage = '';
+    this.postService.deleteComment(target.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.comments = this.comments.filter(comment => comment.id !== target.id);
+        this.actionPending = false;
+        this.deleteTarget = null;
+        this.actionMessage = 'Comentário excluído.';
+      },
+      error: () => {
+        this.actionPending = false;
+        this.error = 'Não foi possível excluir o comentário. Tente novamente.';
+      },
+    });
   }
 
   private findComment(commentId: string): SpectrumComment | undefined {
