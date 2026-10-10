@@ -746,6 +746,10 @@ export class PostService {
     return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id }).pipe(map((comment) => this.toComment(comment)));
   }
 
+  deleteComment(commentId: string): Observable<unknown> {
+    return this.http.delete(API_BASE_URL + '/comment/' + encodeURIComponent(commentId));
+  }
+
   private toComment(comment: CommentApiResponse): SpectrumComment {
     return { id: comment._id, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
       authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
