@@ -55,6 +55,14 @@
           <option value="es">{{ 'Español' | translate }}</option>
         </select>
       </label>
+      <button class="settings-row settings-row--button settings-row--danger" type="button"
+        [disabled]="settingsSaving() || accountDeleting()" (click)="openDialog('deleteAccount')">
+        <span class="settings-row__content">
+          <strong>{{ 'Excluir conta' | translate }}</strong>
+          <small>{{ 'Excluir permanentemente sua conta do Spectrum' | translate }}</small>
+        </span>
+        <span class="settings-row__arrow" aria-hidden="true"></span>
+      </button>
     </app-settings-section>
 
     <app-settings-section [title]="'Segurança' | translate">
@@ -156,6 +164,26 @@
       <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
       <span>{{ (toastMessage) | translate }}</span>
     </div>
+  }
+
+  @if (activeDialog === 'deleteAccount') {
+    <app-settings-dialog [title]="'Excluir conta' | translate" (closed)="closeDialog()">
+      <form class="settings-form settings-confirm" (ngSubmit)="deleteAccount()">
+        <p id="delete-account-warning">{{ 'A exclusão da sua conta é permanente e não pode ser desfeita.' | translate }}</p>
+        <label for="delete-account-confirmation">
+          <span>{{ 'Para confirmar que deseja excluir sua conta, digite {confirmation}.' | translate:{ confirmation: deleteConfirmationPhrase } }}</span>
+          <input id="delete-account-confirmation" name="deleteAccountConfirmation" type="text"
+            [(ngModel)]="deleteConfirmation" [disabled]="accountDeleting()" autocomplete="off" spellcheck="false"
+            aria-describedby="delete-account-warning" />
+        </label>
+        @if (formError) { <p class="settings-form__error" role="alert">{{ formError | translate }}</p> }
+        @if (accountDeleting()) { <p class="settings-form__hint" role="status">{{ 'Excluindo conta...' | translate }}</p> }
+        <div class="settings-dialog-actions">
+          <button class="settings-dialog-actions__ghost" type="button" [disabled]="accountDeleting()" (click)="closeDialog()">{{ 'Cancelar' | translate }}</button>
+          <button class="settings-dialog-actions__danger" type="submit" [disabled]="!canDeleteAccount">{{ 'Excluir conta' | translate }}</button>
+        </div>
+      </form>
+    </app-settings-dialog>
   }
 
   @if (activeDialog === 'name') {

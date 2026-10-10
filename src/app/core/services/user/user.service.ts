@@ -133,6 +133,15 @@ export class UserService {
     );
   }
 
+  deleteAccount(): Observable<void> {
+    const userId = this.currentUser()?._id;
+    if (!userId) return throwError(() => new Error('Entre na sua conta para excluir a conta.'));
+    return this.http.delete<void>(`${this.apiUrl}/${userId}`).pipe(
+      timeout(15000),
+      tap(() => { if (this.currentUser()?._id === userId) this.logout(); }),
+    );
+  }
+
   uploadAvatar(avatar: Blob): Observable<UpdateAvatarResponse> {
     const userId = this.currentUser()?._id;
     if (!userId) {

@@ -18,6 +18,7 @@ type SettingsDialogKind =
   | 'name'
   | 'username'
   | 'password'
+  | 'deleteAccount'
   | null;
 
 @Component({
@@ -74,6 +75,25 @@ export class SettingsPage implements OnDestroy {
   usernameStatus: 'idle' | 'checking' | 'available' = 'idle';
   passwordSaving = false;
   toastMessage = '';
+  readonly deleteConfirmationPhrase = 'EXCLUIR CONTA';
+  deleteConfirmation = '';
+  readonly accountDeleting = signal(false);
+
+  get canDeleteAccount(): boolean {
+    return this.deleteConfirmation === this.deleteConfirmationPhrase && !!this.user && !this.accountDeleting();
+  }
+
+  async deleteAccount(): Promise<void> {
+    if (this.activeDialog !== 'deleteAccount' || !this.canDeleteAccount) return;
+    this.accountDeleting.set(true);
+    this.formError = '';
+    try {
+      await firstValueFrom(this.userService.deleteAccount());
+      if (!this.destroyed && !this.user) void this.router.navigateByUrl('/login');
+    } catch {
+      if (!this.destroyed) this.formError = 'Não foi possível excluir sua conta. Tente novamente.';
+    } finally { this.accountDeleting.set(false); }
+  }
 
   constructor() {
     effect(() => { this.settings = { ...this.settings, ...this.preferencesService.preferences() }; });
@@ -113,10 +133,12 @@ export class SettingsPage implements OnDestroy {
   }
 
   openDialog(kind: Exclude<SettingsDialogKind, null>): void {
+    if (this.accountDeleting()) return;
     this.clearAvatarDraft();
     this.activeDialog = kind;
     this.formError = '';
     this.passwordSaving = false;
+    this.deleteConfirmation = '';
 
     if (kind === 'name') {
       this.nameDraft = this.account.name;
@@ -137,9 +159,10 @@ export class SettingsPage implements OnDestroy {
   }
 
   closeDialog(): void {
-    if (this.avatarSaving()) return;
+    if (this.avatarSaving() || this.accountDeleting()) return;
     this.clearAvatarDraft();
     this.activeDialog = null;
+    this.deleteConfirmation = '';
     this.formError = '';
     this.passwordSaving = false;
     this.clearUsernameTimer();
