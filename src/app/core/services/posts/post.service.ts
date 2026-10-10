@@ -1,7 +1,7 @@
 import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of, tap, throwError } from 'rxjs';
+import { Observable, forkJoin, map, of, tap, throwError } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser, UserService } from '../user/user.service';
@@ -742,7 +742,17 @@ export class PostService {
   }
 
   loadComments(postId: string): Observable<SpectrumComment[]> {
-    return this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`).pipe(map((comments) => comments.map((comment) => this.toComment(comment))));
+    return forkJoin({
+      comments: this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`),
+      reactions: this.http.get<Record<string, Pick<SpectrumComment, 'likes' | 'dislikes' | 'liked' | 'disliked'>>>(`${API_BASE_URL}/like/comment/post/${postId}`),
+    }).pipe(map(({ comments, reactions }) => comments.map(comment => ({ ...this.toComment(comment),
+      ...(reactions[comment._id] ?? { likes: 0, dislikes: 0, liked: false, disliked: false }) }))));
+  }
+
+  setCommentReaction(comment: SpectrumComment, reaction: 'LIKE' | 'UNLIKE' | null): Observable<SpectrumComment> {
+    return this.http.put<Pick<SpectrumComment, 'likes' | 'dislikes' | 'liked' | 'disliked'>>(
+      `${API_BASE_URL}/like/comment/${comment.id}`, { reaction },
+    ).pipe(map(state => ({ ...comment, ...state })));
   }
 
   createComment(postId: string, content: string, user: LoggedUser): Observable<SpectrumComment> {
