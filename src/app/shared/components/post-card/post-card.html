@@ -223,11 +223,11 @@
     <div class="post-card__meta">
       <span class="post-card__meta-location">
         <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-        <span>{{ post.location?.cityName || post.location?.city || post.location?.label || post.authorCity }}</span>
+        <span>{{ post.location?.cityName || post.location?.city || post.location?.label || post.authorCity }}{{ (post.location?.stateCode || post.location?.stateName || post.location?.state) ? ' - ' + (post.location?.stateCode || post.location?.stateName || post.location?.state) : '' }}</span>
       </span>
       <span class="post-card__meta-date">{{ post.publishedAtLabel }}</span>
     </div>
-    <div class="post-card__actions" aria-label="Interacoes">
+    <div class="post-card__actions" aria-label="Interaçoes">
       <button
         type="button"
         [class.post-card__action--liked]="post.liked"
