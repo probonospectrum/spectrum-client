@@ -176,6 +176,7 @@ export interface SpectrumPost {
 export interface SpectrumComment {
   id: string;
   authorId?: string;
+  authorAvatarUrl?: string;
   authorName: string;
   authorInitial: string;
   content: string;
@@ -746,7 +747,7 @@ export class PostService {
   }
 
   private toComment(comment: CommentApiResponse): SpectrumComment {
-    return { id: comment._id, authorId: comment.userId, authorName: comment.author.name,
+    return { id: comment._id, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
       authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
       dateLabel: this.formatPublishedAt(new Date(comment.createdAt)), likes: comment.likeCount ?? 0,
       dislikes: comment.unlikeCount ?? 0, liked: false, disliked: false };

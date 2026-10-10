@@ -9,7 +9,7 @@ describe('SocialShell profile search', () => {
   let api: { searchProfiles: ReturnType<typeof vi.fn> };
   beforeEach(() => {
     vi.useFakeTimers();
-    api = { searchProfiles: vi.fn().mockReturnValue(of([{ name: 'Maria', nickname: 'mariazinha' }])) };
+    api = { searchProfiles: vi.fn().mockReturnValue(of([{ name: 'Maria', nickname: 'mariazinha', avatarUrl: 'https://example.test/maria.png' }])) };
     TestBed.configureTestingModule({ providers: [
       provideRouter([]),
       { provide: ActivatedRoute, useValue: {} },
@@ -27,7 +27,7 @@ describe('SocialShell profile search', () => {
     vi.advanceTimersByTime(300);
     expect(api.searchProfiles).toHaveBeenCalledWith('mariazinha');
     expect(shell.searchResults()).toContainEqual({
-      id: 'profile:mariazinha', name: 'Maria', nickname: 'mariazinha', type: 'Pessoa',
+      id: 'profile:mariazinha', name: 'Maria', nickname: 'mariazinha', avatarUrl: 'https://example.test/maria.png', type: 'Pessoa',
     });
     expect(shell.isSearching()).toBe(false);
   });

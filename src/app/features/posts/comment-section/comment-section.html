@@ -22,6 +22,7 @@
           <div class="comment-section__item-header">
             <span class="comment-section__avatar">
               <app-user-avatar [user]="comment.authorId === currentUser?._id ? currentUser : null"
+                [imageUrl]="comment.authorId === currentUser?._id ? '' : (comment.authorAvatarUrl || '')"
                 [name]="comment.authorName" />
             </span>
             <div class="comment-section__author">

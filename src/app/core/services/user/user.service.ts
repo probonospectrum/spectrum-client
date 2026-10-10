@@ -77,8 +77,8 @@ export class UserService {
 
   constructor(private readonly http: HttpClient) {}
 
-  searchProfiles(term: string): Observable<Pick<PublicProfileResponse, 'name' | 'nickname'>[]> {
-    return this.http.get<Pick<PublicProfileResponse, 'name' | 'nickname'>[]>(
+  searchProfiles(term: string): Observable<Pick<PublicProfileResponse, 'name' | 'nickname' | 'avatarUrl'>[]> {
+    return this.http.get<Pick<PublicProfileResponse, 'name' | 'nickname' | 'avatarUrl'>[]>(
       this.apiUrl + '/search', { params: { q: term } },
     );
   }
