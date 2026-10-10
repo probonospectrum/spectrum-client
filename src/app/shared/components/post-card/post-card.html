@@ -260,6 +260,7 @@
       <button
         type="button"
         [class.post-card__action--active]="post.reposted"
+        [attr.aria-pressed]="post.reposted"
         [attr.aria-label]="(post.reposted ? 'Remover repost' : 'Repostar publicacao') | translate"
         (click)="repost.emit(post)"
         [disabled]="repostPending"
