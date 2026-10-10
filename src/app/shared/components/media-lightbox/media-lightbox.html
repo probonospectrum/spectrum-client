@@ -37,7 +37,7 @@
       </button>
     }
 
-    <div class="media-lightbox__content" (click)="onContentClick($event)">
+    <div class="media-lightbox__content" [class.media-lightbox__content--zoomable]="enableZoom && !isVideo" (click)="onContentClick($event)">
       @if (currentItem; as item) {
         @if (isVideo) {
           <video
@@ -50,6 +50,14 @@
         } @else {
           <img
             class="media-lightbox__img"
+            [class.media-lightbox__img--zoomed]="zoom > 1"
+            [style.transform]="'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')'"
+            [draggable]="false"
+            (pointerdown)="startPan($event)"
+            (pointermove)="movePan($event)"
+            (pointerup)="endPan()"
+            (pointercancel)="endPan()"
+            (lostpointercapture)="endPan()"
             [src]="item.url"
             [alt]="(item.alt || ('Imagem expandida' | translate))"
             loading="eager"
@@ -69,6 +77,18 @@
       </button>
     }
   </main>
+
+  @if (enableZoom && currentItem && !isVideo) {
+    <div class="media-lightbox__zoom-controls" (click)="onContentClick($event)">
+      <button type="button" class="media-lightbox__close" [attr.aria-label]="'Diminuir zoom' | translate" [disabled]="zoom <= 1" (click)="changeZoom(-0.1)">
+        <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+      </button>
+      <span class="media-lightbox__zoom" aria-live="polite">{{ (zoom * 100).toFixed(0) }}%</span>
+      <button type="button" class="media-lightbox__close" [attr.aria-label]="'Aumentar zoom' | translate" [disabled]="zoom >= 3" (click)="changeZoom(0.1)">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      </button>
+    </div>
+  }
 
   @if (hasMultiple) {
     <footer class="media-lightbox__footer" (click)="onContentClick($event)">

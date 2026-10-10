@@ -290,6 +290,7 @@
 @if (lightboxOpen) {
   <app-media-lightbox
     [mediaList]="galleryItems"
+    [enableZoom]="true"
     [initialIndex]="lightboxIndex"
     (close)="closeGalleryLightbox()"
   />

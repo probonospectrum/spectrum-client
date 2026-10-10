@@ -38,7 +38,7 @@
             />
           </span>
           <span><strong>{{ occurrence.authorName }}</strong><small>{{ 'Publicada em' | translate }} {{ formatDate(occurrence.createdAt) }}</small></span>
-          <span class="occurrence-detail__place"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ occurrence.location?.cityName || occurrence.authorCity }}</span>
+          <span class="occurrence-detail__place"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ occurrence.location?.cityName || occurrence.authorCity }}@if (occurrence.location?.stateCode || occurrence.location?.state; as state) { — {{ state }} }</span>
         </div>
       </div>
     </article>
@@ -260,11 +260,21 @@
           }
 
           @if (actionPanel === 'agency') {
+            @if (!isModerator) {
+              <div class="occurrence-detail__suggestion-actions">
+                <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
+                <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+              </div>
+            } @else {
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
+            }
           }
 
           @if (actionPanel === 'evidence') {
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ 'Adicionar evidência' | translate }}</button>
+            <div class="occurrence-detail__suggestion-actions">
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ 'Adicionar evidência' | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+            </div>
           }
 
           @if (actionPanel === 'resolution') {
@@ -312,7 +322,9 @@
             </label>
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitReopen()">{{ 'Reabrir ocorrência' | translate }}</button>
           }
-          <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+          @if (actionPanel !== 'evidence' && (actionPanel !== 'agency' || isModerator)) {
+            <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+          }
           </fieldset>
         </form>
       }
@@ -429,6 +441,7 @@
   @if (lightboxOpen) {
     <app-media-lightbox
       [mediaList]="occurrenceMediaList"
+      [enableZoom]="true"
       [initialIndex]="lightboxIndex"
       (close)="closeLightbox()"
     />

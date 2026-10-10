@@ -25,9 +25,48 @@ export interface LightboxMediaItem {
 export class MediaLightbox implements OnInit, OnDestroy {
   @Input() mediaList: LightboxMediaItem[] = [];
   @Input() initialIndex = 0;
+  @Input() enableZoom = false;
   @Output() close = new EventEmitter<void>();
 
   currentIndex = 0;
+  zoom = 1;
+  panX = 0;
+  panY = 0;
+  private drag: { id: number; x: number; y: number } | null = null;
+
+  changeZoom(amount: number): void {
+    if (!this.enableZoom || this.isVideo) return;
+    this.zoom = Math.max(1, Math.min(3, Math.round((this.zoom + amount) * 10) / 10));
+    this.panX = this.panY = 0;
+    this.drag = null;
+  }
+
+  startPan(event: PointerEvent): void {
+    if (!this.enableZoom || this.zoom <= 1 || event.button !== 0) return;
+    const image = event.currentTarget as HTMLImageElement;
+    image.setPointerCapture(event.pointerId);
+    this.drag = { id: event.pointerId, x: event.clientX - this.panX, y: event.clientY - this.panY };
+    event.preventDefault();
+  }
+
+  movePan(event: PointerEvent): void {
+    if (!this.drag || this.drag.id !== event.pointerId) return;
+    const image = event.currentTarget as HTMLImageElement;
+    const limitX = image.clientWidth * (this.zoom - 1) / 2;
+    const limitY = image.clientHeight * (this.zoom - 1) / 2;
+    this.panX = Math.max(-limitX, Math.min(limitX, event.clientX - this.drag.x));
+    this.panY = Math.max(-limitY, Math.min(limitY, event.clientY - this.drag.y));
+  }
+
+  endPan(): void {
+    this.drag = null;
+  }
+
+  private resetZoom(): void {
+    this.zoom = 1;
+    this.panX = this.panY = 0;
+    this.drag = null;
+  }
 
   ngOnInit(): void {
     if (this.mediaList.length > 0) {
@@ -86,6 +125,7 @@ export class MediaLightbox implements OnInit, OnDestroy {
   prev(event?: MouseEvent): void {
     event?.stopPropagation();
     if (!this.hasMultiple) return;
+    this.resetZoom();
     if (this.currentIndex > 0) {
       this.currentIndex--;
     } else {
@@ -96,6 +136,7 @@ export class MediaLightbox implements OnInit, OnDestroy {
   next(event?: MouseEvent): void {
     event?.stopPropagation();
     if (!this.hasMultiple) return;
+    this.resetZoom();
     if (this.currentIndex < this.mediaList.length - 1) {
       this.currentIndex++;
     } else {
@@ -106,6 +147,7 @@ export class MediaLightbox implements OnInit, OnDestroy {
   goTo(index: number, event?: MouseEvent): void {
     event?.stopPropagation();
     if (index >= 0 && index < this.mediaList.length) {
+      this.resetZoom();
       this.currentIndex = index;
     }
   }
