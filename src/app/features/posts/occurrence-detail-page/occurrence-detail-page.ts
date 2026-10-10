@@ -18,6 +18,7 @@ import {
 import { UserService } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+import { MediaLightbox } from '../../../shared/components/media-lightbox/media-lightbox';
 
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 
@@ -36,7 +37,7 @@ type ActionPanel =
 
 @Component({
   selector: 'app-occurrence-detail-page',
-  imports: [CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell],
+  imports: [CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell, MediaLightbox],
   templateUrl: './occurrence-detail-page.html',
   styleUrl: './occurrence-detail-page.scss',
 })
@@ -137,6 +138,42 @@ export class OccurrenceDetailPage implements OnInit {
 
   evidenceUrl(evidence: OccurrenceEvidence): string | null {
     return evidence.url && /^https?:\/\//i.test(evidence.url) ? evidence.url : null;
+  }
+
+  lightboxOpen = false;
+  lightboxIndex = 0;
+
+  get occurrenceMediaList(): Array<{ url: string; type: string; alt?: string }> {
+    if (!this.occurrence?.evidences) return [];
+    return this.occurrence.evidences
+      .filter((e) => Boolean(this.evidenceUrl(e)))
+      .map((e) => ({
+        url: this.evidenceUrl(e)!,
+        type: e.type,
+        alt: this.occurrence?.title,
+      }));
+  }
+
+  openLightbox(index: number): void {
+    this.lightboxIndex = index;
+    this.lightboxOpen = true;
+  }
+
+  openEvidenceInLightbox(evidence: OccurrenceEvidence): void {
+    const url = this.evidenceUrl(evidence);
+    if (!url) return;
+    const list = this.occurrenceMediaList;
+    const foundIndex = list.findIndex((m) => m.url === url);
+    if (foundIndex >= 0) {
+      this.openLightbox(foundIndex);
+    } else {
+      this.lightboxIndex = 0;
+      this.lightboxOpen = true;
+    }
+  }
+
+  closeLightbox(): void {
+    this.lightboxOpen = false;
   }
 
   loadOccurrence(): void {

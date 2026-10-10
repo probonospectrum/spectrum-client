@@ -131,8 +131,67 @@
 
     <p class="post-card__copy">{{ post.content }}</p>
 
-    @if (coverImage; as imageUrl) {
-      <img class="post-card__evidence-image" [src]="imageUrl" [alt]="post.title" loading="lazy" (error)="failedCoverUrl = imageUrl" />
+    @if (galleryItems.length === 1) {
+      <div
+        class="post-card__media-single"
+        [class.post-card__media-single--video]="galleryItems[0].type === 'VIDEO'"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="galleryItems[0].type === 'VIDEO' ? 'Reproduzir vídeo da ocorrência' : 'Expandir imagem da ocorrência'"
+        (click)="openGalleryMedia($event, 0)"
+        (keydown.enter)="openGalleryMedia($event, 0)"
+        (keydown.space)="$event.preventDefault(); openGalleryMedia($event, 0)"
+      >
+        @if (galleryItems[0].type === 'VIDEO') {
+          <video [src]="galleryItems[0].url" preload="metadata" muted></video>
+          <div class="post-card__play-badge" aria-hidden="true">
+            <span class="material-symbols-outlined">play_arrow</span>
+          </div>
+        } @else {
+          <img class="post-card__evidence-image" [src]="galleryItems[0].url" [alt]="post.title" loading="lazy" (error)="failedCoverUrl = galleryItems[0].url" />
+          <div class="post-card__media-zoom" aria-hidden="true">
+            <span class="material-symbols-outlined">zoom_in</span>
+          </div>
+        }
+      </div>
+    } @else if (galleryItems.length > 1) {
+      <div
+        class="post-card__media-grid"
+        [class.post-card__media-grid--2]="galleryItems.length === 2"
+        [class.post-card__media-grid--3]="galleryItems.length === 3"
+        [class.post-card__media-grid--4]="galleryItems.length >= 4"
+        aria-label="Fotos e vídeos da ocorrência"
+      >
+        @for (item of galleryItems.slice(0, 4); track item.url + $index; let idx = $index) {
+          <div
+            class="post-card__grid-item"
+            [class.post-card__grid-item--featured]="galleryItems.length === 3 && idx === 0"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="item.type === 'VIDEO' ? 'Reproduzir vídeo ' + (idx + 1) : 'Expandir imagem ' + (idx + 1)"
+            (click)="openGalleryMedia($event, idx)"
+            (keydown.enter)="openGalleryMedia($event, idx)"
+            (keydown.space)="$event.preventDefault(); openGalleryMedia($event, idx)"
+          >
+            @if (item.type === 'VIDEO') {
+              <video [src]="item.url" preload="metadata" muted></video>
+              <div class="post-card__play-badge" aria-hidden="true">
+                <span class="material-symbols-outlined">play_arrow</span>
+              </div>
+            } @else {
+              <img [src]="item.url" [alt]="post.title" loading="lazy" />
+              <div class="post-card__media-zoom" aria-hidden="true">
+                <span class="material-symbols-outlined">zoom_in</span>
+              </div>
+            }
+            @if (idx === 3 && galleryItems.length > 4) {
+              <div class="post-card__more-overlay" aria-hidden="true">
+                <span>+{{ galleryItems.length - 3 }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
     } @else if (post.mediaType !== 'text') {
       <div class="post-card__media" [class.post-card__media--image]="post.mediaType === 'image'">
         @if (post.mediaType === 'video') {
@@ -225,4 +284,13 @@
       (commentAdded)="onCommentAdded()"
     />
   }
+
 </article>
+
+@if (lightboxOpen) {
+  <app-media-lightbox
+    [mediaList]="galleryItems"
+    [initialIndex]="lightboxIndex"
+    (close)="closeGalleryLightbox()"
+  />
+}

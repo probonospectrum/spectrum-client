@@ -1,0 +1,97 @@
+<div
+  class="media-lightbox"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Visualizador de mídia"
+  (click)="onBackdropClick($event)"
+>
+  <header class="media-lightbox__header" (click)="onContentClick($event)">
+    <div class="media-lightbox__info">
+      @if (hasMultiple) {
+        <span class="media-lightbox__counter">
+          {{ currentIndex + 1 }} / {{ mediaList.length }}
+        </span>
+      }
+    </div>
+    <div class="media-lightbox__actions">
+      <button
+        type="button"
+        class="media-lightbox__close"
+        aria-label="Fechar visualizador"
+        (click)="close.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="media-lightbox__body" (click)="onBackdropClick($event)">
+    @if (hasMultiple) {
+      <button
+        type="button"
+        class="media-lightbox__nav media-lightbox__nav--prev"
+        aria-label="Mídia anterior"
+        (click)="prev($event)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      </button>
+    }
+
+    <div class="media-lightbox__content" (click)="onContentClick($event)">
+      @if (currentItem; as item) {
+        @if (isVideo) {
+          <video
+            class="media-lightbox__video"
+            [src]="item.url"
+            controls
+            autoplay
+            playsinline
+          ></video>
+        } @else {
+          <img
+            class="media-lightbox__img"
+            [src]="item.url"
+            [alt]="item.alt || 'Imagem expandida'"
+            loading="eager"
+          />
+        }
+      }
+    </div>
+
+    @if (hasMultiple) {
+      <button
+        type="button"
+        class="media-lightbox__nav media-lightbox__nav--next"
+        aria-label="Próxima mídia"
+        (click)="next($event)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </button>
+    }
+  </main>
+
+  @if (hasMultiple) {
+    <footer class="media-lightbox__footer" (click)="onContentClick($event)">
+      <div class="media-lightbox__thumbnails">
+        @for (item of mediaList; track item.url + $index; let idx = $index) {
+          <button
+            type="button"
+            class="media-lightbox__thumb-btn"
+            [class.is-active]="idx === currentIndex"
+            [attr.aria-label]="'Ir para mídia ' + (idx + 1)"
+            (click)="goTo(idx, $event)"
+          >
+            @if (item.type === 'VIDEO') {
+              <div class="media-lightbox__thumb-video">
+                <span class="material-symbols-outlined">play_arrow</span>
+              </div>
+            } @else {
+              <img [src]="item.url" alt="" loading="lazy" />
+            }
+          </button>
+        }
+      </div>
+    </footer>
+  }
+</div>
+
