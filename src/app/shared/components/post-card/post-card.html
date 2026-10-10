@@ -48,7 +48,7 @@
             >
               <span class="material-symbols-outlined" aria-hidden="true">edit</span>
               <span>
-                Editar publicacao
+                Editar publicação
                 <small>{{ editWindowStatus }}</small>
               </span>
             </button>
@@ -58,7 +58,7 @@
               (click)="selectMenuAction(remove)"
             >
               <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-              Excluir publicacao
+              Excluir publicação
             </button>
             <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
               <span
@@ -91,11 +91,11 @@
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(hideAuthor)">
               <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
-              Ocultar publicacoes desse usuario
+              Ocultar publicações desse usuário
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(notInterested)">
               <span class="material-symbols-outlined" aria-hidden="true">block</span>
-              Nao tenho interesse
+              Não tenho interesse
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(aiSpam)">
               <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
@@ -103,7 +103,7 @@
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(report)">
               <span class="material-symbols-outlined" aria-hidden="true">flag</span>
-              Denunciar publicacao
+              Denunciar publicação
             </button>
           }
         </div>
@@ -164,7 +164,7 @@
     <div class="post-card__meta">
       <span class="post-card__meta-location">
         <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-        <span>{{ post.authorCity }}</span>
+        <span>{{ post.location?.cityName || post.location?.city || post.location?.label || post.authorCity }}</span>
       </span>
       <span class="post-card__meta-date">{{ post.publishedAtLabel }}</span>
     </div>
