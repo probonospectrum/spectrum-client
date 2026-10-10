@@ -890,6 +890,7 @@ Para confirmar que deseja excluir sua conta, digite {confirmation}.|To confirm y
 Excluindo conta...|Deleting account...|Eliminando cuenta...
 Não foi possível excluir sua conta. Tente novamente.|Could not delete your account. Try again.|No se pudo eliminar tu cuenta. Inténtalo de nuevo.
 Entre na sua conta para excluir a conta.|Sign in to delete your account.|Inicia sesión para eliminar tu cuenta.
+Use apenas letras minúsculas, números, ponto (.) ou underline (_), sem espaços.|Use only lowercase letters, numbers, dots (.) or underscores (_), without spaces.|Usa solo letras minúsculas, números, puntos (.) o guiones bajos (_), sin espacios.
 `;
 export const TRANSLATIONS: ReadonlyMap<string, readonly [string, string]> = new Map(
   rows.trim().split('\n').filter(Boolean).map((row) => {
