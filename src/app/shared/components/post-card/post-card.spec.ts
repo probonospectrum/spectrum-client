@@ -69,6 +69,16 @@ describe('PostCard media and gallery layout', () => {
     expect(component).toBeTruthy();
   });
 
+  it('shows the original author avatar on an owned repost', () => {
+    fixture.componentRef.setInput('currentUser', { _id: 'reposter', name: 'Ana', nickname: 'ana', avatarUrl: 'https://example.com/ana.png' } as LoggedUser);
+    fixture.componentRef.setInput('post', { ...basePost, createdBy: 'reposter', originalPostId: 'original', authorAvatarUrl: 'https://example.com/original.png' });
+    fixture.detectChanges();
+    const image = fixture.nativeElement.querySelector('.post-card__avatar img') as HTMLImageElement;
+    expect(image.getAttribute('src')).toBe('https://example.com/original.png');
+    expect(component.isOwnPost).toBe(true);
+    expect(component.occurrenceId).toBe('original');
+  });
+
   it('updates the comment count without accumulating duplicate counts', () => {
     component.onCommentCountChanged(3);
     expect(component.commentsCount).toBe(3);
