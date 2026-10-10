@@ -883,6 +883,13 @@ Um registro pode ser o primeiro passo para melhorar o seu bairro.|A report can b
 Ver no feed|View in feed|Ver en el feed
 Concluindo seu login com Google...|Completing your Google sign-in...|Completando tu inicio de sesión con Google...
 Não foi possível entrar com Google|Could not sign in with Google|No se pudo iniciar sesión con Google
+Excluir conta|Delete account|Eliminar cuenta
+Excluir permanentemente sua conta do Spectrum|Permanently delete your Spectrum account|Eliminar permanentemente tu cuenta de Spectrum
+A exclusão da sua conta é permanente e não pode ser desfeita.|Deleting your account is permanent and cannot be undone.|La eliminación de tu cuenta es permanente y no se puede deshacer.
+Para confirmar que deseja excluir sua conta, digite {confirmation}.|To confirm you want to delete your account, type {confirmation}.|Para confirmar que deseas eliminar tu cuenta, escribe {confirmation}.
+Excluindo conta...|Deleting account...|Eliminando cuenta...
+Não foi possível excluir sua conta. Tente novamente.|Could not delete your account. Try again.|No se pudo eliminar tu cuenta. Inténtalo de nuevo.
+Entre na sua conta para excluir a conta.|Sign in to delete your account.|Inicia sesión para eliminar tu cuenta.
 `;
 export const TRANSLATIONS: ReadonlyMap<string, readonly [string, string]> = new Map(
   rows.trim().split('\n').filter(Boolean).map((row) => {

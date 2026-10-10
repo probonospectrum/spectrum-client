@@ -376,6 +376,21 @@ input:focus {
   color: #ffffff;
 }
 
+.settings-row--danger .settings-row__content strong,
+.settings-row--danger:hover .settings-row__content strong {
+  color: var(--spectrum-error);
+}
+
+.settings-dialog-actions__danger {
+  border: 1px solid var(--spectrum-error);
+  background: var(--spectrum-error);
+  color: #ffffff;
+}
+
+.settings-dialog-actions__danger:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
 .settings-dialog-actions__primary:hover:not(:disabled) {
   background: var(--spectrum-primary-900);
   transform: translateY(-1px);

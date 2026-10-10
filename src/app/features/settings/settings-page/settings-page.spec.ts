@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { SettingsPage } from './settings-page';
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -34,6 +34,51 @@ describe('SettingsPage', () => {
   afterEach(() => {
     component.ngOnDestroy();
     TestBed.inject(HttpTestingController).verify();
+  });
+
+  it('requires the exact confirmation and clears it when cancelling', async () => {
+    clickButton('Excluir conta');
+    fixture.detectChanges();
+    const submit = fixture.nativeElement.querySelector('.settings-dialog-actions__danger') as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+    component.deleteConfirmation = 'excluir conta';
+    await component.deleteAccount();
+    TestBed.inject(HttpTestingController).expectNone(API_BASE_URL + '/user/ana');
+    component.deleteConfirmation = 'EXCLUIR CONTA';
+    fixture.detectChanges();
+    expect(submit.disabled).toBe(false);
+    component.closeDialog();
+    expect(component.deleteConfirmation).toBe('');
+    component.openDialog('deleteAccount');
+    expect(component.canDeleteAccount).toBe(false);
+  });
+
+  it('prevents duplicate requests and closing while deleting, then logs out and redirects', async () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    component.openDialog('deleteAccount');
+    component.deleteConfirmation = 'EXCLUIR CONTA';
+    const deleting = component.deleteAccount();
+    await component.deleteAccount();
+    component.closeDialog();
+    expect(component.activeDialog).toBe('deleteAccount');
+    expect(component.accountDeleting()).toBe(true);
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/ana').flush(null);
+    await deleting;
+    expect(TestBed.inject(UserService).getCurrentUser()).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/login');
+  });
+
+  it('shows deletion errors and allows retry without logging out', async () => {
+    component.openDialog('deleteAccount');
+    component.deleteConfirmation = 'EXCLUIR CONTA';
+    const deleting = component.deleteAccount();
+    TestBed.inject(HttpTestingController).expectOne(API_BASE_URL + '/user/ana')
+      .flush({}, { status: 500, statusText: 'Error' });
+    await deleting;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.settings-form__error').textContent).toContain('Não foi possível excluir');
+    expect(component.canDeleteAccount).toBe(true);
+    expect(TestBed.inject(UserService).getCurrentUser()?._id).toBe('ana');
   });
 
   it('saves Spanish through the existing dropdown and updates the interface without reloading preferences', async () => {
