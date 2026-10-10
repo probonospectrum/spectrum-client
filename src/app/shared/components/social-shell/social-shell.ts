@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import {
@@ -34,7 +35,7 @@ interface SearchResult {
 
 @Component({
   selector: 'app-social-shell',
-  imports: [
+  imports: [TranslatePipe,
     UserAvatar,
     CommonModule,
     FormsModule,

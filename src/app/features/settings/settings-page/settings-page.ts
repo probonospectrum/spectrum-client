@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { Component, ElementRef, OnDestroy, ViewChild, effect, inject, signal } from '@angular/core';
@@ -21,7 +22,7 @@ type SettingsDialogKind =
 
 @Component({
   selector: 'app-settings-page',
-  imports: [UserAvatar, FormsModule, SocialShell, SettingsSection, ToggleSwitch, SettingsDialog],
+  imports: [TranslatePipe, UserAvatar, FormsModule, SocialShell, SettingsSection, ToggleSwitch, SettingsDialog],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })

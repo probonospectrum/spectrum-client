@@ -1,3 +1,4 @@
+import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, of, tap, throwError } from 'rxjs';
@@ -175,6 +176,7 @@ export interface SpectrumPost {
 
 export interface SpectrumComment {
   id: string;
+  createdAt?: string;
   authorId?: string;
   authorAvatarUrl?: string;
   authorName: string;
@@ -306,6 +308,7 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  readonly i18n = inject(I18nService);
   getModerationOccurrences(user: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`).pipe(
       map(items => items.map(item => this.toSpectrumPost(item, user))),
@@ -751,7 +754,7 @@ export class PostService {
   }
 
   private toComment(comment: CommentApiResponse): SpectrumComment {
-    return { id: comment._id, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
+    return { id: comment._id, createdAt: comment.createdAt, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
       authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
       dateLabel: this.formatPublishedAt(new Date(comment.createdAt)), likes: comment.likeCount ?? 0,
       dislikes: comment.unlikeCount ?? 0, liked: false, disliked: false };
@@ -1588,12 +1591,12 @@ return {
   }
 
   private formatPublishedAt(date: Date): string {
-    const day = new Intl.DateTimeFormat('pt-BR').format(date);
-    const time = new Intl.DateTimeFormat('pt-BR', {
+    const day = new Intl.DateTimeFormat(this.i18n.language()).format(date);
+    const time = new Intl.DateTimeFormat(this.i18n.language(), {
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
 
-    return `Publicado em ${day}, as ${time}`;
+    return this.i18n.translate('Publicado em {date}, as {time}', { date: day, time });
   }
 }

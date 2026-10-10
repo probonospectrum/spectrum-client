@@ -1,3 +1,4 @@
+import { LocalizedDatePipe, TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { CommonModule } from '@angular/common';
@@ -9,7 +10,7 @@ import { LoggedUser, UserService } from '../../../core/services/user/user.servic
 
 @Component({
   selector: 'app-comment-section',
-  imports: [ReportModal, UserAvatar, CommonModule, FormsModule],
+  imports: [LocalizedDatePipe, TranslatePipe, ReportModal, UserAvatar, CommonModule, FormsModule],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })

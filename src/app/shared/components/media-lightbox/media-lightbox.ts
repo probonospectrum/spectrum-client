@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -17,7 +18,7 @@ export interface LightboxMediaItem {
 
 @Component({
   selector: 'app-media-lightbox',
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   templateUrl: './media-lightbox.html',
   styleUrl: './media-lightbox.scss',
 })

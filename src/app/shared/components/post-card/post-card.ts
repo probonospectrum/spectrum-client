@@ -1,3 +1,5 @@
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { LocalizedDatePipe, TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 import { CommonModule } from '@angular/common';
@@ -27,11 +29,12 @@ import { LightboxMediaItem, MediaLightbox } from '../media-lightbox/media-lightb
 
 @Component({
   selector: 'app-post-card',
-  imports: [UserAvatar, CommonModule, CommentSection, MediaLightbox],
+  imports: [LocalizedDatePipe, TranslatePipe, UserAvatar, CommonModule, CommentSection, MediaLightbox],
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
+  readonly i18n = inject(I18nService);
   private readonly destroyRef = inject(DestroyRef);
   reactionPending = false;
   reactionError = '';
@@ -187,18 +190,18 @@ export class PostCard implements OnChanges, OnDestroy {
 
   get historySummary(): string {
     if (!this.historyCount) {
-      return 'Ocorrência criada em ' + this.formatHistoryDate(this.post.createdAt);
+      return this.i18n.translate('Ocorrência criada em {date}', { date: this.formatHistoryDate(this.post.createdAt) });
     }
 
     const latest = this.latestHistoryEvent;
 
     if (!latest) {
-      return `${this.historyCount} eventos no histórico`;
+      return this.i18n.translate('{count} eventos no histórico', { count: this.historyCount });
     }
 
-    return `Última atualização: ${this.formatHistoryEvent(latest.eventType)} em ${this.formatHistoryDate(
-      latest.occurredAt,
-    )}`;
+    return this.i18n.translate('Última atualização: {event} em {date}', {
+      event: this.i18n.translate(this.formatHistoryEvent(latest.eventType)), date: this.formatHistoryDate(latest.occurredAt),
+    });
   }
 
   get responsibleAgencyLabel(): string {
@@ -386,7 +389,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   formatHistoryDate(date: string): string {
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(this.i18n.language(), {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',

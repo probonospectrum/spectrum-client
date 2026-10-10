@@ -2,29 +2,29 @@
 <div class="occurrence-detail">
   <a class="occurrence-detail__back" routerLink="/publicacoes">
     <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-    Voltar para publicações
+    {{ 'Voltar para publicações' | translate }}
   </a>
 
   @if (isLoading()) {
     <section class="occurrence-detail__loading">
-      <app-loading-indicator label="Carregando ocorrência" />
+      <app-loading-indicator [label]="'Carregando ocorrência' | translate" />
     </section>
   } @else if (occurrence) {
     <article class="occurrence-detail__hero">
       <div>
-        <p class="occurrence-detail__eyebrow">NOSSA CIDADE, EM ACOMPANHAMENTO</p>
+        <p class="occurrence-detail__eyebrow">{{ 'NOSSA CIDADE, EM ACOMPANHAMENTO' | translate }}</p>
         <div class="occurrence-detail__hero-actions">
           <span class="occurrence-detail__status" [attr.data-status]="occurrence.status">
-            {{ statusLabel() }}
+            {{ (statusLabel()) | translate }}
           </span>
-          <span class="occurrence-detail__status">Importância {{ formatImportance() }}</span>
-          <span class="occurrence-detail__status">{{ formatCategory() }}</span>
+          <span class="occurrence-detail__status">{{ 'Importância' | translate }} {{ (formatImportance()) | translate }}</span>
+          <span class="occurrence-detail__status">{{ (formatCategory()) | translate }}</span>
           @if (canEdit) {
-            <button type="button" class="occurrence-detail__secondary" (click)="shell.openEditPost(occurrence)"><span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar ocorrência</button>
+            <button type="button" class="occurrence-detail__secondary" (click)="shell.openEditPost(occurrence)"><span class="material-symbols-outlined" aria-hidden="true">edit</span>{{ 'Editar ocorrência' | translate }}</button>
           }
           <button type="button" class="occurrence-detail__secondary" (click)="shareOccurrence()">
             <span class="material-symbols-outlined" aria-hidden="true">ios_share</span>
-            Compartilhar
+            {{ 'Compartilhar' | translate }}
           </button>
         </div>
         <h1>{{ occurrence.title }}</h1>
@@ -37,54 +37,54 @@
               [name]="occurrence.authorName"
             />
           </span>
-          <span><strong>{{ occurrence.authorName }}</strong><small>Publicada em {{ formatDate(occurrence.createdAt) }}</small></span>
+          <span><strong>{{ occurrence.authorName }}</strong><small>{{ 'Publicada em' | translate }} {{ formatDate(occurrence.createdAt) }}</small></span>
           <span class="occurrence-detail__place"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ occurrence.location?.cityName || occurrence.authorCity }}</span>
         </div>
       </div>
     </article>
 
-    <section class="occurrence-detail__section occurrence-detail__progress" aria-label="Etapas da ocorrência">
-      <div class="occurrence-detail__section-head"><div><p class="occurrence-detail__eyebrow">PASSO A PASSO</p><h2>Acompanhe a evolução</h2></div>
-        <button class="occurrence-detail__text-button" type="button" (click)="loadOccurrence()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>Atualizar</button>
+    <section class="occurrence-detail__section occurrence-detail__progress" [attr.aria-label]="'Etapas da ocorrência' | translate">
+      <div class="occurrence-detail__section-head"><div><p class="occurrence-detail__eyebrow">{{ 'PASSO A PASSO' | translate }}</p><h2>{{ 'Acompanhe a evolução' | translate }}</h2></div>
+        <button class="occurrence-detail__text-button" type="button" (click)="loadOccurrence()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>{{ 'Atualizar' | translate }}</button>
       </div>
       <ol class="occurrence-detail__steps">
         @for (stage of ['Aberta', 'Em andamento', 'Fechada']; track stage; let index = $index) {
-          <li [attr.aria-current]="formatStatus() === stage ? 'step' : null" [class.is-complete]="formatStatus() === 'Fechada' || (formatStatus() === 'Em andamento' && index === 0)"><span>{{ stage }}</span><small>{{ ['Relato registrado', 'Encaminhamento e análise', 'Resolução validada'][index] }}</small></li>
+          <li [attr.aria-current]="formatStatus() === stage ? 'step' : null" [class.is-complete]="formatStatus() === 'Fechada' || (formatStatus() === 'Em andamento' && index === 0)"><span>{{ (stage) | translate }}</span><small>{{ (['Relato registrado', 'Encaminhamento e análise', 'Resolução validada'][index]) | translate }}</small></li>
         }
       </ol>
-      <div class="occurrence-detail__next-step"><span class="material-symbols-outlined" aria-hidden="true">{{ occurrence.status === 'RESOLVIDA' ? 'task_alt' : 'update' }}</span><div><strong>{{ statusDetail }}</strong><p>{{ nextStep }}</p>
-      @if (occurrence.forwardingDueAt && !moderationLabel) { <small>Próxima verificação a partir de {{ formatDate(occurrence.forwardingDueAt) }}</small> }
+      <div class="occurrence-detail__next-step"><span class="material-symbols-outlined" aria-hidden="true">{{ occurrence.status === 'RESOLVIDA' ? 'task_alt' : 'update' }}</span><div><strong>{{ (statusDetail) | translate }}</strong><p>{{ (nextStep) | translate }}</p>
+      @if (occurrence.forwardingDueAt && !moderationLabel) { <small>{{ 'Próxima verificação a partir de' | translate }} {{ formatDate(occurrence.forwardingDueAt) }}</small> }
       </div></div>
     </section>
 
     @if (successMessage) {
-      <p role="status" class="occurrence-detail__notice occurrence-detail__notice--success">{{ successMessage }}</p>
+      <p role="status" class="occurrence-detail__notice occurrence-detail__notice--success">{{ (successMessage) | translate }}</p>
     }
     @if (errorMessage) {
-      <p role="alert" class="occurrence-detail__notice occurrence-detail__notice--error">{{ errorMessage }}</p>
+      <p role="alert" class="occurrence-detail__notice occurrence-detail__notice--error">{{ (errorMessage) | translate }}</p>
     }
 
     <section class="occurrence-detail__grid">
       <section class="occurrence-detail__section">
-        <h2><span class="material-symbols-outlined" aria-hidden="true">assignment</span>Situação atual</h2>
+        <h2><span class="material-symbols-outlined" aria-hidden="true">assignment</span>{{ 'Situação atual' | translate }}</h2>
         <dl class="occurrence-detail__facts">
-          <div><dt>Status</dt><dd>{{ statusLabel() }}</dd></div>
-          <div><dt>Órgão responsável</dt><dd>{{ responsibleAgencyLabel }}</dd></div>
-          <div><dt>Última atualização</dt><dd>{{ formatDate(latestUpdateDate) }}</dd></div>
-          <div><dt>Encaminhada em</dt><dd>{{ latestForwardingDate ? formatDate(latestForwardingDate) : 'Ainda não encaminhada' }}</dd></div>
-          <div><dt>Protocolo</dt><dd>{{ currentProtocol || 'Não informado' }}</dd></div>
+          <div><dt>{{ 'Status' | translate }}</dt><dd>{{ (statusLabel()) | translate }}</dd></div>
+          <div><dt>{{ 'Órgão responsável' | translate }}</dt><dd>{{ (responsibleAgencyLabel) | translate }}</dd></div>
+          <div><dt>{{ 'Última atualização' | translate }}</dt><dd>{{ formatDate(latestUpdateDate) }}</dd></div>
+          <div><dt>{{ 'Encaminhada em' | translate }}</dt><dd>{{ (latestForwardingDate ? formatDate(latestForwardingDate) : 'Ainda não encaminhada') | translate }}</dd></div>
+          <div><dt>{{ 'Protocolo' | translate }}</dt><dd>{{ (currentProtocol || ('Não informado' | translate)) }}</dd></div>
         </dl>
       </section>
 
       <section class="occurrence-detail__section">
-        <h2><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Localização</h2>
+        <h2><span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ 'Localização' | translate }}</h2>
         <dl class="occurrence-detail__facts">
-          <div><dt>Cidade</dt><dd>{{ occurrence.location?.cityName || occurrence.location?.city || occurrence.authorCity }}</dd></div>
-          <div><dt>Estado</dt><dd>{{ occurrence.location?.stateCode || occurrence.location?.state || 'Não informado' }}</dd></div>
-          <div><dt>Bairro</dt><dd>{{ occurrence.location?.neighborhoodName || 'Não informado' }}</dd></div>
-          <div><dt>Endereço/local</dt><dd>{{ occurrence.location?.address || occurrence.location?.label }}</dd></div>
+          <div><dt>{{ 'Cidade' | translate }}</dt><dd>{{ occurrence.location?.cityName || occurrence.location?.city || occurrence.authorCity }}</dd></div>
+          <div><dt>{{ 'Estado' | translate }}</dt><dd>{{ (occurrence.location?.stateCode || occurrence.location?.state || ('Não informado' | translate)) }}</dd></div>
+          <div><dt>{{ 'Bairro' | translate }}</dt><dd>{{ (occurrence.location?.neighborhoodName || ('Não informado' | translate)) }}</dd></div>
+          <div><dt>{{ 'Endereço/local' | translate }}</dt><dd>{{ occurrence.location?.address || occurrence.location?.label }}</dd></div>
           @if (occurrence.location?.latitude != null && occurrence.location?.longitude != null) {
-            <div><dt>Coordenadas</dt><dd>{{ occurrence.location?.latitude }}, {{ occurrence.location?.longitude }}</dd></div>
+            <div><dt>{{ 'Coordenadas' | translate }}</dt><dd>{{ occurrence.location?.latitude }}, {{ occurrence.location?.longitude }}</dd></div>
           }
         </dl>
       </section>
@@ -94,62 +94,62 @@
 
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head">
-        <h2>Como você pode contribuir</h2>
-        <span>{{ confirmationCount }} confirmações comunitárias</span>
+        <h2>{{ 'Como você pode contribuir' | translate }}</h2>
+        <span>{{ confirmationCount }} {{ 'confirmações comunitárias' | translate }}</span>
       </div>
 
       @if (hasAvailableActions) {
         <div class="occurrence-detail__actions">
           @if (canShowCommunityActions) {
             <div class="occurrence-detail__action-group">
-              <span>Comunidade</span>
+              <span>{{ 'Comunidade' | translate }}</span>
               @if (canConfirmCommunity) {
                 <button type="button" [disabled]="userAlreadyConfirmed || isSubmitting()" (click)="confirmOccurrence()">
                   <span class="material-symbols-outlined" aria-hidden="true">verified</span>
-                  {{ userAlreadyConfirmed ? 'Você já confirmou' : 'Também identifiquei este problema' }}
+                  {{ (userAlreadyConfirmed ? 'Você já confirmou' : 'Também identifiquei este problema') | translate }}
                 </button>
               }
               @if (canAddEvidence) {
                 <button type="button" (click)="openPanel('evidence')">
                   <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
-                  Adicionar evidência
+                  {{ 'Adicionar evidência' | translate }}
                 </button>
               }
               @if (canSuggestAgency) {
                 <button type="button" (click)="openPanel('agency')">
                   <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-                  Sugerir órgão responsável
+                  {{ 'Sugerir órgão responsável' | translate }}
                 </button>
               }
               @if (canInformResolution) {
                 <button type="button" (click)="openPanel('resolution')">
                   <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
-                  Informar resolução
+                  {{ 'Informar resolução' | translate }}
                 </button>
               }
             </div>
           }
 
           @if (canShowAgencyActions) {
-            <div class="occurrence-detail__action-group"><span>Órgão responsável</span>
-              @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>Registrar resposta</button> }
+            <div class="occurrence-detail__action-group"><span>{{ 'Órgão responsável' | translate }}</span>
+              @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>{{ 'Registrar resposta' | translate }}</button> }
             </div>
           }
 
           @if (canShowModeratorActions) {
             <div class="occurrence-detail__action-group">
-              <span>Moderação</span>
-              @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>Registrar resposta</button> }
+              <span>{{ 'Moderação' | translate }}</span>
+              @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>{{ 'Registrar resposta' | translate }}</button> }
               @if (canForward) {
                 <button type="button" (click)="openPanel('forward')">
                   <span class="material-symbols-outlined" aria-hidden="true">send</span>
-                  Encaminhar por e-mail
+                  {{ 'Encaminhar por e-mail' | translate }}
                 </button>
               }
               @if (canRegisterForwardingFailure) {
                 <button type="button" (click)="openPanel('forwardFailure')">
                   <span class="material-symbols-outlined" aria-hidden="true">error</span>
-                  Registrar falha
+                  {{ 'Registrar falha' | translate }}
                 </button>
               }
             </div>
@@ -157,30 +157,30 @@
 
           @if (canResolve || canContest || canReopen) {
             <div class="occurrence-detail__action-group">
-              <span>Acompanhamento</span>
+              <span>{{ 'Acompanhamento' | translate }}</span>
               @if (canResolve) {
                 <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
                   <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-                  Classificar resposta
+                  {{ 'Classificar resposta' | translate }}
                 </button>
               }
               @if (canContest) {
                 <button type="button" class="occurrence-detail__danger" (click)="openPanel('contest')">
                   <span class="material-symbols-outlined" aria-hidden="true">report</span>
-                  Contestar resolução
+                  {{ 'Contestar resolução' | translate }}
                 </button>
               }
               @if (canReopen) {
                 <button type="button" (click)="openPanel('reopen')">
                   <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
-                  Reabrir ocorrência
+                  {{ 'Reabrir ocorrência' | translate }}
                 </button>
               }
             </div>
           }
         </div>
       } @else {
-        <p class="occurrence-detail__empty">Nenhuma ação disponível para este perfil neste status.</p>
+        <p class="occurrence-detail__empty">{{ 'Nenhuma ação disponível para este perfil neste status.' | translate }}</p>
       }
 
       @if (actionPanel) {
@@ -189,15 +189,15 @@
           @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest') {
             <div class="occurrence-detail__upload">
               <div class="occurrence-detail__upload-info">
-                <span class="occurrence-detail__upload-label">Evidência</span>
+                <span class="occurrence-detail__upload-label">{{ 'Evidência' | translate }}</span>
                 <span class="occurrence-detail__upload-name">
-                  {{ evidenceInput.files?.[0]?.name || 'Nenhum arquivo escolhido' }}
+                  {{ (evidenceInput.files?.[0]?.name || ('Nenhum arquivo escolhido' | translate)) }}
                 </span>
               </div>
               <button
                 type="button"
                 class="occurrence-detail__upload-button"
-                aria-label="Adicionar evidência"
+                [attr.aria-label]="'Adicionar evidência' | translate"
                 (click)="evidenceInput.click()"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
@@ -207,112 +207,112 @@
                 class="occurrence-detail__file-input"
                 type="file"
                 accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
-                aria-label="Selecionar evidência"
+                [attr.aria-label]="'Selecionar evidência' | translate"
                 (change)="onEvidenceSelected($event)"
               />
             </div>
             @if (actionPanel !== 'resolution') {
               <label>
-                <span>Descrição da evidência</span>
+                <span>{{ 'Descrição da evidência' | translate }}</span>
                 <input type="text" [(ngModel)]="evidenceDescription" name="evidenceDescription" />
               </label>
             }
           }
 
           @if (actionPanel === 'response') {
-            <div class="occurrence-detail__form-heading"><h3>Resposta do órgão</h3><p>Registre a mensagem recebida. A situação só será classificada após a análise da moderação.</p></div>
-            <label><span>Código informado pelo órgão</span><select [(ngModel)]="receivedResponseCode" name="receivedResponseCode"><option value="">Não informado</option><option value="01">01 · Ocorrência rejeitada</option><option value="02">02 · Ocorrência resolvida</option><option value="03">03 · Ocorrência em resolução</option></select></label>
-            <label><span>Protocolo (opcional)</span><input type="text" maxlength="120" [(ngModel)]="responseProtocol" name="responseProtocol" /></label>
-            <label><span>Mensagem recebida</span><textarea [(ngModel)]="responseMessage" name="responseMessage" maxlength="4000" placeholder="Transcreva a resposta recebida do órgão responsável."></textarea></label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !responseMessage.trim()" (click)="submitResponse()">{{ isSubmitting() ? 'Registrando…' : 'Registrar para análise' }}</button>
+            <div class="occurrence-detail__form-heading"><h3>{{ 'Resposta do órgão' | translate }}</h3><p>{{ 'Registre a mensagem recebida. A situação só será classificada após a análise da moderação.' | translate }}</p></div>
+            <label><span>{{ 'Código informado pelo órgão' | translate }}</span><select [(ngModel)]="receivedResponseCode" name="receivedResponseCode"><option value="">{{ 'Não informado' | translate }}</option><option value="01">{{ '01 · Ocorrência rejeitada' | translate }}</option><option value="02">{{ '02 · Ocorrência resolvida' | translate }}</option><option value="03">{{ '03 · Ocorrência em resolução' | translate }}</option></select></label>
+            <label><span>{{ 'Protocolo (opcional)' | translate }}</span><input type="text" maxlength="120" [(ngModel)]="responseProtocol" name="responseProtocol" /></label>
+            <label><span>{{ 'Mensagem recebida' | translate }}</span><textarea [(ngModel)]="responseMessage" name="responseMessage" maxlength="4000" [placeholder]="'Transcreva a resposta recebida do órgão responsável.' | translate"></textarea></label>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !responseMessage.trim()" (click)="submitResponse()">{{ (isSubmitting() ? 'Registrando…' : 'Registrar para análise') | translate }}</button>
           }
           @if ((actionPanel === 'agency' && isModerator) || actionPanel === 'forward') {
-            <div class="occurrence-detail__form-heading"><h3>Encaminhar ao órgão responsável</h3><p>Selecione o órgão e um de seus contatos cadastrados. O documento será gerado automaticamente.</p></div>
-            @if (agenciesLoading) { <p class="occurrence-detail__form-hint" role="status">Carregando órgãos cadastrados…</p> }
-            @if (agenciesError) { <div class="occurrence-detail__form-hint" role="alert"><p>{{ agenciesError }}</p><button type="button" class="occurrence-detail__secondary" (click)="loadAgencies()">Tentar novamente</button></div> }
-            @if (!agenciesLoading && !agenciesError && !registeredAgencies.length) { <p class="occurrence-detail__form-hint">Nenhum órgão cadastrado disponível. A ocorrência continuará aguardando a moderação.</p> }
-            <label><span>Órgão cadastrado</span>
+            <div class="occurrence-detail__form-heading"><h3>{{ 'Encaminhar ao órgão responsável' | translate }}</h3><p>{{ 'Selecione o órgão e um de seus contatos cadastrados. O documento será gerado automaticamente.' | translate }}</p></div>
+            @if (agenciesLoading) { <p class="occurrence-detail__form-hint" role="status">{{ 'Carregando órgãos cadastrados…' | translate }}</p> }
+            @if (agenciesError) { <div class="occurrence-detail__form-hint" role="alert"><p>{{ (agenciesError) | translate }}</p><button type="button" class="occurrence-detail__secondary" (click)="loadAgencies()">{{ 'Tentar novamente' | translate }}</button></div> }
+            @if (!agenciesLoading && !agenciesError && !registeredAgencies.length) { <p class="occurrence-detail__form-hint">{{ 'Nenhum órgão cadastrado disponível. A ocorrência continuará aguardando a moderação.' | translate }}</p> }
+            <label><span>{{ 'Órgão cadastrado' | translate }}</span>
               <select [disabled]="agenciesLoading || !registeredAgencies.length" [(ngModel)]="agencyId" name="agencyId" (ngModelChange)="selectRegisteredAgency()">
-                <option value="">Selecione um órgão</option>
+                <option value="">{{ 'Selecione um órgão' | translate }}</option>
                 @for (agency of registeredAgencies; track agency._id) { <option [value]="agency._id">{{ agency.name }}</option> }
               </select>
             </label>
-            <label><span>E-mail cadastrado</span>
-              <select [disabled]="!registeredContacts.length" [(ngModel)]="agencyEmail" name="agencyEmail"><option value="">Selecione um e-mail</option>
+            <label><span>{{ 'E-mail cadastrado' | translate }}</span>
+              <select [disabled]="!registeredContacts.length" [(ngModel)]="agencyEmail" name="agencyEmail"><option value="">{{ 'Selecione um e-mail' | translate }}</option>
                 @for (email of registeredContacts; track email) { <option [value]="email">{{ email }}</option> }
               </select>
             </label>
-            <p class="occurrence-detail__form-hint">O status será atualizado após a confirmação do envio. Caso o envio falhe, a tentativa ficará registrada para análise.</p>
+            <p class="occurrence-detail__form-hint">{{ 'O status será atualizado após a confirmação do envio. Caso o envio falhe, a tentativa ficará registrada para análise.' | translate }}</p>
           }
           @if (actionPanel === 'agency' && !isModerator) {
-            <label><span>Órgão sugerido</span><input type="text" [(ngModel)]="agencyName" name="agencyName" /></label>
+            <label><span>{{ 'Órgão sugerido' | translate }}</span><input type="text" [(ngModel)]="agencyName" name="agencyName" /></label>
           }
           @if (actionPanel === 'forward') {
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || agenciesLoading || !agencyId || !agencyEmail" (click)="submitForwarding()">{{ isSubmitting() ? 'Enviando…' : 'Encaminhar por e-mail' }}</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || agenciesLoading || !agencyId || !agencyEmail" (click)="submitForwarding()">{{ (isSubmitting() ? 'Enviando…' : 'Encaminhar por e-mail') | translate }}</button>
           }
 
           @if (actionPanel === 'forwardFailure') {
             <label>
-              <span>Motivo da falha</span>
+              <span>{{ 'Motivo da falha' | translate }}</span>
               <textarea [(ngModel)]="forwardingFailureReason" name="forwardingFailureReason"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitForwardingFailure()">Registrar falha</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitForwardingFailure()">{{ 'Registrar falha' | translate }}</button>
           }
 
           @if (actionPanel === 'agency') {
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ agencySubmitLabel }}</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
           }
 
           @if (actionPanel === 'evidence') {
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">Adicionar evidência</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ 'Adicionar evidência' | translate }}</button>
           }
 
           @if (actionPanel === 'resolution') {
             <label>
-              <span>Descrição da resolução</span>
+              <span>{{ 'Descrição da resolução' | translate }}</span>
               <input type="text" [(ngModel)]="resolutionStatement" name="resolutionStatement"  />
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">Informar resolução</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ 'Informar resolução' | translate }}</button>
           }
 
           @if (actionPanel === 'analysis') {
-            <label><span>Qual ação foi iniciada?</span><textarea [(ngModel)]="analysisNote" name="analysisNote" minlength="20" placeholder="Descreva a vistoria ou ação iniciada pelo órgão."></textarea></label>
+            <label><span>{{ 'Qual ação foi iniciada?' | translate }}</span><textarea [(ngModel)]="analysisNote" name="analysisNote" minlength="20" [placeholder]="'Descreva a vistoria ou ação iniciada pelo órgão.' | translate"></textarea></label>
             @if (user?.occurrenceRole === 'MODERATOR') {
               <label>
-                <span>Referência da resposta do órgão</span>
+                <span>{{ 'Referência da resposta do órgão' | translate }}</span>
                 <input type="text" [(ngModel)]="analysisReference" name="analysisReference" />
               </label>
             }
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAnalysis()">Registrar início da análise</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAnalysis()">{{ 'Registrar início da análise' | translate }}</button>
           }
 
           @if (actionPanel === 'resolve') {
-            <label><span>Classificação após análise</span><select [(ngModel)]="responseCode" name="responseCode">
-              <option value="02">Ocorrência resolvida</option><option value="03">Ocorrência em resolução</option><option value="01">Ocorrência rejeitada</option>
+            <label><span>{{ 'Classificação após análise' | translate }}</span><select [(ngModel)]="responseCode" name="responseCode">
+              <option value="02">{{ 'Ocorrência resolvida' | translate }}</option><option value="03">{{ 'Ocorrência em resolução' | translate }}</option><option value="01">{{ 'Ocorrência rejeitada' | translate }}</option>
             </select></label>
             <label>
-              <span>Justificativa da análise (mínimo de 20 caracteres)</span>
-              <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote" maxlength="1000" placeholder="Explique como as informações do órgão foram verificadas."></textarea>
+              <span>{{ 'Justificativa da análise (mínimo de 20 caracteres)' | translate }}</span>
+              <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote" maxlength="1000" [placeholder]="'Explique como as informações do órgão foram verificadas.' | translate"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">Classificar resposta</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">{{ 'Classificar resposta' | translate }}</button>
           }
 
           @if (actionPanel === 'contest') {
             <label>
-              <span>Por que você está contestando?</span>
-              <textarea [(ngModel)]="contestReason" name="contestReason" placeholder="A prefeitura informou que o buraco foi consertado, mas ele continua aberto."></textarea>
+              <span>{{ 'Por que você está contestando?' | translate }}</span>
+              <textarea [(ngModel)]="contestReason" name="contestReason" [placeholder]="'A prefeitura informou que o buraco foi consertado, mas ele continua aberto.' | translate"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitContest()">Contestar resolução</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitContest()">{{ 'Contestar resolução' | translate }}</button>
           }
 
           @if (actionPanel === 'reopen') {
             <label>
-              <span>Motivo da reabertura</span>
+              <span>{{ 'Motivo da reabertura' | translate }}</span>
               <textarea [(ngModel)]="reopenReason" name="reopenReason"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitReopen()">Reabrir ocorrência</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitReopen()">{{ 'Reabrir ocorrência' | translate }}</button>
           }
-          <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">Cancelar</button>
+          <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
           </fieldset>
         </form>
       }
@@ -320,7 +320,7 @@
 
 
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
-      <div class="occurrence-detail__section-head"><h2 id="evidence-title">Evidências do relato</h2><span>{{ occurrence.evidences.length }} {{ occurrence.evidences.length === 1 ? 'anexo' : 'anexos' }}</span></div>
+      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências do relato' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
       @if (occurrence.evidences.length) {
         <div class="occurrence-detail__evidence-list">
           @for (evidence of occurrence.evidences; track evidence.id) {
@@ -330,10 +330,10 @@
                   <button
                     type="button"
                     class="occurrence-detail__media-btn"
-                    aria-label="Expandir foto da evidência"
+                    [attr.aria-label]="'Expandir foto da evidência' | translate"
                     (click)="openEvidenceInLightbox(evidence)"
                   >
-                    <img [src]="url" alt="Evidência da ocorrência" loading="lazy" />
+                    <img [src]="url" [alt]="'Evidência da ocorrência' | translate" loading="lazy" />
                     <div class="occurrence-detail__media-zoom" aria-hidden="true">
                       <span class="material-symbols-outlined">zoom_in</span>
                     </div>
@@ -342,7 +342,7 @@
                   <button
                     type="button"
                     class="occurrence-detail__media-btn occurrence-detail__media-btn--video"
-                    aria-label="Reproduzir vídeo da evidência"
+                    [attr.aria-label]="'Reproduzir vídeo da evidência' | translate"
                     (click)="openEvidenceInLightbox(evidence)"
                   >
                     <video [src]="url" preload="metadata" muted></video>
@@ -354,30 +354,30 @@
               } @else {
                 <div class="occurrence-detail__no-file">
                   <span class="material-symbols-outlined" aria-hidden="true">description</span>
-                  <span>Registro sem arquivo</span>
+                  <span>{{ 'Registro sem arquivo' | translate }}</span>
                 </div>
               }
             </article>
           }
         </div>
-      } @else { <div class="occurrence-detail__empty-state"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span><div><strong>Ainda não há evidências</strong><p>Fotos e vídeos ajudam a documentar a situação e dão contexto ao órgão responsável.</p></div></div> }
+      } @else { <div class="occurrence-detail__empty-state"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span><div><strong>{{ 'Ainda não há evidências' | translate }}</strong><p>{{ 'Fotos e vídeos ajudam a documentar a situação e dão contexto ao órgão responsável.' | translate }}</p></div></div> }
     </section>
 
     <section class="occurrence-detail__section">
-      <div class="occurrence-detail__section-head"><h2>Histórico da ocorrência</h2><span>{{ timeline.length }} {{ timeline.length === 1 ? 'atualização' : 'atualizações' }}</span></div>
+      <div class="occurrence-detail__section-head"><h2>{{ 'Histórico da ocorrência' | translate }}</h2><span>{{ timeline.length }} {{ (timeline.length === 1 ? 'atualização' : 'atualizações') | translate }}</span></div>
       <ol class="occurrence-detail__timeline">
         @for (event of timeline; track event.id) {
           <li [attr.data-origin]="eventOriginClass(event)">
             <time>{{ formatDate(event.createdAt || event.occurredAt) }}</time>
-            <strong>{{ formatEvent(event.eventType) }}</strong>
-            <small class="occurrence-detail__actor">{{ eventActorLine(event) }}</small>
-            <p>{{ eventDescription(event) }}</p>
+            <strong>{{ (formatEvent(event.eventType)) | translate }}</strong>
+            <small class="occurrence-detail__actor">{{ (eventActorLine(event)) | translate }}</small>
+            <p>{{ (eventDescription(event)) | translate }}</p>
             @if (isModerator && event.metadata?.['responseReceived']) {
-              <p>{{ event.metadata?.['responseReceived'] }}</p>
-              <small>Código informado pelo órgão: {{ event.metadata?.['responseCode'] || 'Não informado' }}</small>
+              <p>{{ (event.metadata?.['responseReceived']) | translate }}</p>
+              <small>{{ 'Código informado pelo órgão:' | translate }} {{ (event.metadata?.['responseCode'] || ('Não informado' | translate)) }}</small>
             }
             @if (event.previousStatus || event.newStatus) {
-              <small>{{ statusLabel(event.previousStatus) }} → {{ statusLabel(event.newStatus) }}</small>
+              <small>{{ (statusLabel(event.previousStatus)) | translate }} → {{ (statusLabel(event.newStatus)) | translate }}</small>
             }
             @if (eventEvidences(event); as evidences) {
               @if (evidences.length) {
@@ -386,13 +386,13 @@
                     <button
                       type="button"
                       class="occurrence-detail__timeline-evidence-btn"
-                      [attr.aria-label]="evidence.type === 'VIDEO' ? 'Ver vídeo da evidência' : 'Ver foto da evidência'"
+                      [attr.aria-label]="(evidence.type === 'VIDEO' ? 'Ver vídeo da evidência' : 'Ver foto da evidência') | translate"
                       (click)="openEvidenceInLightbox(evidence)"
                     >
                       <span class="material-symbols-outlined" aria-hidden="true">
                         {{ evidence.type === 'VIDEO' ? 'play_circle' : 'image' }}
                       </span>
-                      <span>{{ evidence.type === 'VIDEO' ? 'Ver vídeo' : 'Ver foto' }}</span>
+                      <span>{{ (evidence.type === 'VIDEO' ? 'Ver vídeo' : 'Ver foto') | translate }}</span>
                     </button>
                   }
                 </div>
@@ -402,27 +402,27 @@
         }
       </ol>
       @if (!timeline.length) {
-        <p class="occurrence-detail__empty">Nenhum evento registrado para esta ocorrência.</p>
+        <p class="occurrence-detail__empty">{{ 'Nenhum evento registrado para esta ocorrência.' | translate }}</p>
       }
     </section>
 
     <section class="occurrence-detail__section">
-      <h2>Discussão</h2>
+      <h2>{{ 'Discussão' | translate }}</h2>
       <app-comment-section [postId]="occurrence.id" [currentUser]="user" />
     </section>
   } @else if (notFound) {
     <section class="occurrence-detail__state">
       <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
-      <h1>Ocorrência não encontrada</h1>
-      <p>Essa ocorrência não existe ou não está mais disponível.</p>
-      <button type="button" (click)="loadOccurrence()">Tentar novamente</button>
+      <h1>{{ 'Ocorrência não encontrada' | translate }}</h1>
+      <p>{{ 'Essa ocorrência não existe ou não está mais disponível.' | translate }}</p>
+      <button type="button" (click)="loadOccurrence()">{{ 'Tentar novamente' | translate }}</button>
     </section>
   } @else {
     <section class="occurrence-detail__state occurrence-detail__state--error">
       <span class="material-symbols-outlined" aria-hidden="true">error</span>
-      <h1>Não foi possível carregar a ocorrência</h1>
-      <p>{{ errorMessage }}</p>
-      <button type="button" (click)="loadOccurrence()">Tentar novamente</button>
+      <h1>{{ 'Não foi possível carregar a ocorrência' | translate }}</h1>
+      <p>{{ (errorMessage) | translate }}</p>
+      <button type="button" (click)="loadOccurrence()">{{ 'Tentar novamente' | translate }}</button>
     </section>
   }
 

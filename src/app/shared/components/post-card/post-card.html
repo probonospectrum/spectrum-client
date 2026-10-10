@@ -3,12 +3,12 @@
   [class.post-card--clickable]="canOpenOccurrence"
   (click)="openOccurrenceFromCard($event)"
 >
-  @if (reactionError) { <p role="alert">{{ reactionError }}</p> }
+  @if (reactionError) { <p role="alert">{{ (reactionError) | translate }}</p> }
   <header class="post-card__header">
     <button
       type="button"
       class="post-card__avatar"
-      [attr.aria-label]="'Ver perfil de ' + post.authorName"
+      [attr.aria-label]="(('Ver perfil de ' | translate) + post.authorName) | translate"
       (click)="goToAuthorProfile()"
     >
       <app-user-avatar [user]="isOwnPost ? currentUser : null" [imageUrl]="isOwnPost ? '' : post.authorAvatarUrl || ''" [name]="post.authorName" />
@@ -17,7 +17,7 @@
       class="post-card__author"
       role="link"
       tabindex="0"
-      [attr.aria-label]="'Ver perfil de ' + post.authorName"
+      [attr.aria-label]="(('Ver perfil de ' | translate) + post.authorName) | translate"
       (click)="goToAuthorProfile()"
       (keydown.enter)="goToAuthorProfile()"
       (keydown.space)="goToAuthorProfile()"
@@ -30,7 +30,7 @@
       <button
         class="post-card__more"
         type="button"
-        aria-label="Abrir opcoes da publicacao"
+        [attr.aria-label]="'Abrir opcoes da publicacao' | translate"
         [attr.aria-expanded]="menuOpen"
         (click)="toggleMenu($event)"
       >
@@ -48,8 +48,8 @@
             >
               <span class="material-symbols-outlined" aria-hidden="true">edit</span>
               <span>
-                Editar publicação
-                <small>{{ editWindowStatus }}</small>
+                {{ 'Editar publicação' | translate }}
+                <small>{{ (editWindowStatus) | translate }}</small>
               </span>
             </button>
             <button
@@ -58,7 +58,7 @@
               (click)="selectMenuAction(remove)"
             >
               <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-              Excluir publicação
+              {{ 'Excluir publicação' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
               <span
@@ -68,11 +68,11 @@
               >
                 {{ isSaved ? 'bookmark' : 'bookmark_border' }}
               </span>
-              Salvar
+              {{ 'Salvar' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(copyLink)">
               <span class="material-symbols-outlined" aria-hidden="true">link</span>
-              Copiar link
+              {{ 'Copiar link' | translate }}
             </button>
           } @else {
             <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
@@ -83,27 +83,27 @@
               >
                 {{ isSaved ? 'bookmark' : 'bookmark_border' }}
               </span>
-              Salvar
+              {{ 'Salvar' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(copyLink)">
               <span class="material-symbols-outlined" aria-hidden="true">link</span>
-              Copiar link
+              {{ 'Copiar link' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(hideAuthor)">
               <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
-              Ocultar publicações desse usuário
+              {{ 'Ocultar publicações desse usuário' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(notInterested)">
               <span class="material-symbols-outlined" aria-hidden="true">block</span>
-              Não tenho interesse
+              {{ 'Não tenho interesse' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(aiSpam)">
               <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-              Parece spam de IA
+              {{ 'Parece spam de IA' | translate }}
             </button>
             <button type="button" role="menuitem" (click)="selectMenuAction(report)">
               <span class="material-symbols-outlined" aria-hidden="true">flag</span>
-              Denunciar publicação
+              {{ 'Denunciar publicação' | translate }}
             </button>
           }
         </div>
@@ -116,15 +116,15 @@
     [class.post-card__main--clickable]="canOpenOccurrence"
     [attr.role]="canOpenOccurrence ? 'link' : null"
     [attr.tabindex]="canOpenOccurrence ? '0' : null"
-    [attr.aria-label]="canOpenOccurrence ? 'Abrir ocorrência ' + post.title : null"
+    [attr.aria-label]="(canOpenOccurrence ? ('Abrir ocorrência ' | translate) + post.title : null) | translate"
     (keydown.enter)="goToOccurrence()"
     (keydown.space)="$event.preventDefault(); goToOccurrence()"
   >
-    <div class="post-card__occurrence" aria-label="Situacao da ocorrencia">
+    <div class="post-card__occurrence" [attr.aria-label]="'Situacao da ocorrencia' | translate">
       <div class="post-card__status-row">
-        <span class="post-card__status" [attr.data-status]="post.status" [attr.title]="statusDetail">{{ statusLabel }}</span>
-        <span class="post-card__importance">{{ categoryLabel }}</span>
-        <span class="post-card__importance">Importância {{ importanceLabel }}</span>
+        <span class="post-card__status" [attr.data-status]="post.status" [attr.title]="(statusDetail) | translate">{{ (statusLabel) | translate }}</span>
+        <span class="post-card__importance">{{ (categoryLabel) | translate }}</span>
+        <span class="post-card__importance">{{ 'Importância' | translate }} {{ (importanceLabel) | translate }}</span>
       </div>
       <h3 class="post-card__title">{{ post.title }}</h3>
     </div>
@@ -137,7 +137,7 @@
         [class.post-card__media-single--video]="galleryItems[0].type === 'VIDEO'"
         role="button"
         tabindex="0"
-        [attr.aria-label]="galleryItems[0].type === 'VIDEO' ? 'Reproduzir vídeo da ocorrência' : 'Expandir imagem da ocorrência'"
+        [attr.aria-label]="(galleryItems[0].type === 'VIDEO' ? 'Reproduzir vídeo da ocorrência' : 'Expandir imagem da ocorrência') | translate"
         (click)="openGalleryMedia($event, 0)"
         (keydown.enter)="openGalleryMedia($event, 0)"
         (keydown.space)="$event.preventDefault(); openGalleryMedia($event, 0)"
@@ -160,7 +160,7 @@
         [class.post-card__media-grid--2]="galleryItems.length === 2"
         [class.post-card__media-grid--3]="galleryItems.length === 3"
         [class.post-card__media-grid--4]="galleryItems.length >= 4"
-        aria-label="Fotos e vídeos da ocorrência"
+        [attr.aria-label]="'Fotos e vídeos da ocorrência' | translate"
       >
         @for (item of galleryItems.slice(0, 4); track item.url + $index; let idx = $index) {
           <div
@@ -168,7 +168,7 @@
             [class.post-card__grid-item--featured]="galleryItems.length === 3 && idx === 0"
             role="button"
             tabindex="0"
-            [attr.aria-label]="item.type === 'VIDEO' ? 'Reproduzir vídeo ' + (idx + 1) : 'Expandir imagem ' + (idx + 1)"
+            [attr.aria-label]="(item.type === 'VIDEO' ? ('Reproduzir vídeo ' | translate) + (idx + 1) : ('Expandir imagem ' | translate) + (idx + 1)) | translate"
             (click)="openGalleryMedia($event, idx)"
             (keydown.enter)="openGalleryMedia($event, idx)"
             (keydown.space)="$event.preventDefault(); openGalleryMedia($event, idx)"
@@ -197,13 +197,13 @@
         @if (post.mediaType === 'video') {
           <span class="post-card__play material-symbols-outlined" aria-hidden="true">play_circle</span>
         } @else {
-          <span>Registro da comunidade</span>
+          <span>{{ 'Registro da comunidade' | translate }}</span>
         }
       </div>
     }
 
     @if (post.tags.length) {
-      <div class="post-card__tags" aria-label="Tags">
+      <div class="post-card__tags" [attr.aria-label]="'Tags' | translate">
         @for (tag of post.tags; track tag) {
           <span>#{{ tag }}</span>
         }
@@ -213,9 +213,9 @@
     <div class="post-card__summary">
       <div class="post-card__agency">
         <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-        <span>{{ responsibleAgencyLabel }}</span>
+        <span>{{ (responsibleAgencyLabel) | translate }}</span>
       </div>
-      <span>{{ historySummary }}</span>
+      <span>{{ (historySummary) | translate }}</span>
     </div>
   </section>
 
@@ -223,15 +223,15 @@
     <div class="post-card__meta">
       <span class="post-card__meta-location">
         <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-        <span>{{ post.location?.cityName || post.location?.city || post.location?.label || post.authorCity }}{{ (post.location?.stateCode || post.location?.stateName || post.location?.state) ? ' - ' + (post.location?.stateCode || post.location?.stateName || post.location?.state) : '' }}</span>
+        <span>{{ post.location?.cityName || post.location?.city || post.location?.label || post.authorCity }}{{ ((post.location?.stateCode || post.location?.stateName || post.location?.state) ? ' - ' + (post.location?.stateCode || post.location?.stateName || post.location?.state) : '') | translate }}</span>
       </span>
-      <span class="post-card__meta-date">{{ post.publishedAtLabel }}</span>
+      <span class="post-card__meta-date">{{ post.publishedAt | localizedDate:post.publishedAtLabel }}</span>
     </div>
-    <div class="post-card__actions" aria-label="Interaçoes">
+    <div class="post-card__actions" [attr.aria-label]="'Interaçoes' | translate">
       <button
         type="button"
         [class.post-card__action--liked]="post.liked"
-        aria-label="Curtir publicacao"
+        [attr.aria-label]="'Curtir publicacao' | translate"
         (click)="toggleLike()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
@@ -243,7 +243,7 @@
       <button
         type="button"
         [class.post-card__action--disliked]="post.disliked"
-        aria-label="Descurtir publicacao"
+        [attr.aria-label]="'Descurtir publicacao' | translate"
         (click)="toggleDislike()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
@@ -251,20 +251,20 @@
           <span class="post-card__count">{{ post.dislikes }}</span>
         }
       </button>
-      <button type="button" aria-label="Comentar publicacao" (click)="toggleComments()">
+      <button type="button" [attr.aria-label]="'Comentar publicacao' | translate" (click)="toggleComments()">
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
         {{ commentsCount }}
       </button>
       <button
         type="button"
         [class.post-card__action--active]="post.reposted"
-        [attr.aria-label]="post.reposted ? 'Remover repost' : 'Repostar publicacao'"
+        [attr.aria-label]="(post.reposted ? 'Remover repost' : 'Repostar publicacao') | translate"
         (click)="repost.emit(post)"
       >
         <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
         {{ reposts }}
       </button>
-      <button type="button" aria-label="Salvar publicacao" (click)="toggleSaved()">
+      <button type="button" [attr.aria-label]="'Salvar publicacao' | translate" (click)="toggleSaved()">
         <span
           class="material-symbols-outlined"
           [class.post-card__filled-icon]="isSaved"
@@ -272,7 +272,7 @@
         >
           {{ isSaved ? 'bookmark' : 'bookmark_border' }}
         </span>
-        {{ isSaved ? 'Salvo' : 'Salvar' }}
+        {{ (isSaved ? 'Salvo' : 'Salvar') | translate }}
       </button>
     </div>
   </footer>

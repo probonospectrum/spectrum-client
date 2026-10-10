@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 export interface DashboardBarItem {
@@ -9,6 +10,7 @@ export interface DashboardBarItem {
 }
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-dashboard-bar-chart',
   templateUrl: './dashboard-bar-chart.html',
   styleUrl: './dashboard-bar-chart.scss',

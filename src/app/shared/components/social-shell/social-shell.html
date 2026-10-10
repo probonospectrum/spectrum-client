@@ -1,21 +1,21 @@
-<a class="social-skip" href="#spectrum-content">Ir para o conteúdo</a>
+<a class="social-skip" href="#spectrum-content">{{ 'Ir para o conteúdo' | translate }}</a>
 <main class="social-page" [class.social-page--wide]="wideContent">
 
     <header class="social-header">
     <div class="social-header__inner">
 
-      <a class="social-logo" routerLink="/publicacoes" aria-label="Spectrum">
-        <img src="/logo.png" alt="Spectrum" class="logo">
+      <a class="social-logo" routerLink="/publicacoes" [attr.aria-label]="'Spectrum' | translate">
+        <img src="/logo.png" [alt]="'Spectrum' | translate" class="logo">
       </a>
 
       <div class="social-search">
 
-        <span class="sr-only">Pesquisar</span>
+        <span class="sr-only">{{ 'Pesquisar' | translate }}</span>
         
         <input
           type="search"
-          aria-label="Pesquisar cidades e usuarios"
-          placeholder="Pesquise por cidades e usuários"
+          [attr.aria-label]="'Pesquisar cidades e usuarios' | translate"
+          [placeholder]="'Pesquise por cidades e usuários' | translate"
           [ngModel]="searchTerm()"
           (ngModelChange)="searchTerm.set($event); onSearch()"
           (keydown)="onSearchKeydown($event)"
@@ -58,7 +58,7 @@
                 <div class="search-results">
 
                   <span class="search-results__title">
-                    RESULTADOS
+                    {{ 'RESULTADOS' | translate }}
                   </span>
 
                   @for (result of searchResults(); track result.id) {
@@ -111,11 +111,11 @@
                   </span>
 
                   <strong>
-                    Nenhum resultado encontrado
+                    {{ 'Nenhum resultado encontrado' | translate }}
                   </strong>
 
                   <span>
-                    Tente pesquisar por outro termo.
+                    {{ 'Tente pesquisar por outro termo.' | translate }}
                   </span>
 
                 </div>
@@ -133,11 +133,11 @@
       <button
         class="social-create"
         type="button"
-        aria-label="Criar ocorrência"
+        [attr.aria-label]="'Criar ocorrência' | translate"
         (click)="openCreatePost()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
-        <span class="social-create__label">Nova ocorrência</span>
+        <span class="social-create__label">{{ 'Nova ocorrência' | translate }}</span>
       </button>
 
     </div>
@@ -146,13 +146,13 @@
   <div class="social-layout">
 
     <!-- MENU LATERAL -->
-    <aside class="social-sidebar" aria-label="Navegacao principal">
+    <aside class="social-sidebar" [attr.aria-label]="'Navegacao principal' | translate">
 
       <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'">
         @if (user?.occurrenceRole === 'MODERATOR') {
           <a class="social-nav__item" routerLink="/moderacao" routerLinkActive="social-nav__item--active">
             <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
-            Moderação
+            {{ 'Moderação' | translate }}
           </a>
         }
 
@@ -165,7 +165,7 @@
           <span class="material-symbols-outlined">
             home
           </span>
-          Início
+          {{ 'Início' | translate }}
         </a>
 
         <!-- NOTIFICAÇÕES -->
@@ -177,12 +177,12 @@
           <span class="social-nav__notification-icon">
             <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
             @if (notificationService.unreadCount()) {
-              <span class="social-nav__notification-badge" [attr.aria-label]="notificationService.unreadCount() + ' notificações não lidas'">
-                {{ notificationService.unreadCount() > 99 ? '99+' : notificationService.unreadCount() }}
+              <span class="social-nav__notification-badge" [attr.aria-label]="(notificationService.unreadCount() + (' notificações não lidas' | translate)) | translate">
+                {{ (notificationService.unreadCount() > 99 ? '99+' : notificationService.unreadCount()) | translate }}
               </span>
             }
           </span>
-          Notificações
+          {{ 'Notificações' | translate }}
         </a>
 
         <a
@@ -193,7 +193,7 @@
           <span class="material-symbols-outlined">
             monitoring
           </span>
-          Cidades
+          {{ 'Cidades' | translate }}
         </a>
 
         <!-- PERFIL -->
@@ -206,7 +206,7 @@
           <span class="material-symbols-outlined">
             account_circle
           </span>
-          Perfil
+          {{ 'Perfil' | translate }}
         </a>
 
         <!-- CONFIGURAÇÕES -->
@@ -218,15 +218,15 @@
           <span class="material-symbols-outlined">
             settings
           </span>
-          Configurações
+          {{ 'Configurações' | translate }}
         </a>
 
       </nav>
 
       <div class="social-community-note">
         <span class="material-symbols-outlined" aria-hidden="true">diversity_3</span>
-        <strong>Uma cidade melhor<br>começa com a gente.</strong>
-        <p>Seu olhar ajuda a transformar os lugares que compartilhamos.</p>
+        <strong>{{ 'Uma cidade melhor' | translate }}<br>{{ 'começa com a gente.' | translate }}</strong>
+        <p>{{ 'Seu olhar ajuda a transformar os lugares que compartilhamos.' | translate }}</p>
       </div>
       <!-- USUÁRIO LOGADO -->
       <div class="social-user" (click)="$event.stopPropagation()">
@@ -244,7 +244,7 @@
         <button
           class="social-user__more"
           type="button"
-          aria-label="Abrir opcoes da conta"
+          [attr.aria-label]="'Abrir opcoes da conta' | translate"
           [attr.aria-expanded]="userMenuOpen"
           (click)="toggleUserMenu($event)"
         >
@@ -255,7 +255,7 @@
           <div class="social-user__menu" role="menu">
             <button type="button" role="menuitem" (click)="openLogoutConfirm()">
               <span class="material-symbols-outlined" aria-hidden="true">logout</span>
-              Sair
+              {{ 'Sair' | translate }}
             </button>
           </div>
         }
@@ -276,10 +276,10 @@
         <div class="social-content__header">
 
           <div>
-            <p>{{ title }}</p>
+            <p>{{ (title) | translate }}</p>
 
             <h1 id="social-title">
-              {{ subtitle }}
+              {{ (subtitle) | translate }}
             </h1>
           </div>
 
@@ -302,11 +302,11 @@
     <!-- SUGESTÕES -->
     <aside
       class="social-suggestions"
-      aria-label="Cidades sugeridas"
+      [attr.aria-label]="'Cidades sugeridas' | translate"
     >
 
-      <h2>Explore as cidades</h2>
-      <p class="social-suggestions__intro">Cada lugar tem uma história. Faça parte da próxima mudança.</p>
+      <h2>{{ 'Explore as cidades' | translate }}</h2>
+      <p class="social-suggestions__intro">{{ 'Cada lugar tem uma história. Faça parte da próxima mudança.' | translate }}</p>
 
       @for (city of suggestedCities; track city.id) {
 
@@ -335,9 +335,9 @@
 
       <div class="social-guide">
         <span class="material-symbols-outlined" aria-hidden="true">route</span>
-        <h3>Do relato à solução</h3>
-        <ol><li>Registre o que você observou</li><li>Acompanhe as atualizações</li><li>Ajude a confirmar a solução</li></ol>
-        <button type="button" (click)="openCreatePost()">Registrar um problema <span aria-hidden="true">↗</span></button>
+        <h3>{{ 'Do relato à solução' | translate }}</h3>
+        <ol><li>{{ 'Registre o que você observou' | translate }}</li><li>{{ 'Acompanhe as atualizações' | translate }}</li><li>{{ 'Ajude a confirmar a solução' | translate }}</li></ol>
+        <button type="button" (click)="openCreatePost()">{{ 'Registrar um problema' | translate }} <span aria-hidden="true">↗</span></button>
       </div>
     </aside>
 

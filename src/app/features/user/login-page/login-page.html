@@ -1,39 +1,37 @@
 <app-auth-shell [compact]="isRegisterMode">
   <header class="auth-welcome">
     @if (pendingGoogleRegistration) {
-      <p>Conta Google confirmada. Complete seus dados para criar sua conta no Spectrum.</p>
+      <p>{{ 'Conta Google confirmada. Complete seus dados para criar sua conta no Spectrum.' | translate }}</p>
     }
-    <span>{{ isRegisterMode ? 'FAÇA PARTE DA COMUNIDADE' : 'BEM-VINDO AO SPECTRUM' }}</span>
-    <h1>{{ isRegisterMode ? 'Sua participação importa.' : 'Bom ter você por aqui.' }}</h1>
+    <span>{{ (isRegisterMode ? 'FAÇA PARTE DA COMUNIDADE' : 'BEM-VINDO AO SPECTRUM') | translate }}</span>
+    <h1>{{ (isRegisterMode ? 'Sua participação importa.' : 'Bom ter você por aqui.') | translate }}</h1>
     <p>
-      {{
-        isRegisterMode
+      {{ (isRegisterMode
           ? 'Crie sua conta para acompanhar e transformar seu bairro.'
-          : 'Entre para acompanhar o que acontece na sua cidade.'
-      }}
+          : 'Entre para acompanhar o que acontece na sua cidade.') | translate }}
     </p>
   </header>
 
   @if (!isRegisterMode) {
     <form class="auth-form auth-form--login" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
       <app-input
-        label="Usuário ou e-mail"
-        placeholder="Seu usuário ou e-mail"
+        [label]="'Usuário ou e-mail' | translate"
+        [placeholder]="'Seu usuário ou e-mail' | translate"
         autocomplete="username"
         formControlName="identifier"
-        [error]="fieldError('login', 'identifier')"
+        [error]="(fieldError('login', 'identifier')) | translate"
       />
 
       <app-input
-        label="Senha"
-        placeholder="Sua senha"
+        [label]="'Senha' | translate"
+        [placeholder]="'Sua senha' | translate"
         type="password"
         autocomplete="current-password"
         formControlName="password"
-        [error]="fieldError('login', 'password')"
+        [error]="(fieldError('login', 'password')) | translate"
       />
 
-      <a class="auth-link auth-link--forgot" routerLink="/forgot-password"> Esqueceu a senha? </a>
+      <a class="auth-link auth-link--forgot" routerLink="/forgot-password"> {{ 'Esqueceu a senha?' | translate }} </a>
 
       <app-button
         class="auth-submit"
@@ -42,12 +40,12 @@
         [loading]="isSubmitting()"
         loadingLabel="Entrando"
       >
-        Entrar
+        {{ 'Entrar' | translate }}
       </app-button>
 
       @if (isGoogleLoginAvailable) {
         <div class="auth-divider" aria-hidden="true">
-          <span>ou</span>
+          <span>{{ 'ou' | translate }}</span>
         </div>
 
         <button
@@ -56,15 +54,15 @@
           [disabled]="isSubmitting()"
           (click)="loginWithGoogle()"
         >
-          Entrar com o Google
+          {{ 'Entrar com o Google' | translate }}
         </button>
       }
     </form>
 
     <p class="auth-switch">
-      <span>Não possui uma conta?</span>
+      <span>{{ 'Não possui uma conta?' | translate }}</span>
       <button class="auth-link auth-link--inline" type="button" (click)="goToRegister()">
-        Criar conta
+        {{ 'Criar conta' | translate }}
       </button>
     </p>
   } @else {
@@ -75,77 +73,76 @@
     >
       @if (registerStep() === 1) {
         <app-input
-          label="Nome de usuario"
-          placeholder="Seu nome de usuario"
+          [label]="'Nome de usuario' | translate"
+          [placeholder]="'Seu nome de usuario' | translate"
           autocomplete="username"
           formControlName="nickname"
-          [error]="fieldError('register', 'nickname')"
+          [error]="(fieldError('register', 'nickname')) | translate"
         />
 
         <app-input
-          label="Email"
-          placeholder="Seu email"
+          [label]="'Email' | translate"
+          [placeholder]="'Seu email' | translate"
           autocomplete="email"
           formControlName="email"
-          [error]="fieldError('register', 'email')"
+          [error]="(fieldError('register', 'email')) | translate"
         />
 
         <app-input
-          label="Data de nascimento"
-          placeholder="DD/MM/YYYY"
+          [label]="'Data de nascimento' | translate"
+          [placeholder]="'DD/MM/YYYY' | translate"
           type="date"
           autocomplete="bday"
           formControlName="birthDate"
-          [error]="fieldError('register', 'birthDate')"
+          [error]="(fieldError('register', 'birthDate')) | translate"
         />
 
         @if (pendingGoogleRegistration) {
           <p>
-            Crie uma senha do Spectrum para também poder entrar com e-mail e senha. Não use sua
-            senha do Google.
+            {{ 'Crie uma senha do Spectrum para também poder entrar com e-mail e senha. Não use sua senha do Google.' | translate }}
           </p>
         }
         <app-input
-          label="Senha"
-          placeholder="Sua senha"
+          [label]="'Senha' | translate"
+          [placeholder]="'Sua senha' | translate"
           type="password"
           autocomplete="new-password"
           formControlName="password"
-          [error]="fieldError('register', 'password')"
+          [error]="(fieldError('register', 'password')) | translate"
         />
 
-        <app-button type="button" (click)="goToNextRegisterStep()"> Proximo </app-button>
+        <app-button type="button" (click)="goToNextRegisterStep()"> {{ 'Proximo' | translate }} </app-button>
       } @else {
         <app-input
-          label="Nome proprio"
-          placeholder="Seu nome"
+          [label]="'Nome proprio' | translate"
+          [placeholder]="'Seu nome' | translate"
           autocomplete="name"
           formControlName="name"
-          [error]="fieldError('register', 'name')"
+          [error]="(fieldError('register', 'name')) | translate"
         />
 
         <app-select
-          label="Estado"
-          placeholder="Selecione seu estado"
+          [label]="'Estado' | translate"
+          [placeholder]="'Selecione seu estado' | translate"
           formControlName="stateId"
           [loading]="isLoadingStates()"
           [options]="stateOptions"
-          [error]="fieldError('register', 'stateId')"
+          [error]="(fieldError('register', 'stateId')) | translate"
         />
 
         <app-select
-          label="Municipio"
-          placeholder="Selecione seu municipio"
+          [label]="'Municipio' | translate"
+          [placeholder]="'Selecione seu municipio' | translate"
           formControlName="cityUser"
           [loading]="isLoadingCities()"
           [isDisabled]="isCitySelectDisabled"
           [options]="cityOptions"
-          [error]="fieldError('register', 'cityUser')"
+          [error]="(fieldError('register', 'cityUser')) | translate"
         />
 
         <div class="auth-actions">
           <button class="auth-link" type="button" (click)="goToPreviousRegisterStep()">
-            Voltar
+            {{ 'Voltar' | translate }}
           </button>
 
           <app-button
@@ -154,16 +151,16 @@
             [loading]="isSubmitting()"
             loadingLabel="Cadastrando"
           >
-            Cadastrar
+            {{ 'Cadastrar' | translate }}
           </app-button>
         </div>
       }
     </form>
 
     <p class="auth-switch">
-      <span>Já possui uma conta?</span>
+      <span>{{ 'Já possui uma conta?' | translate }}</span>
       <button class="auth-link auth-link--inline" type="button" (click)="goToLogin()">
-        Entrar
+        {{ 'Entrar' | translate }}
       </button>
     </p>
   }
@@ -172,9 +169,9 @@
 @if (alert(); as currentAlert) {
   <app-alert-popup
     [type]="currentAlert.type"
-    [title]="currentAlert.title"
-    [message]="currentAlert.message"
-    [actionLabel]="currentAlert.actionLabel"
+    [title]="(currentAlert.title) | translate"
+    [message]="(currentAlert.message) | translate"
+    [actionLabel]="(currentAlert.actionLabel) | translate"
     (dismissed)="dismissAlert()"
   />
 }

@@ -1,36 +1,36 @@
 <app-social-shell [user]="user" [showContentHeader]="false" [wideContent]="true" (logout)="logout()">
   <section class="moderation" aria-labelledby="moderation-title">
     <header class="hero">
-      <div><span class="eyebrow">ÁREA DA MODERAÇÃO</span><h1 id="moderation-title">Encaminhamentos</h1>
-        <p>Acompanhe os envios e ajude cada ocorrência a chegar à solução.</p></div>
-      <button type="button" (click)="load()" [disabled]="loading()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>{{ loading() ? 'Atualizando…' : 'Atualizar' }}</button>
+      <div><span class="eyebrow">{{ 'ÁREA DA MODERAÇÃO' | translate }}</span><h1 id="moderation-title">{{ 'Encaminhamentos' | translate }}</h1>
+        <p>{{ 'Acompanhe os envios e ajude cada ocorrência a chegar à solução.' | translate }}</p></div>
+      <button type="button" (click)="load()" [disabled]="loading()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>{{ (loading() ? 'Atualizando…' : 'Atualizar') | translate }}</button>
     </header>
-    <div class="summary" aria-label="Resumo das ocorrências carregadas">
-      <div><strong>{{ items().length }}</strong><span>Ocorrências carregadas</span></div>
-      <div><strong>{{ pendingCount }}</strong><span>Com pendência</span></div>
-      <div><strong>{{ reviewCount }}</strong><span>Respostas para analisar</span></div>
+    <div class="summary" [attr.aria-label]="'Resumo das ocorrências carregadas' | translate">
+      <div><strong>{{ items().length }}</strong><span>{{ 'Ocorrências carregadas' | translate }}</span></div>
+      <div><strong>{{ pendingCount }}</strong><span>{{ 'Com pendência' | translate }}</span></div>
+      <div><strong>{{ reviewCount }}</strong><span>{{ 'Respostas para analisar' | translate }}</span></div>
     </div>
     <aside class="help"><span class="material-symbols-outlined" aria-hidden="true">info</span>
-      <p>Abra uma ocorrência para selecionar o órgão, registrar uma resposta ou validar a resolução. Respostas por e-mail precisam ser registradas manualmente.</p></aside>
+      <p>{{ 'Abra uma ocorrência para selecionar o órgão, registrar uma resposta ou validar a resolução. Respostas por e-mail precisam ser registradas manualmente.' | translate }}</p></aside>
     <div class="controls">
-      <label>Buscar ocorrência<input type="search" [(ngModel)]="search" placeholder="Título, cidade, órgão ou identificador" /></label>
-      <label>Situação<select [(ngModel)]="filter">@for (option of filters; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select></label>
+      <label>{{ 'Buscar ocorrência' | translate }}<input type="search" [(ngModel)]="search" [placeholder]="'Título, cidade, órgão ou identificador' | translate" /></label>
+      <label>{{ 'Situação' | translate }}<select [(ngModel)]="filter">@for (option of filters; track option.value) { <option [value]="option.value">{{ (option.label) | translate }}</option> }</select></label>
     </div>
-    <p class="caption">Até 100 ocorrências mais recentemente atualizadas. Os filtros e totais consideram essa lista.</p>
-    @if (error) { <div class="state" role="alert"><h2>Não conseguimos atualizar</h2><p>{{ error }}</p><button type="button" (click)="load()">Tentar novamente</button></div> }
-    @else if (loading()) { <div class="state" role="status">Carregando encaminhamentos…</div> }
+    <p class="caption">{{ 'Até 100 ocorrências mais recentemente atualizadas. Os filtros e totais consideram essa lista.' | translate }}</p>
+    @if (error) { <div class="state" role="alert"><h2>{{ 'Não conseguimos atualizar' | translate }}</h2><p>{{ (error) | translate }}</p><button type="button" (click)="load()">{{ 'Tentar novamente' | translate }}</button></div> }
+    @else if (loading()) { <div class="state" role="status">{{ 'Carregando encaminhamentos…' | translate }}</div> }
     @else {
-      <p class="caption" role="status">{{ visible.length }} ocorrência(s) encontrada(s)</p>
+      <p class="caption" role="status">{{ visible.length }} {{ 'ocorrência(s) encontrada(s)' | translate }}</p>
       <div class="list">
         @for (post of visible; track post.id) {
           <article class="card">
-            <div class="card-top"><span class="badge" [class.resolved]="post.status === 'RESOLVIDA'">{{ status(post) }}</span><span class="city">{{ post.location?.cityName || post.location?.city || 'Cidade não informada' }} · {{ post.location?.stateCode || post.location?.state }}</span></div>
-            <h2>{{ post.title || 'Ocorrência sem título' }}</h2>
-            <p>{{ guidance(post) }}</p>
-            <div class="card-bottom"><div><span class="agency">{{ post.responsibleAgency?.name || 'Órgão ainda não definido' }}</span><small>Publicada em {{ post.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
-              <a [routerLink]="['/ocorrencias', post.id]">{{ action(post) }} <span aria-hidden="true">→</span></a></div>
+            <div class="card-top"><span class="badge" [class.resolved]="post.status === 'RESOLVIDA'">{{ status(post) | translate }}</span><span class="city">{{ (post.location?.cityName || post.location?.city || ('Cidade não informada' | translate)) }} · {{ post.location?.stateCode || post.location?.state }}</span></div>
+            <h2>{{ (post.title || ('Ocorrência sem título' | translate)) }}</h2>
+            <p>{{ guidance(post) | translate }}</p>
+            <div class="card-bottom"><div><span class="agency">{{ (post.responsibleAgency?.name || ('Órgão ainda não definido' | translate)) }}</span><small>{{ 'Publicada em' | translate }} {{ post.createdAt | localizedDate }}</small></div>
+              <a [routerLink]="['/ocorrencias', post.id]">{{ action(post) | translate }} <span aria-hidden="true">→</span></a></div>
           </article>
-        } @empty { <div class="state"><span class="material-symbols-outlined" aria-hidden="true">task_alt</span><h2>{{ items().length ? 'Nenhum resultado neste filtro' : 'Nenhuma ocorrência para acompanhar' }}</h2><p>{{ items().length ? 'Tente outra busca ou selecione Todas.' : 'As novas ocorrências aparecerão aqui. Use Atualizar para consultar o servidor.' }}</p></div> }
+        } @empty { <div class="state"><span class="material-symbols-outlined" aria-hidden="true">task_alt</span><h2>{{ (items().length ? 'Nenhum resultado neste filtro' : 'Nenhuma ocorrência para acompanhar') | translate }}</h2><p>{{ (items().length ? 'Tente outra busca ou selecione Todas.' : 'As novas ocorrências aparecerão aqui. Use Atualizar para consultar o servidor.') | translate }}</p></div> }
       </div>
     }
   </section>

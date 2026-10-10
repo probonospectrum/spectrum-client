@@ -9,15 +9,15 @@
     >
       <header class="report-modal__header">
         <div class="report-modal__heading">
-          <h2 id="report-title">{{ title }}</h2>
-          <p class="report-modal__hint">Selecione o motivo da denúncia.</p>
+          <h2 id="report-title">{{ (title) | translate }}</h2>
+          <p class="report-modal__hint">{{ 'Selecione o motivo da denúncia.' | translate }}</p>
         </div>
-        <button class="report-modal__close" type="button" aria-label="Fechar" (click)="close.emit()">
+        <button class="report-modal__close" type="button" [attr.aria-label]="'Fechar' | translate" (click)="close.emit()">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </header>
 
-      <div class="report-options" role="radiogroup" aria-label="Motivo da denuncia">
+      <div class="report-options" role="radiogroup" [attr.aria-label]="'Motivo da denuncia' | translate">
         @for (reason of reasons; track reason) {
           <button
             type="button"
@@ -27,22 +27,22 @@
             class="report-options__item"
             [disabled]="submitting" (click)="select(reason)"
           >
-            <span class="report-options__label">{{ reason }}</span>
+            <span class="report-options__label">{{ reason | translate }}</span>
             <span class="report-options__radio" aria-hidden="true"></span>
           </button>
         }
       </div>
 
-      @if (submissionError) { <p role="alert">{{ submissionError }}</p> }
-      <button class="report-modal__submit" type="button" [disabled]="submitting" (click)="onConfirm()">{{ submitting ? 'Enviando...' : 'Denunciar' }}</button>
+      @if (submissionError) { <p role="alert">{{ (submissionError) | translate }}</p> }
+      <button class="report-modal__submit" type="button" [disabled]="submitting" (click)="onConfirm()">{{ (submitting ? 'Enviando...' : 'Denunciar') | translate }}</button>
     </section>
   </div>
 } @else {
   <app-alert-popup
     type="success"
-    title="Enviado"
-    message="Sua denúncia foi registrada com sucesso. Nossa equipe irá analisar seu relato e iremos retornar o mais breve possível. Agradecemos sua confiança e colaboração para manter nossa comunidade segura."
-    actionLabel="Feito"
+    [title]="'Enviado' | translate"
+    [message]="'Sua denúncia foi registrada com sucesso. Nossa equipe irá analisar seu relato e iremos retornar o mais breve possível. Agradecemos sua confiança e colaboração para manter nossa comunidade segura.' | translate"
+    [actionLabel]="'Feito' | translate"
     (dismissed)="onDone()"
   />
 }

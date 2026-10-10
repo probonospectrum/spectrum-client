@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { I18nService } from '../../i18n/i18n.service';
+import { Injectable, inject } from '@angular/core';
 import { SpectrumPost } from '../posts/post.service';
 
 /**
@@ -23,6 +24,7 @@ export interface PublicProfile {
   providedIn: 'root',
 })
 export class PublicProfileMockService {
+  readonly i18n = inject(I18nService);
   private readonly profiles: PublicProfile[] = [
     {
       nickname: 'ana.martins',
@@ -144,7 +146,7 @@ export class PublicProfileMockService {
   }
 
   private formatJoinedDate(date: Date): string {
-    const label = new Intl.DateTimeFormat('pt-BR', {
+    const label = new Intl.DateTimeFormat(this.i18n.language(), {
       month: 'long',
       year: 'numeric',
     }).format(date);
