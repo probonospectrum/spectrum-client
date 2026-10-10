@@ -262,6 +262,7 @@
         [class.post-card__action--active]="post.reposted"
         [attr.aria-label]="(post.reposted ? 'Remover repost' : 'Repostar publicacao') | translate"
         (click)="repost.emit(post)"
+        [disabled]="repostPending"
       >
         <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
         {{ reposts }}

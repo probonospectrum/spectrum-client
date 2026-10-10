@@ -244,6 +244,8 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  repostCount?: number;
+  reposted?: boolean;
   commentCount?: number;
   reaction?: 'LIKE' | 'UNLIKE' | null;
   author?: { _id: string; name: string; nickname: string; avatarUrl?: string; cityUser: string };
@@ -375,8 +377,14 @@ export class PostService {
   }
 
   toggleServerRepost(post: SpectrumPost, user: LoggedUser | null): Observable<RepostToggleResult> {
-    return this.http.post<{ post: OccurrenceApiResponse; reposted: boolean }>(`${this.apiUrl}/${post.id}/repost/toggle`, {}).pipe(
-      map((result) => ({ post: { ...this.toSpectrumPost(result.post, user), reposted: result.reposted }, reposted: result.reposted })),
+    return this.http.post<{ post: OccurrenceApiResponse; reposted: boolean; repostCount: number }>(`${this.apiUrl}/${post.id}/repost/toggle`, {}).pipe(
+      map((result) => {
+        // Reposting only changes repost metadata, never reactions, saved state or history.
+        post.reposts = result.repostCount;
+        post.reposted = result.reposted;
+        return { post, reposted: result.reposted };
+      }),
+      tap(result => this.cacheOccurrence(result.post)),
     );
   }
 
@@ -1317,8 +1325,8 @@ export class PostService {
       liked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'LIKE' : currentUserInteraction?.liked ?? false,
       disliked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'UNLIKE' : currentUserInteraction?.disliked ?? false,
       saved: currentUserInteraction?.saved ?? normalizedPost.saved,
-      reposts: normalizedPost.reposts + reposts.length,
-      reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
+      reposts: this.isApiId(originalPostId) ? normalizedPost.reposts : normalizedPost.reposts + reposts.length,
+      reposted: this.isApiId(originalPostId) ? normalizedPost.reposted : userId ? reposts.some((repost) => repost.userId === userId) : false,
     };
   }
 
@@ -1385,8 +1393,8 @@ export class PostService {
       dislikes: Math.max(0, post.dislikes - (this.isApiId(postId) ? 0 : interactionDislikes)),
       liked: false,
       disliked: false,
-      reposts: Math.max(0, post.reposts - reposts),
-      reposted: false,
+      reposts: this.isApiId(postId) ? post.reposts : Math.max(0, post.reposts - reposts),
+      reposted: this.isApiId(postId) ? post.reposted : false,
     };
   }
 
@@ -1520,8 +1528,8 @@ return {
   dislikes: occurrence.unlikeCount ?? 0,
   disliked: occurrence.reaction === 'UNLIKE',
   comments: occurrence.commentCount ?? 0,
-  reposts: 0,
-  reposted: false,
+  reposts: occurrence.repostCount ?? 0,
+  reposted: occurrence.reposted ?? false,
   saved: false,
   tags: [],
   status: occurrence.status,
