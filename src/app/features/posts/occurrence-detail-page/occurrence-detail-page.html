@@ -320,10 +320,37 @@
           @for (evidence of occurrence.evidences; track evidence.id) {
             <article class="occurrence-detail__attachment">
               @if (evidenceUrl(evidence); as url) {
-                @if (evidence.type === 'IMAGE') { <a [href]="url" target="_blank" rel="noopener noreferrer"><img [src]="url" [alt]="evidence.description || 'Evidência da ocorrência'" loading="lazy" /></a> }
-                @else if (evidence.type === 'VIDEO') { <video [src]="url" controls preload="metadata" [attr.aria-label]="evidence.description || 'Vídeo da ocorrência'"></video> }
-                <a class="occurrence-detail__attachment-caption" [href]="url" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined" aria-hidden="true">{{ evidence.type === 'IMAGE' ? 'image' : 'attach_file' }}</span><span>{{ evidence.description || 'Abrir evidência' }}</span><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span></a>
-              } @else { <p class="occurrence-detail__attachment-caption">{{ evidence.description || 'Evidência registrada sem arquivo' }}</p> }
+                @if (evidence.type === 'IMAGE') {
+                  <button
+                    type="button"
+                    class="occurrence-detail__media-btn"
+                    aria-label="Expandir foto da evidência"
+                    (click)="openEvidenceInLightbox(evidence)"
+                  >
+                    <img [src]="url" alt="Evidência da ocorrência" loading="lazy" />
+                    <div class="occurrence-detail__media-zoom" aria-hidden="true">
+                      <span class="material-symbols-outlined">zoom_in</span>
+                    </div>
+                  </button>
+                } @else if (evidence.type === 'VIDEO') {
+                  <button
+                    type="button"
+                    class="occurrence-detail__media-btn occurrence-detail__media-btn--video"
+                    aria-label="Reproduzir vídeo da evidência"
+                    (click)="openEvidenceInLightbox(evidence)"
+                  >
+                    <video [src]="url" preload="metadata" muted></video>
+                    <div class="occurrence-detail__play-badge" aria-hidden="true">
+                      <span class="material-symbols-outlined">play_arrow</span>
+                    </div>
+                  </button>
+                }
+              } @else {
+                <div class="occurrence-detail__no-file">
+                  <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                  <span>Registro sem arquivo</span>
+                </div>
+              }
             </article>
           }
         </div>
@@ -350,11 +377,17 @@
               @if (evidences.length) {
                 <div class="occurrence-detail__timeline-evidences">
                   @for (evidence of evidences; track evidence.id) {
-                    <a [href]="evidenceUrl(evidence)" target="_blank" rel="noopener noreferrer">
-                      Abrir evidência
-                      <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
-                      {{ evidence.description || 'Evidência anexada' }}
-                    </a>
+                    <button
+                      type="button"
+                      class="occurrence-detail__timeline-evidence-btn"
+                      [attr.aria-label]="evidence.type === 'VIDEO' ? 'Ver vídeo da evidência' : 'Ver foto da evidência'"
+                      (click)="openEvidenceInLightbox(evidence)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">
+                        {{ evidence.type === 'VIDEO' ? 'play_circle' : 'image' }}
+                      </span>
+                      <span>{{ evidence.type === 'VIDEO' ? 'Ver vídeo' : 'Ver foto' }}</span>
+                    </button>
                   }
                 </div>
               }
@@ -385,6 +418,14 @@
       <p>{{ errorMessage }}</p>
       <button type="button" (click)="loadOccurrence()">Tentar novamente</button>
     </section>
+  }
+
+  @if (lightboxOpen) {
+    <app-media-lightbox
+      [mediaList]="occurrenceMediaList"
+      [initialIndex]="lightboxIndex"
+      (close)="closeLightbox()"
+    />
   }
 </div>
 

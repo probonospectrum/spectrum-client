@@ -17,15 +17,17 @@ import { CommentSection } from '../../../features/posts/comment-section/comment-
 import {
   POST_EDIT_WINDOW_MS,
   PostService,
+  OccurrenceEvidence,
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
+import { LightboxMediaItem, MediaLightbox } from '../media-lightbox/media-lightbox';
 
 @Component({
   selector: 'app-post-card',
-  imports: [UserAvatar, CommonModule, CommentSection],
+  imports: [UserAvatar, CommonModule, CommentSection, MediaLightbox],
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })
@@ -91,6 +93,50 @@ export class PostCard implements OnChanges, OnDestroy {
 
   get primaryImage(): string | undefined {
     return this.post.evidences.find(evidence => evidence.type === 'IMAGE' && evidence.url)?.url;
+  }
+
+  get mediaEvidences(): OccurrenceEvidence[] {
+    return (this.post.evidences || []).filter(
+      (evidence) => (evidence.type === 'IMAGE' || evidence.type === 'VIDEO') && Boolean(evidence.url),
+    );
+  }
+
+  get galleryItems(): LightboxMediaItem[] {
+    const list = this.mediaEvidences;
+    if (list.length > 0) {
+      return list.map((e) => ({
+        url: e.url!,
+        type: e.type,
+        alt: this.post.title,
+      }));
+    }
+
+    const cover = this.coverImage;
+    if (cover) {
+      return [
+        {
+          url: cover,
+          type: this.post.mediaType === 'video' ? 'VIDEO' : 'IMAGE',
+          alt: this.post.title,
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  lightboxOpen = false;
+  lightboxIndex = 0;
+
+  openGalleryMedia(event: Event, index: number): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.lightboxIndex = index;
+    this.lightboxOpen = true;
+  }
+
+  closeGalleryLightbox(): void {
+    this.lightboxOpen = false;
   }
 
   get coverImage(): string | undefined {
@@ -379,7 +425,7 @@ export class PostCard implements OnChanges, OnDestroy {
 
     return Boolean(
       target.closest(
-        'a, button, input, select, textarea, [role="button"], [role="link"]:not(.post-card__main), [role="menuitem"], [contenteditable="true"], app-comment-section',
+        'a, button, input, select, textarea, [role="button"], [role="link"]:not(.post-card__main), [role="menuitem"], [contenteditable="true"], app-comment-section, app-media-lightbox, .post-card__media-single, .post-card__grid-item',
       ),
     );
   }

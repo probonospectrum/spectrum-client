@@ -192,4 +192,41 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.formatStatus()).toBe('Aberta');
   });
 
+  it('populates occurrenceMediaList and opens media in lightbox without external redirection', () => {
+    fixture.componentInstance.occurrence = {
+      ...occurrence,
+      evidences: [
+        {
+          id: 'ev-1',
+          type: 'IMAGE',
+          url: 'https://example.com/img1.jpg',
+          description: 'arquivo_teste.jpg',
+          addedAt: '2026-09-01T12:00:00.000Z',
+        },
+        {
+          id: 'ev-2',
+          type: 'VIDEO',
+          url: 'https://example.com/video1.mp4',
+          description: 'video_gravado.mp4',
+          addedAt: '2026-09-01T12:00:00.000Z',
+        },
+      ],
+    };
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.occurrenceMediaList.length).toBe(2);
+    expect(fixture.componentInstance.occurrenceMediaList[0].url).toBe('https://example.com/img1.jpg');
+
+    fixture.componentInstance.openEvidenceInLightbox(fixture.componentInstance.occurrence.evidences[0]);
+    expect(fixture.componentInstance.lightboxOpen).toBe(true);
+    expect(fixture.componentInstance.lightboxIndex).toBe(0);
+
+    fixture.componentInstance.closeLightbox();
+    expect(fixture.componentInstance.lightboxOpen).toBe(false);
+
+    // Verify raw file name is not rendered as attachment caption link
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.occurrence-detail__attachment-caption')).toBeNull();
+  });
 });
+
