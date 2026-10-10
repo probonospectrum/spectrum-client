@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { PostCard } from './post-card';
-import { SpectrumPost } from '../../../core/services/posts/post.service';
+import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
+import { LoggedUser } from '../../../core/services/user/user.service';
+import { Subject } from 'rxjs';
 
 describe('PostCard media and gallery layout', () => {
   let component: PostCard;
@@ -65,6 +67,49 @@ describe('PostCard media and gallery layout', () => {
 
   it('should create post card component', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('updates the comment count without accumulating duplicate counts', () => {
+    component.onCommentCountChanged(3);
+    expect(component.commentsCount).toBe(3);
+    component.onCommentCountChanged(3);
+    expect(component.commentsCount).toBe(3);
+    component.onCommentCountChanged(2);
+    expect(component.commentsCount).toBe(2);
+  });
+
+  it.each(['LIKE', 'UNLIKE'] as const)('renders the saved %s after one click and ignores clicks while saving', async reaction => {
+    const response = new Subject<SpectrumPost>();
+    const save = vi.spyOn(TestBed.inject(PostService), 'setPostReaction').mockReturnValue(response);
+    component.currentUser = { _id: 'user' } as LoggedUser;
+    const label = reaction === 'LIKE' ? 'Curtir publicacao' : 'Descurtir publicacao';
+    const button = fixture.nativeElement.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement;
+    button.click();
+    if (reaction === 'LIKE') component.toggleLike(); else component.toggleDislike();
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith(expect.anything(), component.currentUser, reaction);
+    fixture.detectChanges();
+    expect(button.disabled).toBe(true);
+    response.next({ ...basePost, likes: reaction === 'LIKE' ? 6 : 5, dislikes: reaction === 'UNLIKE' ? 1 : 0,
+      liked: reaction === 'LIKE', disliked: reaction === 'UNLIKE', reaction });
+    response.complete();
+    await fixture.whenStable();
+    expect(button.disabled).toBe(false);
+    expect(button.classList.contains(reaction === 'LIKE' ? 'post-card__action--liked' : 'post-card__action--disliked')).toBe(true);
+    expect(button.textContent).toContain(reaction === 'LIKE' ? '6' : '1');
+  });
+
+  it('keeps the previous state and displays a persistence failure without another click', async () => {
+    const response = new Subject<SpectrumPost>();
+    vi.spyOn(TestBed.inject(PostService), 'setPostReaction').mockReturnValue(response);
+    component.currentUser = { _id: 'user' } as LoggedUser;
+    component.toggleLike();
+    response.error(new Error('Unavailable'));
+    await fixture.whenStable();
+    expect(component.post.liked).toBe(false);
+    expect(component.post.likes).toBe(5);
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Não foi possível salvar');
+    expect(component.reactionPending).toBe(false);
   });
 
   it('should parse media evidences into gallery items', () => {

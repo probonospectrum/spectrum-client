@@ -244,6 +244,7 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  commentCount?: number;
   reaction?: 'LIKE' | 'UNLIKE' | null;
   author?: { _id: string; name: string; nickname: string; avatarUrl?: string; cityUser: string };
   unlikeCount?: number;
@@ -1518,7 +1519,7 @@ return {
   liked: occurrence.reaction === 'LIKE',
   dislikes: occurrence.unlikeCount ?? 0,
   disliked: occurrence.reaction === 'UNLIKE',
-  comments: 0,
+  comments: occurrence.commentCount ?? 0,
   reposts: 0,
   reposted: false,
   saved: false,

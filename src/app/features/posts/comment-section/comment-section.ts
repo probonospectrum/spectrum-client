@@ -3,7 +3,7 @@ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, DestroyRef, Injector, afterNextRender, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, Injector, afterNextRender, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
@@ -18,6 +18,7 @@ export class CommentSection implements OnInit {
   @Input({ required: true }) postId!: string;
   @Input() currentUser: LoggedUser | null = null;
   @Output() commentAdded = new EventEmitter<void>();
+  @Output() commentCountChanged = new EventEmitter<number>();
 
   readonly visibleCount = 2;
 
@@ -34,6 +35,7 @@ export class CommentSection implements OnInit {
   actionMessage = '';
   private readonly pendingReactions = new Set<string>();
   private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly injector = inject(Injector);
 
   constructor(
@@ -46,6 +48,8 @@ export class CommentSection implements OnInit {
     this.postService.loadComments(this.postId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (comments) => {
         this.comments = comments;
+        this.commentCountChanged.emit(this.comments.length);
+        this.changeDetector.markForCheck();
         this.loading = false;
         const target = comments.find(comment => window.location.hash === '#comment-' + comment.id);
         if (target) {
@@ -92,7 +96,7 @@ export class CommentSection implements OnInit {
     this.saving = true;
     this.error = '';
     this.postService.createComment(this.postId, content, user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (comment) => { this.comments = [comment, ...this.comments]; this.newComment = ''; this.saving = false; this.commentAdded.emit(); },
+      next: (comment) => { this.comments = [comment, ...this.comments]; this.newComment = ''; this.saving = false; this.commentAdded.emit(); this.commentCountChanged.emit(this.comments.length); this.changeDetector.markForCheck(); },
       error: () => { this.saving = false; this.error = 'Não foi possível enviar o comentário. Tente novamente.'; },
     });
   }
@@ -162,11 +166,12 @@ export class CommentSection implements OnInit {
   private saveReaction(previous: SpectrumComment, reaction: 'LIKE' | 'UNLIKE' | null): void {
     this.pendingReactions.add(previous.id);
     this.postService.setCommentReaction(previous, reaction).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: comment => { this.replaceComment(comment); this.pendingReactions.delete(previous.id); },
+      next: comment => { this.replaceComment(comment); this.pendingReactions.delete(previous.id); this.changeDetector.markForCheck(); },
       error: () => {
         this.replaceComment(previous);
         this.pendingReactions.delete(previous.id);
         this.error = 'Não foi possível salvar a reação. Tente novamente.';
+        this.changeDetector.markForCheck();
       },
     });
   }
@@ -215,6 +220,8 @@ export class CommentSection implements OnInit {
     this.postService.deleteComment(target.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.comments = this.comments.filter(comment => comment.id !== target.id);
+        this.commentCountChanged.emit(this.comments.length);
+        this.changeDetector.markForCheck();
         this.actionPending = false;
         this.deleteTarget = null;
         this.actionMessage = 'Comentário excluído.';
