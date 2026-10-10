@@ -282,7 +282,10 @@
               <span>{{ 'Descrição da resolução' | translate }}</span>
               <input type="text" [(ngModel)]="resolutionStatement" name="resolutionStatement"  />
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ 'Informar resolução' | translate }}</button>
+            <div class="occurrence-detail__suggestion-actions">
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ 'Informar resolução' | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+            </div>
           }
 
           @if (actionPanel === 'analysis') {
@@ -322,7 +325,7 @@
             </label>
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitReopen()">{{ 'Reabrir ocorrência' | translate }}</button>
           }
-          @if (actionPanel !== 'evidence' && (actionPanel !== 'agency' || isModerator)) {
+          @if (actionPanel !== 'evidence' && actionPanel !== 'resolution' && (actionPanel !== 'agency' || isModerator)) {
             <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
           }
           </fieldset>
