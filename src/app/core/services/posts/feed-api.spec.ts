@@ -52,6 +52,32 @@ describe('Occurrence feed API', () => {
     expect(post).toMatchObject({ reposts: 2, reposted: false, liked: true, saved: true });
   });
 
+  it('shows the original author and content in a profile repost while retaining repost ownership', () => {
+    const originalId = '66f1c0de0000000000000001';
+    const repostId = '66f1c0de0000000000000002';
+    const owner = { _id: 'profile-owner', name: 'Ana', nickname: 'ana', avatarUrl: '/ana.png' };
+    let result: SpectrumPost[] = [];
+    posts.getAuthorPosts(owner, owner as LoggedUser).subscribe(value => result = value);
+    http.expectOne(r => r.url === API_BASE_URL + '/post/user/profile-owner').flush([
+      { _id: repostId, originalPostId: originalId, createdBy: owner._id, title: 'Repost: título', text: '', repostCount: 4, reposted: true },
+    ]);
+    http.expectOne(API_BASE_URL + '/post/' + originalId).flush({
+      _id: originalId, createdBy: 'original-author', title: 'Ocorrência original', text: 'Problema na rua',
+      author: { _id: 'original-author', name: 'Bruno', nickname: 'bruno', avatarUrl: '/bruno.png' },
+      repostCount: 4, reposted: true, evidences: [], history: [],
+    });
+    expect(result[0]).toMatchObject({ id: repostId, originalPostId: originalId, createdBy: owner._id,
+      authorName: 'Bruno', authorNickname: 'bruno', authorAvatarUrl: '/bruno.png', title: 'Ocorrência original',
+      content: 'Problema na rua', reposts: 4, reposted: true });
+  });
+
+  it('returns an empty profile list without waiting for original occurrence requests', () => {
+    let result: SpectrumPost[] | undefined;
+    posts.getAuthorPosts({ _id: 'owner', name: 'Ana', nickname: 'ana' }, null).subscribe(value => result = value);
+    http.expectOne(r => r.url === API_BASE_URL + '/post/user/owner').flush([]);
+    expect(result).toEqual([]);
+  });
+
   it('sends comment reactions to the backend and uses the saved state', () => {
     const comment = { id: 'comment', likes: 2, dislikes: 1, liked: false, disliked: true } as SpectrumComment;
     let result: SpectrumComment | undefined;

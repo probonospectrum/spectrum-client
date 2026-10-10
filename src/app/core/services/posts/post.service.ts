@@ -1,7 +1,7 @@
 import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, tap, throwError } from 'rxjs';
+import { Observable, forkJoin, map, of, tap, throwError, switchMap, shareReplay } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser, UserService } from '../user/user.service';
@@ -366,9 +366,32 @@ export class PostService {
 
   getAuthorPosts(author: Pick<LoggedUser, '_id' | 'name' | 'nickname' | 'cityUser' | 'avatarUrl'>, viewer: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/user/${author._id}`, { params: { limit: '50' } }).pipe(
-      map((posts) => posts.map((post) => this.withPostState(this.toSpectrumPost({ ...post, author: {
-        _id: author._id, name: author.name, nickname: author.nickname, cityUser: author.cityUser ?? '', avatarUrl: author.avatarUrl,
-      } }, viewer), viewer))), tap((posts) => posts.forEach((post) => this.cacheOccurrence(post))),
+      switchMap(posts => {
+        if (!posts.length) return of([] as SpectrumPost[]);
+        const originals = new Map<string, Observable<SpectrumPost>>();
+        return forkJoin(posts.map(post => {
+          if (!post.originalPostId) {
+            return of(this.withPostState(this.toSpectrumPost({ ...post, author: post.author?.name ? post.author : {
+              _id: author._id, name: author.name, nickname: author.nickname, cityUser: author.cityUser ?? '', avatarUrl: author.avatarUrl,
+            } }, viewer), viewer));
+          }
+          let original = originals.get(post.originalPostId);
+          if (!original) {
+            original = this.getOccurrence(post.originalPostId, viewer).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+            originals.set(post.originalPostId, original);
+          }
+          return original.pipe(map(occurrence => this.withPostState({
+            ...occurrence,
+            id: post._id,
+            originalPostId: post.originalPostId,
+            // Ownership of the repost is separate from the displayed original author.
+            createdBy: post.createdBy,
+            reposts: post.repostCount ?? occurrence.reposts,
+            reposted: post.reposted ?? occurrence.reposted,
+          }, viewer)));
+        }));
+      }),
+      tap(posts => posts.forEach(post => this.cacheOccurrence(post))),
     );
   }
 
