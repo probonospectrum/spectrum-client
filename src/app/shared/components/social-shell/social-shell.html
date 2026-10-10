@@ -71,7 +71,7 @@
 
                     <span class="search-result__icon">
                       @if (result.type === 'Pessoa') {
-                        {{ result.name.charAt(0).toUpperCase() }}
+                        <app-user-avatar [imageUrl]="result.avatarUrl || ''" [name]="result.name" />
                       }
                       @if (result.type === 'Cidade') {
                         <span class="material-symbols-outlined">

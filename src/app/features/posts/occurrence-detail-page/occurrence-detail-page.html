@@ -30,7 +30,13 @@
         <h1>{{ occurrence.title }}</h1>
         <p class="occurrence-detail__description">{{ occurrence.content }}</p>
         <div class="occurrence-detail__byline">
-          <span class="occurrence-detail__avatar" aria-hidden="true">{{ occurrence.authorInitial }}</span>
+          <span class="occurrence-detail__avatar" aria-hidden="true">
+            <app-user-avatar
+              [user]="occurrence.createdBy === user?._id || occurrence.authorNickname === user?.nickname ? user : null"
+              [imageUrl]="occurrence.createdBy === user?._id || occurrence.authorNickname === user?.nickname ? '' : (occurrence.authorAvatarUrl || '')"
+              [name]="occurrence.authorName"
+            />
+          </span>
           <span><strong>{{ occurrence.authorName }}</strong><small>Publicada em {{ formatDate(occurrence.createdAt) }}</small></span>
           <span class="occurrence-detail__place"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ occurrence.location?.cityName || occurrence.authorCity }}</span>
         </div>

@@ -27,6 +27,7 @@ interface SearchResult {
   name: string;
   type: 'Pessoa' | 'Cidade';
   nickname?: string;
+  avatarUrl?: string;
   location?: string;
   slug?: string;
 }
@@ -119,6 +120,7 @@ export class SocialShell implements OnInit {
             name: profile.name,
             type: 'Pessoa',
             nickname: profile.nickname,
+            avatarUrl: profile.avatarUrl,
           })),
           ...this.getSearchResults(term),
         ]),

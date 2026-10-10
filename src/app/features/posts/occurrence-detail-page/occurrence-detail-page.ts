@@ -1,3 +1,4 @@
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
@@ -37,7 +38,7 @@ type ActionPanel =
 
 @Component({
   selector: 'app-occurrence-detail-page',
-  imports: [CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell, MediaLightbox],
+  imports: [UserAvatar, CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell, MediaLightbox],
   templateUrl: './occurrence-detail-page.html',
   styleUrl: './occurrence-detail-page.scss',
 })
