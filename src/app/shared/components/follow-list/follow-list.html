@@ -1,0 +1,17 @@
+<dialog #dialog aria-labelledby="follow-title" (cancel)="$event.preventDefault(); closed.emit()" (click)="backdrop($event)">
+  <header><h2 id="follow-title">{{ type() === 'followers' ? 'Seguidores' : 'Seguindo' }}</h2><button type="button" aria-label="Fechar lista" (click)="closed.emit()">×</button></header>
+  <input type="search" aria-label="Pesquisar usuários" placeholder="Pesquisar" [value]="search()" (input)="search.set($any($event.target).value)" />
+  @if (error()) { <p role="alert">{{ error() }}</p><button type="button" (click)="load()" [disabled]="loading() || !!saving()">Tentar novamente</button> }
+  <div class="users" [attr.aria-busy]="loading()">
+    @if (loading()) { <p role="status">Carregando...</p> } @else {
+      @for (user of filtered(); track user._id) {
+        <div class="user-row">
+          <a [routerLink]="['/perfil', user.nickname]" (click)="closed.emit()"><app-user-avatar [imageUrl]="user.avatarUrl || ''" [name]="user.name" /><span><strong>{{ user.nickname }}</strong><small>{{ user.name }}</small></span></a>
+          @if (user._id !== currentId) {
+            <button type="button" [disabled]="!!saving()" (click)="act(user)">{{ saving() === user._id ? 'Salvando...' : own() && type() === 'followers' ? 'Remover' : user.isFollowing ? 'Deixar de seguir' : 'Seguir' }}</button>
+          }
+        </div>
+      } @empty { <p>{{ search() ? 'Nenhum usuário encontrado.' : 'Nenhum usuário nesta lista.' }}</p> }
+    }
+  </div>
+</dialog>

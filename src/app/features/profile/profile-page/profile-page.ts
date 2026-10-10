@@ -1,3 +1,4 @@
+import { FollowList } from '../../../shared/components/follow-list/follow-list';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
@@ -21,7 +22,7 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
@@ -46,6 +47,7 @@ export class ProfilePage implements OnInit {
   publicProfile = signal<PublicProfileResponse | null>(null);
   profileError = signal('');
   private readonly authorPosts = signal<SpectrumPost[]>([]);
+  readonly connections = signal<'followers' | 'following' | null>(null);
   readonly followSaving = signal(false);
 
   /** true quando estamos vendo o perfil de outra pessoa (nao o proprio). */
@@ -64,7 +66,7 @@ export class ProfilePage implements OnInit {
     // ao navegar entre /perfil (proprio) e /perfil/:nickname (terceiro).
     this.route.paramMap
       .pipe(
-        tap(() => { this.profileLoading.set(true); this.profileError.set(''); this.authorPosts.set([]); }),
+        tap(() => { this.connections.set(null); this.profileLoading.set(true); this.profileError.set(''); this.authorPosts.set([]); }),
         switchMap((params) => this.loadProfile(params.get('nickname') ?? this.user?.nickname ?? '')),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -197,11 +199,24 @@ export class ProfilePage implements OnInit {
     this.followSaving.set(true);
     this.userService.followUser(target._id, !this.isFollowing()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
-        this.followersBase.update((count) => count + (response.isFollowing ? 1 : -1));
+        if (this.publicProfile()?._id !== target._id) { this.followSaving.set(false); return; }
+        this.refreshFollowCounts();
         this.isFollowing.set(response.isFollowing);
         this.followSaving.set(false);
       },
       error: () => { this.followSaving.set(false); this.profileAlert.set({ type: 'error', title: 'Não foi possível atualizar', message: 'A conta pode ser privada. Tente novamente.' }); },
+    });
+  }
+
+  refreshFollowCounts(): void {
+    const target = this.publicProfile();
+    if (!target) return;
+    this.userService.getPublicProfile(target.nickname).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: profile => {
+        if (this.publicProfile()?._id !== target._id) return;
+        this.publicProfile.set(profile); this.followersBase.set(profile.followersCount); this.isFollowing.set(profile.isFollowing);
+      },
+      error: () => this.profileAlert.set({ type: 'error', title: 'Atualização pendente', message: 'A ação foi salva, mas não foi possível atualizar os números. Recarregue o perfil.' }),
     });
   }
 

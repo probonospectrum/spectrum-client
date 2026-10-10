@@ -64,6 +64,14 @@ export interface PublicProfileResponse {
   canViewPosts: boolean;
 }
 
+export interface FollowUserSummary {
+  _id: string;
+  name: string;
+  nickname: string;
+  avatarUrl?: string;
+  isFollowing: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -92,6 +100,14 @@ export class UserService {
     return this.http.patch<{ user: LoggedUser; isFollowing: boolean }>(`${this.apiUrl}/${userId}/${follow ? 'follow' : 'unfollow'}/${targetId}`, {}).pipe(
       tap((response) => this.updateSessionUser(response.user)),
     );
+  }
+
+  getConnections(userId: string, type: 'followers' | 'following'): Observable<FollowUserSummary[]> {
+    return this.http.get<FollowUserSummary[]>(API_BASE_URL + '/follows/' + userId + '/' + type);
+  }
+
+  removeFollower(userId: string): Observable<MessageResponse> {
+    return this.http.delete<MessageResponse>(API_BASE_URL + '/follows/me/followers/' + userId);
   }
 
   updateAccount(patch: { name?: string; nickname?: string }): Observable<LoggedUser> {

@@ -101,8 +101,8 @@
         </div>
 
         <div class="profile-header__stats">
-          <span>{{ 'Seguindo' | translate }} <strong>{{ followingCount }}</strong></span>
-          <span>{{ 'Seguidores' | translate }} <strong>{{ followersCount }}</strong></span>
+          <button type="button" (click)="connections.set('following')">{{ 'Seguindo' | translate }} <strong>{{ followingCount }}</strong></button>
+          <button type="button" (click)="connections.set('followers')">{{ 'Seguidores' | translate }} <strong>{{ followersCount }}</strong></button>
         </div>
       </div>
     </div>
@@ -248,3 +248,9 @@
     />
   }
 </app-social-shell>
+
+@if (connections(); as type) {
+  @if (publicProfile(); as profile) {
+    <app-follow-list [userId]="profile._id" [type]="type" [own]="isOwnProfile()" (closed)="connections.set(null)" (changed)="refreshFollowCounts()" />
+  }
+}
