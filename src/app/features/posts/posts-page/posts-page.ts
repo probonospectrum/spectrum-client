@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { SettingsService } from '../../../core/services/account/settings.service';
 import {
@@ -222,9 +223,18 @@ export class PostsPage implements OnInit {
     });
   }
 
+  readonly repostPendingIds = signal(new Set<string>());
+
   toggleRepost(post: SpectrumPost): void {
-    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (result) => { this.refreshPosts(); this.feedAlert.set({ type: 'success', title: result.reposted ? 'Repost realizado' : 'Repost removido', message: result.reposted ? 'A ocorrência foi adicionada ao seu perfil.' : 'O repost foi removido do seu perfil.' }); },
+    if (this.repostPendingIds().has(post.id)) return;
+    this.repostPendingIds.update(ids => new Set([...ids, post.id]));
+    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+      this.repostPendingIds.update(ids => { const next = new Set(ids); next.delete(post.id); return next; });
+    })).subscribe({
+      next: (result) => { this.allPosts.update(posts => {
+          posts.forEach(item => { if ((item.originalPostId || item.id) === (post.originalPostId || post.id)) { item.reposts = result.post.reposts; item.reposted = result.reposted; } });
+          return [...posts];
+        }); this.feedAlert.set({ type: 'success', title: result.reposted ? 'Repost realizado' : 'Repost removido', message: result.reposted ? 'A ocorrência foi adicionada ao seu perfil.' : 'O repost foi removido do seu perfil.' }); },
       error: () => this.feedAlert.set({ type: 'error', title: 'Não foi possível repostar', message: 'Tente novamente em instantes.' }),
     });
   }

@@ -56,6 +56,7 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() report = new EventEmitter<SpectrumPost>();
   @Output() edit = new EventEmitter<SpectrumPost>();
   @Output() remove = new EventEmitter<SpectrumPost>();
+  @Input() repostPending = false;
   @Output() repost = new EventEmitter<SpectrumPost>();
   @Output() hideAuthor = new EventEmitter<SpectrumPost>();
   @Output() notInterested = new EventEmitter<SpectrumPost>();

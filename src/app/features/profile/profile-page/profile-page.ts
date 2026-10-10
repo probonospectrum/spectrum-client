@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EMPTY, catchError, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, finalize, map, of, switchMap, tap } from 'rxjs';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, PublicProfileResponse, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
@@ -37,7 +37,7 @@ export class ProfilePage implements OnInit {
   readonly user: LoggedUser | null = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
 
-  reposts = this.postService.getUserReposts(this.user);
+  get reposts(): SpectrumPost[] { return this.authorPosts().filter(post => Boolean(post.originalPostId)); }
   activeTab: 'posts' | 'reposts' | 'saved' = 'posts';
   profileAlert = signal<ProfileAlert | null>(null);
   private readonly hiddenPostIds = new Set<string>();
@@ -234,9 +234,32 @@ export class ProfilePage implements OnInit {
     void this.router.navigateByUrl('/login');
   }
 
+  readonly repostPendingIds = signal(new Set<string>());
+
   toggleRepost(post: SpectrumPost): void {
-    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.onPostUpdated(),
+    if (this.repostPendingIds().has(post.id)) return;
+    this.repostPendingIds.update(ids => new Set([...ids, post.id]));
+    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+      this.repostPendingIds.update(ids => { const next = new Set(ids); next.delete(post.id); return next; });
+    })).subscribe({
+      next: result => { this.authorPosts.update(posts => {
+          posts.forEach(item => { if ((item.originalPostId || item.id) === (post.originalPostId || post.id)) { item.reposts = result.post.reposts; item.reposted = result.reposted; } });
+          return [...posts];
+        });
+          if (this.isOwnProfile() && !result.reposted && post.originalPostId) this.authorPosts.update(posts => posts.filter(item => item.id !== post.id));
+          const profile = this.publicProfile();
+          if (profile && this.isOwnProfile()) {
+            this.postService.getAuthorPosts(profile, this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              next: posts => {
+                if (this.publicProfile()?._id !== profile._id) return;
+                const existing = new Map(this.authorPosts().map(item => [item.id, item]));
+                this.authorPosts.set(posts.map(item => existing.get(item.id) ?? item));
+              },
+              error: () => this.profileAlert.set({ type: 'error', title: 'Repost salvo', message: 'Não foi possível atualizar a lista do perfil. Recarregue a página.' }),
+            });
+          }
+          this.profileAlert.set({ type: 'success', title: result.reposted ? 'Repost realizado' : 'Repost removido', message: result.reposted ? 'A ocorrência foi adicionada ao seu perfil.' : 'O repost foi removido do seu perfil.' });
+        },
       error: () => this.profileAlert.set({ type: 'error', title: 'Não foi possível repostar', message: 'Tente novamente em instantes.' }),
     });
   }
@@ -275,7 +298,6 @@ export class ProfilePage implements OnInit {
   }
 
   onPostUpdated(): void {
-    this.reposts = this.postService.getUserReposts(this.user);
     this.loadProfile(this.nickname).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ profile, posts }) => { this.applyProfile(profile); this.authorPosts.set(posts); });
     this.profileAlert.set({
       type: 'success',

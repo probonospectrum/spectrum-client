@@ -17,6 +17,41 @@ describe('Occurrence feed API', () => {
   });
   afterEach(() => http.verify());
 
+  it('updates only repost metadata and preserves other interactions after repost and undo', () => {
+    const id = '66f1c0de0000000000000001';
+    const post = { id, likes: 8, dislikes: 2, liked: true, disliked: false, saved: true, comments: 3,
+      reposts: 4, reposted: false, history: [{ id: 'history' }], evidences: [{ id: 'evidence' }] } as unknown as SpectrumPost;
+    const user = { _id: 'actor' } as LoggedUser;
+    for (const [reposted, count] of [[true, 5], [false, 4]] as const) {
+      let result: any;
+      posts.toggleServerRepost(post, user).subscribe(value => result = value);
+      http.expectOne(API_BASE_URL + '/post/' + id + '/repost/toggle').flush({
+        post: { _id: id, likeCount: 0, unlikeCount: 0 }, reposted, repostCount: count,
+      });
+      expect(result.post).toBe(post);
+      expect(post).toMatchObject({ reposts: count, reposted, likes: 8, dislikes: 2, liked: true, saved: true, comments: 3 });
+      expect(post.history).toEqual([{ id: 'history' }]);
+      expect(post.evidences).toEqual([{ id: 'evidence' }]);
+    }
+  });
+
+  it('restores server repost state after reload without counting obsolete local reposts', () => {
+    const id = '66f1c0de0000000000000001';
+    localStorage.setItem('spectrum-reposts', JSON.stringify([{ userId: 'actor', originalPostId: id }]));
+    let loaded: SpectrumPost | undefined;
+    posts.getFeed({ _id: 'actor' } as LoggedUser).subscribe(page => loaded = page.data[0]);
+    http.expectOne(r => r.url === API_BASE_URL + '/feed').flush({ data: [{ _id: id, text: 'Post', repostCount: 7, reposted: false }], hasMore: false, nextCursor: null });
+    expect(loaded?.reposts).toBe(7);
+    expect(loaded?.reposted).toBe(false);
+  });
+
+  it('preserves interactions and repost state when repost persistence fails', () => {
+    const post = { id: '66f1c0de0000000000000001', reposts: 2, reposted: false, liked: true, saved: true } as SpectrumPost;
+    posts.toggleServerRepost(post, null).subscribe({ error: () => {} });
+    http.expectOne(API_BASE_URL + '/post/' + post.id + '/repost/toggle').flush({}, { status: 500, statusText: 'Error' });
+    expect(post).toMatchObject({ reposts: 2, reposted: false, liked: true, saved: true });
+  });
+
   it('persists reactions before updating counts and does not add the local reaction twice', () => {
     const id = '66f1c0de0000000000000001';
     const post = { id, likes: 4, dislikes: 1, liked: false, disliked: false, evidences: [], history: [], tags: [] } as unknown as SpectrumPost;

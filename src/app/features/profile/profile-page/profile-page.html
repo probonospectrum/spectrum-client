@@ -164,6 +164,7 @@
         <app-post-card
           [post]="post"
           [currentUser]="user"
+          [repostPending]="repostPendingIds().has(post.id)"
           (repost)="toggleRepost($event)"
           (edit)="socialShell.openEditPost($event)"
           (remove)="deletePost($event)"
@@ -185,6 +186,7 @@
         <app-post-card
           [post]="post"
           [currentUser]="user"
+          [repostPending]="repostPendingIds().has(post.id)"
           (repost)="toggleRepost($event)"
           (edit)="socialShell.openEditPost($event)"
           (remove)="deletePost($event)"
@@ -206,6 +208,7 @@
         <app-post-card
           [post]="post"
           [currentUser]="user"
+          [repostPending]="repostPendingIds().has(post.id)"
           (repost)="toggleRepost($event)"
           (edit)="socialShell.openEditPost($event)"
           (remove)="deletePost($event)"
