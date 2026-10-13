@@ -118,7 +118,10 @@ describe('PostCard media and gallery layout', () => {
     await fixture.whenStable();
     expect(component.post.liked).toBe(false);
     expect(component.post.likes).toBe(5);
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Não foi possível salvar');
+    const modal = fixture.nativeElement.querySelector('[role="alertdialog"]');
+    expect(modal.textContent).toContain('Não foi possível salvar');
+    expect(modal.closest('.post-card')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.post-card [role="alert"]')).toBeNull();
     expect(component.reactionPending).toBe(false);
   });
 

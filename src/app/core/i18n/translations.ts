@@ -894,6 +894,7 @@ Use apenas letras minúsculas, números, ponto (.) ou underline (_), sem espaço
 Curtiu seu comentário.|Liked your comment.|Le dio me gusta a tu comentario.
 Curtida no comentário|Comment like|Me gusta en el comentario
 Não foi possível salvar a reação. Tente novamente.|Could not save the reaction. Try again.|No se pudo guardar la reacción. Inténtalo de nuevo.
+Não foi possível salvar|Could not save|No se pudo guardar
 `;
 export const TRANSLATIONS: ReadonlyMap<string, readonly [string, string]> = new Map(
   rows.trim().split('\n').filter(Boolean).map((row) => {
