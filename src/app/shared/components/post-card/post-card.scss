@@ -701,7 +701,7 @@
 .post-card__importance { font-size: 10px; border-radius: 6px; }
 .post-card__title { font-size: 21px; line-height: 1.35; font-weight: 600; letter-spacing: -.025em; }
 .post-card__copy { color: var(--spectrum-text-secondary); line-height: 1.8; font-size: 13px; }
-.post-card__avatar { width: 42px; height: 42px; border-radius: 14px; background: var(--spectrum-accent-soft); border: 0; font-size: 16px; }
+.post-card__avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--spectrum-accent-soft); border: 0; font-size: 16px; }
 .post-card__author strong { font-size: 13px; font-weight: 600; }
 .post-card__author-meta { font-size: 11px; }
 .post-card__evidence-image { width: 100%; max-height: 340px; object-fit: cover; border-radius: 12px; }

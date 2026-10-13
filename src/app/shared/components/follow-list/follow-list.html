@@ -1,5 +1,5 @@
 <dialog #dialog aria-labelledby="follow-title" (cancel)="$event.preventDefault(); closed.emit()" (click)="backdrop($event)">
-  <header><h2 id="follow-title">{{ type() === 'followers' ? 'Seguidores' : 'Seguindo' }}</h2><button type="button" aria-label="Fechar lista" (click)="closed.emit()">×</button></header>
+  <header><h2 id="follow-title">{{ type() === 'followers' ? 'Seguidores' : 'Seguindo' }}</h2><button class="close-button" type="button" aria-label="Fechar lista" (click)="closed.emit()"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></header>
   <input type="search" aria-label="Pesquisar usuários" placeholder="Pesquisar" [value]="search()" (input)="search.set($any($event.target).value)" />
   @if (error()) { <p role="alert">{{ error() }}</p><button type="button" (click)="load()" [disabled]="loading() || !!saving()">Tentar novamente</button> }
   <div class="users" [attr.aria-busy]="loading()">
