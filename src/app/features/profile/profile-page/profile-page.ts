@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EMPTY, catchError, finalize, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, finalize, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, PublicProfileResponse, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
@@ -75,8 +75,11 @@ export class ProfilePage implements OnInit {
 
   private loadProfile(nickname: string) {
     return this.userService.getPublicProfile(nickname).pipe(
-      switchMap((profile) => (profile.canViewPosts ? this.postService.getAuthorPosts(profile, this.user) : of([])).pipe(
-        map((posts) => ({ profile, posts })),
+      switchMap((profile) => forkJoin({
+        posts: profile.canViewPosts ? this.postService.getAuthorPosts(profile, this.user) : of([]),
+        saved: profile._id === this.user?._id ? this.postService.loadSavedPosts(this.user) : of([]),
+      }).pipe(
+        map(({ posts }) => ({ profile, posts })),
       )),
       catchError(() => { this.profileLoading.set(false); this.profileError.set('Não foi possível carregar este perfil.'); return EMPTY; }),
     );

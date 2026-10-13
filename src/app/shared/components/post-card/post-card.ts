@@ -27,10 +27,11 @@ import { LoggedUser } from '../../../core/services/user/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { LightboxMediaItem, MediaLightbox } from '../media-lightbox/media-lightbox';
+import { AlertPopup } from '../alert-popup/alert-popup';
 
 @Component({
   selector: 'app-post-card',
-  imports: [LocalizedDatePipe, TranslatePipe, UserAvatar, CommonModule, CommentSection, MediaLightbox],
+  imports: [AlertPopup, LocalizedDatePipe, TranslatePipe, UserAvatar, CommonModule, CommentSection, MediaLightbox],
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })
@@ -40,9 +41,10 @@ export class PostCard implements OnChanges, OnDestroy {
   private readonly changeDetector = inject(ChangeDetectorRef);
   reactionPending = false;
   reactionError = '';
+  savedPending = false;
 
   private saveReaction(reaction: 'LIKE' | 'UNLIKE' | null): void {
-    if (this.reactionPending || !this.currentUser) return;
+    if (this.reactionPending || this.savedPending || !this.currentUser) return;
     this.reactionPending = true;
     this.reactionError = '';
     this.postService.setPostReaction(this.post, this.currentUser, reaction)
@@ -260,17 +262,15 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleSaved(): void {
-    const previousPost = this.post;
-    this.post = {
-      ...this.post,
-      saved: !this.post.saved,
-    };
-
-    try {
-      this.post = this.postService.togglePostSaved(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
-    }
+    if (this.savedPending || this.reactionPending || !this.currentUser) return;
+    this.savedPending = true;
+    this.reactionError = '';
+    this.postService.setPostSaved(this.post, this.currentUser, !this.post.saved)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+        this.savedPending = false;
+        this.changeDetector.markForCheck();
+      })).subscribe({ next: post => this.post = post,
+        error: () => this.reactionError = 'Não foi possível salvar a alteração. Tente novamente.' });
   }
 
   toggleComments(): void {
