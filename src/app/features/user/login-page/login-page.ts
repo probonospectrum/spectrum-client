@@ -428,6 +428,10 @@ export class LoginPage implements OnInit {
       return fallback;
     }
 
+    if (error.status === 0) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão e se a API está disponível.';
+    }
+
     const apiMessage = error.error?.message;
 
     if (Array.isArray(apiMessage)) {

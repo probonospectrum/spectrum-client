@@ -78,4 +78,67 @@ describe('Occurrence lifecycle', () => {
     expect(service.findPostById(post.id)?.status).toBe('RESOLUCAO_INFORMADA');
   });
 
+  it('loads the public agency catalog without exposing its delivery contacts', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const result = firstValueFrom(service.getResponsibleAgencies());
+    const request = http.expectOne(`${API_BASE_URL}/post/agencies`);
+    expect(request.request.method).toBe('GET');
+    request.flush([{ _id: '66f1c0de0000000000000002', name: 'Secretaria de Obras', stateCode: 'SP' }]);
+
+    await expect(result).resolves.toEqual([
+      { id: '66f1c0de0000000000000002', name: 'Secretaria de Obras', stateCode: 'SP' },
+    ]);
+  });
+
+  it('runs the mock suggestion and author selection locally and persists the choice', async () => {
+    const catalog = await firstValueFrom(service.getResponsibleAgencies('mock-ana-1'));
+    expect(catalog).toHaveLength(2);
+    let post = await firstValueFrom(service.getOccurrence('mock-ana-1', citizen));
+    expect(post.createdBy).toBe(citizen._id);
+    expect(post.history).toHaveLength(1);
+    post = await firstValueFrom(service.suggestResponsibleAgency(post, citizen, catalog[1]));
+    expect(post.history).toHaveLength(2);
+    expect(() => service.acceptAgencySuggestion(post, moderator, catalog[1].id!)).toThrow();
+    post = await firstValueFrom(service.acceptAgencySuggestion(post, citizen, catalog[1].id!));
+    expect(post.responsibleAgency?.id).toBe(catalog[1].id);
+    expect(post.forwardingHistory).toEqual([]);
+    expect(post.status).toBe('ABERTA');
+    expect((await firstValueFrom(service.getOccurrence(post.id, citizen))).responsibleAgency?.id).toBe(catalog[1].id);
+    expect(post.history.at(-1)?.metadata?.['simulation']).toBe(true);
+  });
+
+  it('accepts a suggested agency through the backend forwarding endpoint', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const post = { ...create(), id: '66f1c0de0000000000000001' };
+    const agencyId = '66f1c0de0000000000000002';
+    const result = firstValueFrom(service.acceptAgencySuggestion(post, citizen, agencyId));
+    const request = http.expectOne(`${API_BASE_URL}/post/${post.id}/agency/suggestion/accept`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ agencyId });
+    request.flush({
+      _id: post.id,
+      text: post.content,
+      title: post.title,
+      description: post.content,
+      category: post.category,
+      importance: post.importance,
+      status: 'ENCAMINHADA',
+      location: post.location,
+      responsibleAgency: { id: agencyId, name: 'Secretaria de Obras' },
+      evidences: [],
+      forwardingHistory: [],
+      confirmedByIds: [],
+      history: [],
+      createdBy: citizen._id,
+      createdAt: post.createdAt,
+      updatedAt: post.createdAt,
+    });
+
+    await expect(result).resolves.toMatchObject({
+      id: post.id,
+      status: 'ENCAMINHADA',
+      responsibleAgency: { id: agencyId, name: 'Secretaria de Obras' },
+    });
+  });
+
 });

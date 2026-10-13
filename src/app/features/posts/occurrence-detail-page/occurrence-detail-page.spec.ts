@@ -18,6 +18,7 @@ describe('OccurrenceDetailPage actions', () => {
   const occurrenceId = '66f1c0de0000000000000001';
   const occurrence: SpectrumPost = {
     id: occurrenceId,
+    createdBy: 'USER',
     createdAt: '2026-09-01T12:00:00.000Z',
     authorName: 'Comunidade Demo',
     authorNickname: 'demo.comunidade',
@@ -65,6 +66,7 @@ describe('OccurrenceDetailPage actions', () => {
           useValue: {
             getOccurrence: () => of(occurrence),
             getOccurrenceHistory: () => of([]),
+            getResponsibleAgencies: () => of([]),
             getStatusLabel: (status: string) => status,
             getCategoryLabel: (category: string) => category,
             getImportanceLabel: (importance: string) => importance,
@@ -131,6 +133,49 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.occurrence-detail__action-group button').length).toBe(0);
   });
+
+  it('shows searchable agency suggestions and their authors only to the occurrence creator', () => {
+    actionsFor('USER');
+    fixture.componentInstance.historyEvents = [{
+      id: 'suggestion-1',
+      occurrenceId,
+      eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
+      actorId: 'community-member',
+      actorType: 'USER',
+      actorOrigin: 'Ana da Silva',
+      occurredAt: '2026-09-02T12:00:00.000Z',
+      createdAt: '2026-09-02T12:00:00.000Z',
+      metadata: { agency: { id: '66f1c0de0000000000000002', name: 'Secretaria de Obras' } },
+    }];
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Secretaria de Obras');
+    expect(fixture.nativeElement.textContent).toContain('Ana da Silva');
+    expect(fixture.nativeElement.textContent).toContain('Escolher e encaminhar');
+    expect(fixture.componentInstance.canAcceptAgencySuggestion(fixture.componentInstance.agencySuggestions[0])).toBe(true);
+
+    fixture.componentInstance.occurrence = { ...occurrence, createdAt: new Date().toISOString() };
+    expect(fixture.componentInstance.canAcceptAgencySuggestion(fixture.componentInstance.agencySuggestions[0])).toBe(false);
+
+    for (const status of ['ENCAMINHADA', 'EM_ANALISE', 'RESOLUCAO_INFORMADA', 'RESOLVIDA', 'CONTESTADA', 'REABERTA'] as const) {
+      fixture.componentInstance.occurrence = { ...occurrence, status };
+      expect(fixture.componentInstance.canAcceptAgencySuggestion(fixture.componentInstance.agencySuggestions[0])).toBe(false);
+    }
+
+    fixture.componentInstance.occurrence = occurrence;
+    fixture.componentInstance.agencySuggestionSearch = 'ana';
+    expect(fixture.componentInstance.filteredAgencySuggestions).toHaveLength(1);
+    fixture.componentInstance.agencySuggestionSearch = 'trânsito';
+    expect(fixture.componentInstance.filteredAgencySuggestions).toHaveLength(0);
+
+    fixture.componentInstance.occurrence = { ...occurrence, createdBy: 'another-user' };
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-labelledby="agency-suggestions-title"]')).toBeNull();
+    expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
+  });
+
   it('keeps confirmation visible when an authorized agency only has resolution review available', () => {
     actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
     fixture.componentInstance.occurrence = { ...occurrence, status: 'RESOLUCAO_INFORMADA' };
@@ -157,6 +202,7 @@ describe('OccurrenceDetailPage actions', () => {
     const values = Array.from(fixture.nativeElement.querySelectorAll('select[name="forwardingChannel"] option'))
       .map(option => (option as HTMLOptionElement).value);
     expect(values).toEqual(['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER']);
+    fixture.componentInstance.agencyId = 'agency-demo';
     fixture.componentInstance.agencyName = 'Secretaria de Obras';
     fixture.componentInstance.forwardingContent = 'Solicitação registrada no portal municipal.';
     fixture.componentInstance.submitForwarding();
@@ -173,6 +219,48 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.canReopen).toBe(true);
     fixture.componentInstance.occurrence = { ...occurrence, status: 'REABERTA' };
     expect(fixture.componentInstance.formatStatus()).toBe('Aberta');
+  });
+
+  it('keeps an empty suggestions section visible to the author and permits naming an uncatalogued agency', () => {
+    actionsFor('USER');
+    expect(fixture.nativeElement.textContent).toContain('Ainda não há sugestões');
+    fixture.componentInstance.openPanel('agency');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('input[name="agencyName"]')).not.toBeNull();
+    const service = TestBed.inject(PostService);
+    service.suggestResponsibleAgency = vi.fn(() => of(occurrence));
+    fixture.componentInstance.agencyName = 'Secretaria Municipal de Obras';
+    fixture.componentInstance.submitAgency();
+    expect(service.suggestResponsibleAgency).toHaveBeenCalledWith(occurrence, user, expect.objectContaining({ name: 'Secretaria Municipal de Obras', id: undefined }));
+  });
+
+  it('ranks grouped agencies by distinct participants rather than repeated submissions', () => {
+    actionsFor('USER');
+    const events = [
+      ['Obras', 'ana'], [' Obras ', 'ana'], ['Meio Ambiente', 'ana'], ['Meio Ambiente', 'bia'],
+    ];
+    fixture.componentInstance.historyEvents = events.map(([name, actorId], index) => ({
+      id: String(index), occurrenceId, eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
+      actorId, actorName: actorId, actorType: 'USER', occurredAt: '2026-09-02T12:00:00.000Z',
+      metadata: { agency: { name } },
+    }));
+    const suggestions = fixture.componentInstance.agencySuggestions;
+    expect(suggestions).toHaveLength(2);
+    expect(suggestions[0].agency.name).toBe('Meio Ambiente');
+    expect(suggestions.map(suggestion => suggestion.supportCount)).toEqual([2, 1]);
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const sortButton = fixture.nativeElement.querySelector('.occurrence-detail__sort-button') as HTMLButtonElement;
+    expect(sortButton.textContent).toContain('Mais sugeridos');
+    sortButton.click();
+    fixture.detectChanges();
+    expect(sortButton.textContent).toContain('Menos sugeridos');
+    expect(fixture.componentInstance.filteredAgencySuggestions.map(item => item.supportCount)).toEqual([1, 2]);
+    sortButton.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.filteredAgencySuggestions.map(item => item.supportCount)).toEqual([2, 1]);
+    expect(fixture.componentInstance.canAcceptAgencySuggestion(suggestions[0])).toBe(false);
   });
 
 });

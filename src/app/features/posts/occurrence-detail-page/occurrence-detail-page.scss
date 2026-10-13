@@ -246,6 +246,103 @@
   resize: vertical;
 }
 
+.occurrence-detail__suggestion-intro {
+  margin: 0;
+  color: var(--spectrum-text-secondary);
+  font: 450 14px/1.6 var(--spectrum-font);
+}
+
+.occurrence-detail__suggestion-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.occurrence-detail__search {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 280px;
+  max-width: 560px;
+  min-width: 0;
+  color: var(--spectrum-text-secondary);
+  font: 500 13px/1.4 var(--spectrum-font);
+}
+
+.occurrence-detail__search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-soft);
+  color: var(--spectrum-text-muted);
+}
+
+.occurrence-detail__search-field:focus-within {
+  border-color: var(--spectrum-primary-600);
+  outline: 2px solid var(--spectrum-primary-600);
+  outline-offset: 2px;
+}
+
+.occurrence-detail__search-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--spectrum-text);
+  font: 450 14px/1.4 var(--spectrum-font);
+}
+
+.occurrence-detail__search-field input::placeholder { color: var(--spectrum-text-muted); }
+.occurrence-detail__private-label { display: inline-flex; align-items: center; gap: 6px; }
+.occurrence-detail__private-label .material-symbols-outlined { font-size: 16px; }
+.occurrence-detail__suggestion-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
+.occurrence-detail__suggestion-title h3 { margin: 0; }
+.occurrence-detail__popular-badge { border-radius: 999px; padding: 5px 9px; background: var(--spectrum-accent-soft); color: var(--spectrum-text); font: 600 11px/1.3 var(--spectrum-font); }
+.occurrence-detail__selected-badge { display: inline-flex; align-items: center; gap: 6px; color: var(--spectrum-text); font: 600 13px/1.4 var(--spectrum-font); }
+.occurrence-detail__selected-badge .material-symbols-outlined { font-size: 20px; }
+
+.occurrence-detail__suggestion-list {
+  display: grid;
+  gap: 10px;
+}
+
+.occurrence-detail__suggestion {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  padding: 18px;
+  background: var(--spectrum-surface-soft);
+}
+
+.occurrence-detail__suggestion h3 {
+  margin: 0 0 5px;
+  color: var(--spectrum-text);
+  font: 600 15px/1.3 var(--spectrum-font);
+}
+
+.occurrence-detail__suggestion p {
+  margin: 0 0 5px;
+  color: var(--spectrum-text-secondary);
+  font: 450 13px/1.4 var(--spectrum-font);
+}
+
+.occurrence-detail__suggestion time,
+.occurrence-detail__suggestion-status {
+  color: var(--spectrum-text-muted);
+  font: 500 12px/1.3 var(--spectrum-font);
+}
+
 .occurrence-detail__evidence-list,
 .occurrence-detail__forwarding-list {
   display: grid;
@@ -474,6 +571,7 @@
   .occurrence-detail__hero,
   .occurrence-detail__grid,
   .occurrence-detail__form,
+  .occurrence-detail__suggestion,
   .occurrence-detail__evidence-list,
   .occurrence-detail__forwarding-list {
     grid-template-columns: 1fr;
@@ -676,4 +774,72 @@
   .occurrence-detail__steps li { min-width: 0; padding: 10px 6px; overflow-wrap: anywhere; }
   .occurrence-detail__back { min-height: 44px; }
   .occurrence-detail__evidence strong { white-space: normal; }
+}
+
+.occurrence-detail__suggestion > div { min-width: 0; }
+.occurrence-detail__suggestion h3, .occurrence-detail__participants { overflow-wrap: anywhere; }
+.occurrence-detail__suggestion button { flex-shrink: 0; }
+.occurrence-detail__suggestion .occurrence-detail__support-count { font-weight: 600; margin-bottom: 6px; }
+@media (max-width: 760px) {
+  .occurrence-detail__suggestion { flex-direction: column; align-items: stretch; }
+  .occurrence-detail__search { max-width: none; flex-basis: 100%; }
+}
+
+.occurrence-detail__suggestions {
+  gap: 18px;
+}
+
+.occurrence-detail__suggestions .occurrence-detail__section-head {
+  flex-wrap: wrap;
+}
+
+.occurrence-detail__suggestions .occurrence-detail__private-label {
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.occurrence-detail__suggestion-title h3 {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.occurrence-detail__suggestion .occurrence-detail__participants {
+  color: var(--spectrum-text-muted);
+  margin-bottom: 8px;
+}
+
+.occurrence-detail__suggestion time {
+  font-size: 11px;
+}
+
+.occurrence-detail__suggestion button {
+  min-height: 40px;
+  padding-inline: 18px;
+}
+
+.occurrence-detail .occurrence-detail__sort-button {
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-soft);
+  color: var(--spectrum-text-secondary);
+  font: 500 13px/1.4 var(--spectrum-font);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.occurrence-detail .occurrence-detail__sort-button:hover {
+  border-color: var(--spectrum-primary-600);
+  background: var(--spectrum-surface-muted);
+}
+
+.occurrence-detail .occurrence-detail__sort-button:focus-visible {
+  outline: 2px solid var(--spectrum-primary-600);
+  outline-offset: 2px;
+}
+
+.occurrence-detail__sort-button .material-symbols-outlined { font-size: 18px; }
+@media (max-width: 760px) {
+  .occurrence-detail .occurrence-detail__sort-button { width: auto; margin-left: auto; }
 }
