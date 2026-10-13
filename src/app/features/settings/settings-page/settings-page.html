@@ -17,6 +17,14 @@
         </span>
       </button>
 
+      <button class="settings-row settings-row--button" type="button" (click)="openDialog('cover')">
+        <span class="settings-row__content">
+          <strong>{{ 'Capa do perfil' | translate }}</strong>
+          <small>{{ 'Alterar capa' | translate }}</small>
+        </span>
+        <img class="settings-cover-thumbnail" [src]="coverUrl" alt="" />
+      </button>
+
       <button class="settings-row settings-row--button" type="button" (click)="openDialog('name')">
         <span class="settings-row__content">
           <strong>{{ 'Alterar nome' | translate }}</strong>
@@ -289,16 +297,16 @@
     </app-settings-dialog>
   }
 
-  @if (activeDialog === 'avatar') {
-    <app-settings-dialog [title]="'Foto de perfil' | translate" (closed)="closeDialog()">
+  @if (activeDialog === 'avatar' || activeDialog === 'cover') {
+    <app-settings-dialog [title]="(editingCover ? 'Capa do perfil' : 'Foto de perfil') | translate" (closed)="closeDialog()">
       <form class="settings-form" (ngSubmit)="saveAvatar()">
         @if (avatarDraft()) {
-          <div class="settings-avatar-crop" tabindex="0" role="group"
+          <div class="settings-avatar-crop" [class.settings-avatar-crop--cover]="editingCover" tabindex="0" role="group"
             [attr.aria-label]="'Enquadramento da foto' | translate" aria-describedby="avatar-crop-hint"
             (pointerdown)="startAvatarDrag($event)" (pointermove)="moveAvatarDrag($event)"
             (pointerup)="endAvatarDrag($event)" (pointercancel)="endAvatarDrag($event)"
             (lostpointercapture)="endAvatarDrag($event)" (keydown)="moveAvatarWithKeyboard($event)">
-            <img #avatarImage [src]="avatarDraft()" [alt]="'Prévia da foto de perfil' | translate"
+            <img #avatarImage [src]="avatarDraft()" [alt]="(editingCover ? 'Prévia da capa' : 'Prévia da foto de perfil') | translate"
               draggable="false"
               [style.width.%]="avatarWidth * avatarZoom * 100"
               [style.height.%]="avatarHeight * avatarZoom * 100"
@@ -306,11 +314,11 @@
               [style.top.%]="50 + avatarOffsetY * 100"
               (load)="onAvatarLoaded()"
               (error)="onAvatarPreviewError()" />
-            <span class="settings-avatar-crop__circle" aria-hidden="true"></span>
+            @if (!editingCover) { <span class="settings-avatar-crop__circle" aria-hidden="true"></span> }
             <span class="settings-avatar-crop__grid" aria-hidden="true"></span>
           </div>
           <p id="avatar-crop-hint" class="settings-form__hint">
-            {{ 'Arraste a foto para enquadrar. O círculo mostra como ela ficará no perfil. Você também pode usar as setas do teclado.' | translate }}
+            {{ (editingCover ? 'Arraste a imagem para enquadrar a capa. Você também pode usar as setas do teclado.' : 'Arraste a foto para enquadrar. O círculo mostra como ela ficará no perfil. Você também pode usar as setas do teclado.') | translate }}
           </p>
           <div class="settings-avatar-actions">
             <button class="settings-avatar-action" type="button" [attr.aria-label]="'Diminuir zoom' | translate"
@@ -323,6 +331,8 @@
               <span class="material-symbols-outlined" aria-hidden="true">add</span>
             </button>
           </div>
+        } @else if (editingCover) {
+          <img class="settings-cover-preview" [src]="coverUrl" [alt]="'Prévia da capa' | translate" />
         } @else {
           <span class="settings-row__avatar settings-avatar-preview">
             <app-user-avatar [user]="user" [name]="user?.name || 'Spectrum'" />
@@ -335,13 +345,13 @@
           <button class="settings-avatar-action" type="button" aria-describedby="avatar-hint"
             [disabled]="avatarSaving()" (click)="avatarInput.click()">
             <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
-            {{ 'Selecionar foto' | translate }}
+            {{ (editingCover ? 'Selecionar capa' : 'Selecionar foto') | translate }}
           </button>
-          @if (avatarUrl) {
+          @if (editingCover ? user?.coverUrl : avatarUrl) {
             <button class="settings-avatar-action" type="button"
               [disabled]="avatarSaving()" (click)="removeAvatar()">
               <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-              {{ 'Remover foto de perfil' | translate }}
+              {{ (editingCover ? 'Remover capa' : 'Remover foto de perfil') | translate }}
             </button>
           }
         </div>

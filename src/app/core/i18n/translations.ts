@@ -2,6 +2,16 @@
 export const normalizeText = (value: string): string => value.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const rows = `
 Conta|Account|Cuenta
+Capa do perfil|Profile cover|Portada del perfil
+Alterar capa|Change cover|Cambiar portada
+Selecionar capa|Select cover|Seleccionar portada
+Remover capa|Remove cover|Eliminar portada
+Prévia da capa|Cover preview|Vista previa de la portada
+Capa atualizada.|Cover updated.|Portada actualizada.
+Capa removida.|Cover removed.|Portada eliminada.
+Não foi possível salvar a capa. Tente novamente.|Could not save the cover. Try again.|No se pudo guardar la portada. Inténtalo de nuevo.
+Não foi possível remover a capa. Tente novamente.|Could not remove the cover. Try again.|No se pudo eliminar la portada. Inténtalo de nuevo.
+Arraste a imagem para enquadrar a capa. Você também pode usar as setas do teclado.|Drag the image to frame the cover. You can also use the arrow keys.|Arrastra la imagen para encuadrar la portada. También puedes usar las flechas del teclado.
 Foto de perfil|Profile photo|Foto de perfil
 Alterar foto|Change photo|Cambiar foto
 Adicionar foto|Add photo|Añadir foto

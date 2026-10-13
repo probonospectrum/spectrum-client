@@ -630,7 +630,7 @@
 }
 
 .post-card__actions button.post-card__action--active {
-  color: #2563eb;
+  color: var(--spectrum-primary-800);
 }
 
 .post-card__action--disliked {

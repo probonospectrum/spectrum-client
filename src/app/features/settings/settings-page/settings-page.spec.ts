@@ -234,7 +234,7 @@ describe('SettingsPage', () => {
       setPointerCapture: vi.fn(),
       hasPointerCapture: () => true,
       releasePointerCapture: vi.fn(),
-      getBoundingClientRect: () => ({ width: 320 }),
+      getBoundingClientRect: () => ({ width: 320, height: 320 }),
     };
     const pointer = (x: number, y: number) => ({
       pointerId: 1, button: 0, currentTarget: target,

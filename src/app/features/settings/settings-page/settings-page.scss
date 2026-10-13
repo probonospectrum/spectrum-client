@@ -175,6 +175,9 @@
 }
 
 .settings-avatar-crop:active { cursor: grabbing; }
+.settings-avatar-crop--cover { width: 100%; aspect-ratio: 3 / 1; border-radius: var(--spectrum-radius-sm); }
+.settings-cover-preview { width: 100%; aspect-ratio: 3 / 1; object-fit: cover; border-radius: var(--spectrum-radius-sm); }
+.settings-cover-thumbnail { width: 84px; height: 28px; object-fit: cover; border-radius: var(--spectrum-radius-sm); }
 
 .settings-avatar-crop:focus-visible {
   outline: 2px solid var(--spectrum-primary-600);

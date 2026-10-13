@@ -24,6 +24,7 @@ export interface MessageResponse {
 }
 
 export interface LoggedUser {
+  coverUrl?: string;
   _id: string;
   name: string;
   nickname: string;
@@ -51,6 +52,7 @@ export interface UpdateAvatarResponse extends MessageResponse {
 }
 
 export interface PublicProfileResponse {
+  coverUrl?: string;
   _id: string;
   name: string;
   nickname: string;
@@ -145,6 +147,21 @@ export class UserService {
         if (session?.user._id === userId) {
           this.saveSession({ ...session, user: { ...session.user, avatarUrl: response.avatarUrl } });
         }
+      }),
+    );
+  }
+
+  updateCover(cover?: Blob): Observable<{ coverUrl: string }> {
+    const userId = this.currentUser()?._id;
+    if (!userId) return throwError(() => new Error('Entre na sua conta para alterar a capa.'));
+    const form = new FormData();
+    if (cover) form.append('cover', cover, 'cover.jpg');
+    const url = `${this.apiUrl}/${userId}/cover`;
+    return (cover ? this.http.patch<{ coverUrl: string }>(url, form) : this.http.delete<{ coverUrl: string }>(url)).pipe(
+      timeout(60000),
+      tap(response => {
+        const session = this.session();
+        if (session?.user._id === userId) this.saveSession({ ...session, user: { ...session.user, coverUrl: response.coverUrl } });
       }),
     );
   }

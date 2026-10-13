@@ -136,9 +136,7 @@ export class ProfilePage implements OnInit {
   }
 
   get coverUrl(): string {
-    return (
-      '/Background.png'
-    );
+    return (this.isOwnProfile() ? this.user?.coverUrl : this.publicProfile()?.coverUrl) || '/Background.png';
   }
 
   get joinedDate(): string {
