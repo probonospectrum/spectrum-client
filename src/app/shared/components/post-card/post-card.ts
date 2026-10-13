@@ -14,6 +14,7 @@ import {
   OnDestroy,
   DestroyRef,
   Output,
+  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommentSection } from '../../../features/posts/comment-section/comment-section';
@@ -39,6 +40,7 @@ export class PostCard implements OnChanges, OnDestroy {
   readonly i18n = inject(I18nService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  readonly commentSection = viewChild(CommentSection);
   reactionPending = false;
   reactionError = '';
   savedPending = false;

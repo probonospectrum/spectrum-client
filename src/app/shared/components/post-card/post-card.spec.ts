@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { PostCard } from './post-card';
-import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
+import { PostService, SpectrumComment, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
 import { Subject } from 'rxjs';
 
@@ -67,6 +67,30 @@ describe('PostCard media and gallery layout', () => {
 
   it('should create post card component', () => {
     expect(component).toBeTruthy();
+  });
+
+  it.each(['report', 'delete'] as const)('opens the comment %s dialog outside the transformed card', async mode => {
+    const loaded = new Subject<SpectrumComment[]>();
+    vi.spyOn(TestBed.inject(PostService), 'loadComments').mockReturnValue(loaded);
+    component.currentUser = { _id: 'actor' } as LoggedUser;
+    fixture.nativeElement.querySelector('button[aria-label="Comentar publicacao"]').click();
+    await fixture.whenStable();
+    const comment = { id: 'comment', authorId: mode === 'delete' ? 'actor' : 'other', authorName: 'Ana', content: 'Comentário',
+      authorInitial: 'A', dateLabel: 'Hoje', likes: 0, dislikes: 0, liked: false, disliked: false } as SpectrumComment;
+    loaded.next([comment]);
+    loaded.complete();
+    await fixture.whenStable();
+    fixture.nativeElement.querySelector('.comment-section__more').click();
+    await fixture.whenStable();
+    const menuAction = [...fixture.nativeElement.querySelectorAll('[role="menuitem"]')].find((button: any) =>
+      button.textContent.includes(mode === 'report' ? 'Denunciar comentário' : 'Excluir comentário')) as HTMLButtonElement;
+    menuAction.click();
+    await fixture.whenStable();
+    const selector = mode === 'report' ? 'app-report-modal' : 'app-settings-dialog';
+    const modal = fixture.nativeElement.querySelector(selector) as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.closest('.post-card')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll(selector)).toHaveLength(1);
   });
 
   it('shows the original author avatar on an owned repost', () => {
