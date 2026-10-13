@@ -284,11 +284,16 @@
     <app-comment-section
       [postId]="post.originalPostId || post.id"
       [currentUser]="currentUser"
+      [renderDialogs]="false"
       (commentCountChanged)="onCommentCountChanged($event)"
     />
   }
 
 </article>
+
+@if (commentsOpen) {
+  <ng-container [ngTemplateOutlet]="commentSection()?.dialogs ?? null" />
+}
 
 @if (reactionError) {
   <app-alert-popup type="error" [title]="'Não foi possível salvar'" [message]="reactionError" (dismissed)="reactionError = ''" />
