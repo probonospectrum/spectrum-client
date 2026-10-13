@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -21,7 +22,6 @@ import {
   BrazilState,
   LocalityService,
 } from '../../../core/services/locality/locality.service';
-import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import {
   CreateOccurrenceEvidencePayload,
   OccurrenceCategory,
@@ -41,14 +41,13 @@ interface SelectedEvidence {
 
 @Component({
   selector: 'app-create-post-modal',
-  imports: [UserAvatar, CommonModule, FormsModule, LoadingIndicator],
+  imports: [TranslatePipe, UserAvatar, CommonModule, FormsModule, LoadingIndicator],
   templateUrl: './create-post-modal.html',
   styleUrl: './create-post-modal.scss',
 })
 export class CreatePostModal implements OnChanges {
   private readonly postService = inject(PostService);
   private readonly localityService = inject(LocalityService);
-  private readonly mockLoadingService = inject(MockLoadingService);
   private readonly destroyRef = inject(DestroyRef);
 
   @Input() user: LoggedUser | null = null;
@@ -289,9 +288,9 @@ export class CreatePostModal implements OnChanges {
     }
 
     return forkJoin(
-      this.selectedEvidences.map(({ file, type }) =>
+      this.selectedEvidences.map(({ file }) =>
         this.postService.uploadEvidence(file).pipe(
-          map((upload) => ({ type, url: upload.url, description: file.name })),
+          map((upload) => ({ type: upload.type, url: upload.url, description: file.name })),
         ),
       ),
     );
@@ -323,9 +322,9 @@ export class CreatePostModal implements OnChanges {
     };
 
     this.isPublishing.set(true);
-    this.mockLoadingService
-      .load(() => this.postService.updatePost(this.editingPost!.id, payload, this.user))
+    this.uploadEvidenceFiles()
       .pipe(
+        switchMap(evidences => this.postService.updateOccurrence(this.editingPost!, payload, this.user, evidences)),
         finalize(() => this.isPublishing.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )

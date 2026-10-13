@@ -1,16 +1,21 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import {
   Component,
   DestroyRef,
+  ElementRef,
   HostListener,
   OnInit,
+  afterNextRender,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 
-import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
+import { SettingsService } from '../../../core/services/account/settings.service';
 import {
   OccurrenceCategory,
   PostService,
@@ -36,7 +41,7 @@ interface FeedAlert {
 
 @Component({
   selector: 'app-posts-page',
-  imports: [
+  imports: [TranslatePipe,
     CommonModule,
     SocialShell,
     PostCard,
@@ -48,7 +53,7 @@ interface FeedAlert {
 })
 export class PostsPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
-  private readonly mockLoadingService = inject(MockLoadingService);
+  readonly settingsService = inject(SettingsService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
@@ -58,6 +63,10 @@ export class PostsPage implements OnInit {
 
   allPosts = signal<SpectrumPost[]>([]);
   feedLoading = signal(true);
+  feedError = signal('');
+  loadingMore = signal(false);
+  hasMore = signal(false);
+  private nextCursor: string | null = null;
   readonly selectedStage = signal<OccurrenceStage | 'Todas'>('Todas');
   readonly selectedCategory = signal<OccurrenceCategory | ''>('');
   readonly stages: Array<OccurrenceStage | 'Todas'> = ['Todas', 'Aberta', 'Em andamento', 'Fechada'];
@@ -82,9 +91,42 @@ export class PostsPage implements OnInit {
     this.selectedCategory.set('');
   }
 
+  private readonly categoryList = viewChild<ElementRef<HTMLElement>>('categoryList');
+  readonly canScrollCategoriesBack = signal(false);
+  readonly canScrollCategoriesForward = signal(false);
+  readonly loopCategories = signal(false);
+
+  constructor() {
+    afterNextRender(() => {
+      const list = this.categoryList()?.nativeElement;
+      if (!list) return;
+
+      const observer = new ResizeObserver(() => this.updateCategoryScroll(list));
+      observer.observe(list);
+      for (const category of Array.from(list.children)) observer.observe(category);
+      this.updateCategoryScroll(list);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
+
+  updateCategoryScroll(list: HTMLElement): void {
+    this.loopCategories.set(window.matchMedia('(max-width: 780px)').matches);
+    const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth);
+    this.canScrollCategoriesBack.set(list.scrollLeft > 1);
+    this.canScrollCategoriesForward.set(list.scrollLeft < maxScroll - 1);
+  }
+
   scrollCategories(list: HTMLElement, direction: -1 | 1): void {
-    list.scrollBy({
-      left: direction * list.clientWidth,
+    const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth);
+    let target = Math.max(0, Math.min(maxScroll, list.scrollLeft + direction * list.clientWidth));
+    if (this.loopCategories() && maxScroll > 1) {
+      if (direction === 1 && list.scrollLeft >= maxScroll - 1) target = 0;
+      if (direction === -1 && list.scrollLeft <= 1) target = maxScroll;
+    }
+    if (Math.abs(target - list.scrollLeft) <= 1) return;
+
+    list.scrollTo({
+      left: target,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
   }
@@ -175,56 +217,26 @@ export class PostsPage implements OnInit {
   }
 
   deletePost(post: SpectrumPost): void {
-    try {
-      this.postService.deletePost(post.id, this.user);
-
-      this.refreshPosts();
-
-      this.feedAlert.set({
-        type: 'success',
-        title: 'Publicacao excluida',
-        message: 'A publicacao foi removida do feed.',
-      });
-    } catch (error) {
-      this.feedAlert.set({
-        type: 'error',
-        title: 'Nao foi possivel excluir',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Tente novamente em instantes.',
-      });
-    }
+    this.postService.removeServerPost(post).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => { this.refreshPosts(); this.feedAlert.set({ type: 'success', title: 'Repost excluído', message: 'O repost foi removido.' }); },
+      error: () => this.feedAlert.set({ type: 'error', title: 'Não foi possível excluir', message: 'Ocorrências preservam seu histórico. Apenas reposts próprios podem ser excluídos.' }),
+    });
   }
 
+  readonly repostPendingIds = signal(new Set<string>());
+
   toggleRepost(post: SpectrumPost): void {
-    try {
-      const result = this.postService.toggleRepost(
-        post,
-        this.user,
-      );
-
-      this.refreshPosts();
-
-      this.feedAlert.set({
-        type: 'success',
-        title: result.reposted
-          ? 'Repost realizado'
-          : 'Repost removido',
-        message: result.reposted
-          ? 'A publicacao foi adicionada aos seus reposts.'
-          : 'A publicacao saiu da sua lista de reposts.',
-      });
-    } catch (error) {
-      this.feedAlert.set({
-        type: 'error',
-        title: 'Nao foi possivel repostar',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Tente novamente em instantes.',
-      });
-    }
+    if (this.repostPendingIds().has(post.id)) return;
+    this.repostPendingIds.update(ids => new Set([...ids, post.id]));
+    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+      this.repostPendingIds.update(ids => { const next = new Set(ids); next.delete(post.id); return next; });
+    })).subscribe({
+      next: (result) => { this.allPosts.update(posts => {
+          posts.forEach(item => { if ((item.originalPostId || item.id) === (post.originalPostId || post.id)) { item.reposts = result.post.reposts; item.reposted = result.reposted; } });
+          return [...posts];
+        }); this.feedAlert.set({ type: 'success', title: result.reposted ? 'Repost realizado' : 'Repost removido', message: result.reposted ? 'A ocorrência foi adicionada ao seu perfil.' : 'O repost foi removido do seu perfil.' }); },
+      error: () => this.feedAlert.set({ type: 'error', title: 'Não foi possível repostar', message: 'Tente novamente em instantes.' }),
+    });
   }
 
   hideAuthor(post: SpectrumPost): void {
@@ -291,15 +303,39 @@ export class PostsPage implements OnInit {
     });
   }
 
-  private refreshPosts(): void {
+  refreshPosts(): void {
     this.feedLoading.set(true);
-
-    this.mockLoadingService
-      .load(() => this.postService.getPosts(this.user))
+    this.feedError.set('');
+    this.nextCursor = null;
+    this.postService.getFeed(this.user)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((posts) => {
-        this.allPosts.set(posts);
-        this.feedLoading.set(false);
+      .subscribe({
+        next: (page) => {
+          this.allPosts.set(page.data);
+          this.nextCursor = page.nextCursor;
+          this.hasMore.set(page.hasMore);
+          this.feedLoading.set(false);
+        },
+        error: () => {
+          this.allPosts.set([]);
+          this.hasMore.set(false);
+          this.feedError.set('Não foi possível carregar as ocorrências. Tente novamente.');
+          this.feedLoading.set(false);
+        },
       });
+  }
+
+  loadMore(): void {
+    if (!this.nextCursor || this.loadingMore()) return;
+    this.loadingMore.set(true);
+    this.postService.getFeed(this.user, this.nextCursor).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (page) => {
+        this.allPosts.update((posts) => Array.from(new Map([...posts, ...page.data].map((post) => [post.id, post])).values()));
+        this.nextCursor = page.nextCursor;
+        this.hasMore.set(page.hasMore);
+        this.loadingMore.set(false);
+      },
+      error: () => { this.loadingMore.set(false); this.feedAlert.set({ type: 'error', title: 'Falha ao carregar', message: 'Tente carregar mais ocorrências novamente.' }); },
+    });
   }
 }

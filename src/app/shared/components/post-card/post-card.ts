@@ -1,14 +1,18 @@
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { LocalizedDatePipe, TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  ChangeDetectorRef,
   EventEmitter,
   HostListener,
   inject,
   Input,
   OnChanges,
   OnDestroy,
+  DestroyRef,
   Output,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -16,17 +20,39 @@ import { CommentSection } from '../../../features/posts/comment-section/comment-
 import {
   POST_EDIT_WINDOW_MS,
   PostService,
+  OccurrenceEvidence,
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
 import { LoggedUser } from '../../../core/services/user/user.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { LightboxMediaItem, MediaLightbox } from '../media-lightbox/media-lightbox';
 
 @Component({
   selector: 'app-post-card',
-  imports: [UserAvatar, CommonModule, CommentSection],
+  imports: [LocalizedDatePipe, TranslatePipe, UserAvatar, CommonModule, CommentSection, MediaLightbox],
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })
 export class PostCard implements OnChanges, OnDestroy {
+  readonly i18n = inject(I18nService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  reactionPending = false;
+  reactionError = '';
+
+  private saveReaction(reaction: 'LIKE' | 'UNLIKE' | null): void {
+    if (this.reactionPending || !this.currentUser) return;
+    this.reactionPending = true;
+    this.reactionError = '';
+    this.postService.setPostReaction(this.post, this.currentUser, reaction)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+        this.reactionPending = false;
+        this.changeDetector.markForCheck();
+      }))
+      .subscribe({ next: post => this.post = post,
+        error: () => this.reactionError = 'Não foi possível salvar sua reação. Tente novamente.' });
+  }
   private readonly postService = inject(PostService);
   private readonly router = inject(Router);
 
@@ -35,6 +61,7 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() report = new EventEmitter<SpectrumPost>();
   @Output() edit = new EventEmitter<SpectrumPost>();
   @Output() remove = new EventEmitter<SpectrumPost>();
+  @Input() repostPending = false;
   @Output() repost = new EventEmitter<SpectrumPost>();
   @Output() hideAuthor = new EventEmitter<SpectrumPost>();
   @Output() notInterested = new EventEmitter<SpectrumPost>();
@@ -42,9 +69,9 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() copyLink = new EventEmitter<SpectrumPost>();
 
   commentsOpen = false;
-  addedCommentsCount = 0;
   menuOpen = false;
   now = Date.now();
+  failedCoverUrl?: string;
 
   private editWindowTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -53,7 +80,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   get commentsCount(): number {
-    return this.post.comments + this.addedCommentsCount;
+    return this.post.comments;
   }
 
   get reposts(): number {
@@ -74,6 +101,71 @@ export class PostCard implements OnChanges, OnDestroy {
 
   get primaryImage(): string | undefined {
     return this.post.evidences.find(evidence => evidence.type === 'IMAGE' && evidence.url)?.url;
+  }
+
+  get mediaEvidences(): OccurrenceEvidence[] {
+    return (this.post.evidences || []).filter(
+      (evidence) => (evidence.type === 'IMAGE' || evidence.type === 'VIDEO') && Boolean(evidence.url),
+    );
+  }
+
+  get galleryItems(): LightboxMediaItem[] {
+    const list = this.mediaEvidences;
+    if (list.length > 0) {
+      return list.map((e) => ({
+        url: e.url!,
+        type: e.type,
+        alt: this.post.title,
+      }));
+    }
+
+    const cover = this.coverImage;
+    if (cover) {
+      return [
+        {
+          url: cover,
+          type: this.post.mediaType === 'video' ? 'VIDEO' : 'IMAGE',
+          alt: this.post.title,
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  lightboxOpen = false;
+  lightboxIndex = 0;
+
+  openGalleryMedia(event: Event, index: number): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.lightboxIndex = index;
+    this.lightboxOpen = true;
+  }
+
+  closeGalleryLightbox(): void {
+    this.lightboxOpen = false;
+  }
+
+  get coverImage(): string | undefined {
+    if (this.primaryImage) return this.primaryImage;
+
+    const videoUrl = this.post.evidences.find(evidence => evidence.type === 'VIDEO' && evidence.url)?.url;
+    if (!videoUrl) return undefined;
+
+    let url: URL;
+    try {
+      url = new URL(videoUrl);
+    } catch {
+      return undefined;
+    }
+    if (url.hostname !== 'res.cloudinary.com' || !url.pathname.includes('/video/upload/')) {
+      return undefined;
+    }
+
+    url.pathname = url.pathname.replace(/\.[^/.]+$/, '.jpg');
+    const thumbnailUrl = url.toString();
+    return thumbnailUrl === this.failedCoverUrl ? undefined : thumbnailUrl;
   }
 
   get importanceLabel(): string {
@@ -103,18 +195,18 @@ export class PostCard implements OnChanges, OnDestroy {
 
   get historySummary(): string {
     if (!this.historyCount) {
-      return 'Ocorrência criada em ' + this.formatHistoryDate(this.post.createdAt);
+      return this.i18n.translate('Ocorrência criada em {date}', { date: this.formatHistoryDate(this.post.createdAt) });
     }
 
     const latest = this.latestHistoryEvent;
 
     if (!latest) {
-      return `${this.historyCount} eventos no histórico`;
+      return this.i18n.translate('{count} eventos no histórico', { count: this.historyCount });
     }
 
-    return `Última atualização: ${this.formatHistoryEvent(latest.eventType)} em ${this.formatHistoryDate(
-      latest.occurredAt,
-    )}`;
+    return this.i18n.translate('Última atualização: {event} em {date}', {
+      event: this.i18n.translate(this.formatHistoryEvent(latest.eventType)), date: this.formatHistoryDate(latest.occurredAt),
+    });
   }
 
   get responsibleAgencyLabel(): string {
@@ -160,49 +252,11 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleLike(): void {
-    const previousPost = this.post;
-
-    const nextLiked = !this.post.liked;
-
-    this.post = {
-      ...this.post,
-      liked: nextLiked,
-      disliked: nextLiked ? false : this.post.disliked,
-      likes: this.post.likes + (nextLiked ? 1 : -1),
-      dislikes:
-        this.post.disliked && nextLiked
-          ? this.post.dislikes - 1
-          : this.post.dislikes,
-    };
-
-    try {
-      this.post = this.postService.togglePostLike(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
-    }
+    this.saveReaction(this.post.liked ? null : 'LIKE');
   }
 
   toggleDislike(): void {
-    const previousPost = this.post;
-
-    const nextDisliked = !this.post.disliked;
-
-    this.post = {
-      ...this.post,
-      disliked: nextDisliked,
-      liked: nextDisliked ? false : this.post.liked,
-      dislikes: this.post.dislikes + (nextDisliked ? 1 : -1),
-      likes:
-        this.post.liked && nextDisliked
-          ? this.post.likes - 1
-          : this.post.likes,
-    };
-
-    try {
-      this.post = this.postService.togglePostDislike(previousPost, this.currentUser);
-    } catch {
-      this.post = previousPost;
-    }
+    this.saveReaction(this.post.disliked ? null : 'UNLIKE');
   }
 
   toggleSaved(): void {
@@ -252,8 +306,9 @@ export class PostCard implements OnChanges, OnDestroy {
     this.goToOccurrence();
   }
 
-  onCommentAdded(): void {
-    this.addedCommentsCount++;
+  onCommentCountChanged(count: number): void {
+    this.post = { ...this.post, comments: count };
+    this.changeDetector.markForCheck();
   }
 
   formatHistoryEvent(eventType: string): string {
@@ -294,7 +349,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   formatHistoryDate(date: string): string {
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(this.i18n.language(), {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
@@ -333,7 +388,7 @@ export class PostCard implements OnChanges, OnDestroy {
 
     return Boolean(
       target.closest(
-        'a, button, input, select, textarea, [role="button"], [role="link"]:not(.post-card__main), [role="menuitem"], [contenteditable="true"], app-comment-section',
+        'a, button, input, select, textarea, [role="button"], [role="link"]:not(.post-card__main), [role="menuitem"], [contenteditable="true"], app-comment-section, app-media-lightbox, .post-card__media-single, .post-card__grid-item',
       ),
     );
   }

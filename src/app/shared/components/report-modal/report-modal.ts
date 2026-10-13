@@ -1,10 +1,11 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { AlertPopup } from '../alert-popup/alert-popup';
 
 @Component({
   selector: 'app-report-modal',
-  imports: [CommonModule, AlertPopup],
+  imports: [TranslatePipe, CommonModule, AlertPopup],
   templateUrl: './report-modal.html',
   styleUrl: './report-modal.scss',
 })
@@ -22,6 +23,11 @@ export class ReportModal {
   @Output() close = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<string>();
 
+  @Input() externalSubmission = false;
+  @Input() submitting = false;
+  @Input() submissionError = '';
+  @Output() submit = new EventEmitter<string>();
+
   selectedReason = this.reasons[0];
   submitted = false;
 
@@ -31,7 +37,7 @@ export class ReportModal {
 
   @HostListener('document:keydown.escape')
   closeOnEscape(): void {
-    if (!this.submitted) {
+    if (!this.submitted && !this.submitting) {
       this.close.emit();
     }
   }
@@ -41,7 +47,9 @@ export class ReportModal {
   }
 
   onConfirm(): void {
-    this.submitted = true;
+    if (this.submitting) return;
+    if (this.externalSubmission) this.submit.emit(this.selectedReason);
+    else this.submitted = true;
   }
 
   onDone(): void {

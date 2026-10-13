@@ -167,6 +167,53 @@
   transform: translateY(1px);
 }
 
+:host-context(html[data-theme="dark"]) {
+  .report-backdrop {
+    background: rgba(2, 6, 15, 0.72);
+  }
+
+  .report-modal {
+    border-color: var(--spectrum-border);
+  }
+
+  .report-options__item:hover {
+    background: var(--spectrum-surface-muted);
+  }
+
+  .report-options__item--active,
+  .report-options__item--active:hover {
+    border-color: var(--spectrum-error);
+    background: #2b1c2b;
+    color: var(--spectrum-text);
+  }
+
+  .report-options__item--active:hover {
+    background: #382237;
+  }
+
+  .report-options__item:focus-visible {
+    box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.25);
+  }
+
+  .report-options__radio::after {
+    background: var(--spectrum-surface);
+  }
+
+  .report-modal__submit {
+    background: #be123c;
+    box-shadow: 0 8px 18px rgba(190, 18, 60, 0.2);
+  }
+
+  .report-modal__submit:hover {
+    background: #9f1239;
+    box-shadow: 0 10px 22px rgba(190, 18, 60, 0.28);
+  }
+
+  .report-modal__submit:focus-visible {
+    outline-color: var(--spectrum-error);
+  }
+}
+
 @keyframes report-fade {
   from {
     opacity: 0;

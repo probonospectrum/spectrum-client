@@ -1,9 +1,12 @@
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, defer, finalize, forkJoin, switchMap } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
@@ -18,10 +21,13 @@ import {
 } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
+import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+import { MediaLightbox } from '../../../shared/components/media-lightbox/media-lightbox';
 
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
+  | 'response'
   | 'evidence'
   | 'agency'
   | 'forward'
@@ -42,12 +48,14 @@ interface AgencySuggestion {
 
 @Component({
   selector: 'app-occurrence-detail-page',
-  imports: [CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator],
+  imports: [TranslatePipe, UserAvatar, CommonModule, FormsModule, RouterLink, CommentSection, LoadingIndicator, SocialShell, MediaLightbox],
   templateUrl: './occurrence-detail-page.html',
   styleUrl: './occurrence-detail-page.scss',
 })
 export class OccurrenceDetailPage implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly destroyRef = inject(DestroyRef);
@@ -68,7 +76,15 @@ export class OccurrenceDetailPage implements OnInit {
   evidenceDescription = '';
   agencyName = '';
   agencyId = '';
-  forwardingChannel: OccurrenceForwardingChannel = 'WEBSITE';
+  agencyEmail = '';
+  forwardingChannel: OccurrenceForwardingChannel = 'EMAIL';
+  registeredAgencies: { _id: string; name: string; emails: string[] }[] = [];
+  responseCode = '02';
+  receivedResponseCode = '';
+  responseMessage = '';
+  responseProtocol = '';
+  agenciesLoading = false;
+  agenciesError = '';
   forwardingContent = '';
   forwardingProtocol = '';
   forwardingDeliveryConfirmed = false;
@@ -91,6 +107,91 @@ export class OccurrenceDetailPage implements OnInit {
     this.currentOccurrenceId = id ?? '';
 
     this.loadOccurrence();
+    if (this.isModerator) this.loadAgencies();
+  }
+
+  loadAgencies(): void {
+    this.agenciesLoading = true;
+    this.agenciesError = '';
+    this.postService.getRegisteredAgencies().pipe(finalize(() => this.agenciesLoading = false), takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: agencies => this.registeredAgencies = agencies,
+      error: error => this.agenciesError = this.getErrorMessage(error),
+    });
+  }
+
+  logout(): void { this.userService.logout(); void this.router.navigate(['/login']); }
+
+  onOccurrenceUpdated(post: SpectrumPost): void { this.afterAction(post, 'Alterações salvas. O encaminhamento usará as informações atualizadas.'); }
+
+  get canEdit(): boolean { return !!this.occurrence && this.postService.canModifyPost(this.occurrence, this.user); }
+
+  get canRegisterResponse(): boolean {
+    return (this.isModerator || this.isResponsibleAgencyForOccurrence) && !!this.latestForwarding &&
+      ['ENCAMINHADA', 'EM_RESOLUCAO', 'RESPOSTA_EM_APURACAO', 'FALHA_NO_ENCAMINHAMENTO'].includes(this.occurrence?.status ?? '');
+  }
+
+  submitResponse(): void {
+    if (!this.occurrence || !this.canRegisterResponse || !this.responseMessage.trim()) {
+      this.errorMessage = 'Informe a mensagem recebida do órgão.';
+      return;
+    }
+    this.runAction(() => this.postService.registerForwardingResponse(this.occurrence!, this.user, this.latestForwarding!.id,
+      this.responseMessage.trim(), this.receivedResponseCode, this.responseProtocol), 'Resposta registrada e disponível para análise da moderação.');
+  }
+
+  get nextStep(): string {
+    const messages: Record<string, string> = {
+      AGUARDANDO_ENCAMINHAMENTO: 'Após os 15 minutos de edição, o sistema buscará o órgão responsável e enviará a ocorrência.',
+      EM_ANALISE_DE_COMPETENCIA: 'O sistema está conferindo a localização e a categoria para identificar o órgão responsável.',
+      ENCAMINHADA: 'Aguardamos a resposta do órgão. Se não houver retorno em 15 dias, o sistema fará um único reenvio.',
+      FALHA_NO_ENCAMINHAMENTO: 'O envio não foi concluído. A moderação verificará o contato e a tentativa registrada.',
+      RESPOSTA_EM_APURACAO: 'A resposta foi recebida. A moderação verificará as informações antes de atualizar a situação.',
+      EM_RESOLUCAO: 'O órgão informou que está trabalhando na solução. Novas respostas serão avaliadas pela moderação.',
+      REJEITADA: 'A ocorrência foi rejeitada pelo órgão e está disponível para reavaliação da moderação.',
+      RESOLVIDA: 'A resolução foi validada pela moderação. Se o problema persistir, você pode registrar uma contestação.',
+    };
+    return this.moderationLabel ? `${this.moderationLabel}. A moderação verificará a ocorrência para dar continuidade ao acompanhamento.` :
+      messages[this.occurrence?.status ?? ''] || 'A comunidade pode contribuir com evidências. Todas as atualizações ficam registradas no histórico.';
+  }
+
+  evidenceUrl(evidence: OccurrenceEvidence): string | null {
+    return evidence.url && /^https?:\/\//i.test(evidence.url) ? evidence.url : null;
+  }
+
+  lightboxOpen = false;
+  lightboxIndex = 0;
+
+  get occurrenceMediaList(): Array<{ url: string; type: string; alt?: string }> {
+    if (!this.occurrence?.evidences) return [];
+    return this.occurrence.evidences
+      .filter((e) => Boolean(this.evidenceUrl(e)))
+      .map((e) => ({
+        url: this.evidenceUrl(e)!,
+        type: e.type,
+        alt: this.occurrence?.title,
+      }));
+  }
+
+  openLightbox(index: number): void {
+    this.lightboxIndex = index;
+    this.lightboxOpen = true;
+  }
+
+  openEvidenceInLightbox(evidence: OccurrenceEvidence): void {
+    const url = this.evidenceUrl(evidence);
+    if (!url) return;
+    const list = this.occurrenceMediaList;
+    const foundIndex = list.findIndex((m) => m.url === url);
+    if (foundIndex >= 0) {
+      this.openLightbox(foundIndex);
+    } else {
+      this.lightboxIndex = 0;
+      this.lightboxOpen = true;
+    }
+  }
+
+  closeLightbox(): void {
+    this.lightboxOpen = false;
   }
 
   loadOccurrence(): void {
@@ -238,24 +339,19 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canAssociateAgency(): boolean {
-    return this.isModerator && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return this.canForward;
   }
 
   get canAssumeResponsibility(): boolean {
-    return (
-      this.isResponsibleAgencyForOccurrence &&
-      ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(
-        this.occurrence?.status ?? '',
-      )
-    );
+    return false;
   }
 
   get canForward(): boolean {
-    return this.isModerator && ['ABERTA', 'REABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence?.status ?? '');
+    return this.isModerator && !!this.occurrence && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 && ['AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO', 'ABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence.status);
   }
 
   get canRegisterForwardingFailure(): boolean {
-    return this.isModerator && ['ABERTA', 'REABERTA'].includes(this.occurrence?.status ?? '');
+    return false;
   }
 
   get canShowCommunityActions(): boolean {
@@ -268,12 +364,12 @@ export class OccurrenceDetailPage implements OnInit {
   get canShowAgencyActions(): boolean {
     return (
       this.isResponsibleAgencyForOccurrence &&
-      (this.canAssumeResponsibility || this.canStartAnalysis || this.canInformResolution)
+      (this.canRegisterResponse || this.canInformResolution)
     );
   }
 
   get canShowModeratorActions(): boolean {
-    return this.canAssociateAgency || this.canForward || this.canRegisterForwardingFailure;
+    return this.canForward || this.canRegisterResponse;
   }
 
   get hasAvailableActions(): boolean {
@@ -285,25 +381,25 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get agencySubmitLabel(): string {
-    return this.canAssociateAgency ? 'Salvar órgão' : 'Enviar sugestão';
+    return this.canAssociateAgency ? 'Selecionar e encaminhar' : 'Enviar sugestão';
   }
 
   get canInformResolution(): boolean {
-    if (!this.isCommunityUser && !this.isResponsibleAgencyForOccurrence) {
+    if (!this.isCommunityUser) {
       return false;
     }
 
-    return ['ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'REABERTA'].includes(
+    return ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA'].includes(
       this.occurrence?.status ?? '',
     );
   }
 
   get canResolve(): boolean {
-    return this.occurrence?.status === 'RESOLUCAO_INFORMADA' && (this.isModerator || this.isResponsibleAgencyForOccurrence);
+    return this.isModerator && ['RESPOSTA_EM_APURACAO', 'RESOLUCAO_INFORMADA'].includes(this.occurrence?.status ?? '');
   }
 
   get canStartAnalysis(): boolean {
-    return this.occurrence?.status === 'ENCAMINHADA' && this.isResponsibleAgencyForOccurrence;
+    return false;
   }
 
   get canContest(): boolean {
@@ -505,25 +601,13 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitForwarding(): void {
-    if (!this.occurrence || !this.canForward || !this.agencyId || !this.agencyName.trim() || this.forwardingContent.trim().length < 20) {
-      this.errorMessage = 'Selecione o órgão e descreva o encaminhamento em pelo menos 20 caracteres.';
+    if (!this.occurrence || !this.canForward || !this.agencyId || !this.agencyEmail || !this.registeredContacts.includes(this.agencyEmail)) {
+      this.errorMessage = 'Selecione um órgão cadastrado e aguarde o período de edição.';
       return;
     }
-    if (!['WEBSITE', 'PHONE', 'IN_PERSON', 'OTHER'].includes(this.forwardingChannel) || !this.forwardingDeliveryConfirmed) {
-      this.errorMessage = 'Confirme o registro manual do encaminhamento por um dos canais disponíveis.';
-      return;
-    }
-
-    this.runAction(
-      () => this.postService.forwardOccurrence(this.occurrence!, this.user, {
-        agency: this.buildAgency(),
-        channel: this.forwardingChannel,
-        sentContent: this.forwardingContent.trim(),
-        protocol: this.forwardingProtocol.trim() || undefined,
-        deliveryConfirmed: this.forwardingDeliveryConfirmed,
-      }),
-      'Ocorrência encaminhada e registrada na timeline.',
-    );
+    this.runAction(() => this.postService.forwardOccurrence(this.occurrence!, this.user, {
+      agency: this.buildAgency(), channel: 'EMAIL', sentContent: '',
+    }), 'Encaminhamento enviado por e-mail e registrado no histórico.');
   }
 
   submitForwardingFailure(): void {
@@ -568,12 +652,8 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     this.runAction(
-      () => this.postService.resolveOccurrence(
-        this.occurrence!,
-        this.user,
-        this.resolutionReviewNote.trim(),
-      ),
-      'Ocorrência marcada como resolvida com evento próprio.',
+      () => this.postService.reviewForwardingResponse(this.occurrence!, this.user, this.responseCode, this.resolutionReviewNote.trim()),
+      'Resposta analisada e classificação registrada no histórico.',
     );
   }
 
@@ -637,6 +717,10 @@ export class OccurrenceDetailPage implements OnInit {
 
   formatEvent(eventType: OccurrenceEventType): string {
     const labels: Record<OccurrenceEventType, string> = {
+      ANALISE_DE_COMPETENCIA_INICIADA: 'Análise de competência iniciada',
+      MODERACAO_NECESSARIA: 'Análise da moderação necessária',
+      OCORRENCIA_REENVIADA: 'Ocorrência reenviada',
+      RESPOSTA_CLASSIFICADA: 'Resposta analisada pela moderação',
       OCORRENCIA_CRIADA: 'Ocorrência criada',
       OCCURRENCE_UPDATED: 'Ocorrência atualizada',
       COMMENT_ADDED: 'Comentário adicionado',
@@ -671,20 +755,21 @@ export class OccurrenceDetailPage implements OnInit {
       return 'Não informado';
     }
 
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(this.i18n.language(), {
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(new Date(date));
   }
 
   eventDescription(event: OccurrenceHistoryEvent): string {
+    if (event.description && ['ANALISE_DE_COMPETENCIA_INICIADA', 'MODERACAO_NECESSARIA', 'OCORRENCIA_REENVIADA', 'RESPOSTA_CLASSIFICADA'].includes(event.eventType)) return event.description;
     const metadata = event.metadata ?? {};
 
     if (event.eventType === 'OCORRENCIA_ENCAMINHADA') {
       const agencyName = String(metadata['agencyName'] ?? 'órgão responsável');
       return metadata['protocol']
-        ? `Encaminhada para ${agencyName}. Protocolo: ${metadata['protocol']}.`
-        : `Encaminhada para ${agencyName}.`;
+        ? this.i18n.translate('Encaminhada para {agency}. Protocolo: {protocol}.', { agency: agencyName, protocol: metadata['protocol'] })
+        : this.i18n.translate('Encaminhada para {agency}.', { agency: agencyName });
     }
 
     if (event.eventType === 'ENCAMINHAMENTO_FALHOU') {
@@ -693,28 +778,28 @@ export class OccurrenceDetailPage implements OnInit {
 
     if (event.eventType === 'RESOLUCAO_INFORMADA') {
       const source = event.actorType === 'RESPONSIBLE_AGENCY' ? 'O órgão responsável' : 'A comunidade';
-      return `${source} informou que o problema foi solucionado. ${String(metadata['statement'] ?? '')}`.trim();
+      return `${this.i18n.translate('{source} informou que o problema foi solucionado.', { source: this.i18n.translate(source) })} ${String(metadata['statement'] ?? '')}`.trim();
     }
 
     if (event.eventType === 'ANALISE_INICIADA') {
-      return [event.description, metadata['note'], metadata['reference'] ? `Referência: ${metadata['reference']}` : ''].filter(Boolean).join(' ') || 'O órgão responsável iniciou a análise.';
+      return [this.i18n.translate(event.description), metadata['note'], metadata['reference'] ? this.i18n.translate('Referência: {reference}', { reference: metadata['reference'] }) : ''].filter(Boolean).join(' ') || this.i18n.translate('O órgão responsável iniciou a análise.');
     }
 
     if (event.eventType === 'OCORRENCIA_RESOLVIDA') {
-      return metadata['note'] ? `A ocorrência foi marcada como resolvida. ${metadata['note']}` : 'A ocorrência foi marcada como resolvida.';
+      return metadata['note'] ? `${this.i18n.translate('A ocorrência foi marcada como resolvida.')} ${metadata['note']}` : 'A ocorrência foi marcada como resolvida.';
     }
 
     if (event.eventType === 'OCORRENCIA_CRIADA') {
-      return `${event.actorName ?? this.occurrence?.authorName ?? 'Um usuário'} criou esta ocorrência.`;
+      return this.i18n.translate('{actor} criou esta ocorrência.', { actor: event.actorName ?? this.occurrence?.authorName ?? this.i18n.translate('Um usuário') });
     }
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_IDENTIFICADO') {
-      return `${this.displayAgencyName(String(metadata['agencyName'] ?? 'Um órgão'))} foi identificado como responsável pela ocorrência.`;
+  return this.i18n.translate('{agency} foi identificado como responsável pela ocorrência.', { agency: this.displayAgencyName(String(metadata['agencyName'] ?? this.i18n.translate('Um órgão'))) });
     }
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO') {
       const agency = metadata['agency'] as OccurrenceAgency | undefined;
-      return `${this.displayAgencyName(String(metadata['agencyName'] ?? agency?.name ?? 'Um órgão'))} foi sugerido pela comunidade.`;
+        return this.i18n.translate('{agency} foi sugerido pela comunidade.', { agency: this.displayAgencyName(String(metadata['agencyName'] ?? agency?.name ?? this.i18n.translate('Um órgão'))) });
     }
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {
@@ -757,7 +842,7 @@ export class OccurrenceDetailPage implements OnInit {
       (event.actorType === 'RESPONSIBLE_AGENCY' ? this.occurrence?.responsibleAgency?.name : '') ||
       (event.eventType === 'OCORRENCIA_CRIADA' ? this.occurrence?.authorName : '');
 
-    return actorName ? `${actorName} · ${this.eventOrigin(event)}` : this.eventOrigin(event);
+    return actorName ? `${actorName} · ${this.i18n.translate(this.eventOrigin(event))}` : this.eventOrigin(event);
   }
 
   eventEvidences(event: OccurrenceHistoryEvent): OccurrenceEvidence[] {
@@ -851,6 +936,9 @@ export class OccurrenceDetailPage implements OnInit {
     this.successMessage = message;
     this.errorMessage = '';
     this.actionPanel = null;
+    this.responseMessage = '';
+    this.responseProtocol = '';
+    this.receivedResponseCode = '';
     this.evidenceFile = null;
     this.evidenceDescription = '';
     this.forwardingDeliveryConfirmed = false;
@@ -885,10 +973,32 @@ export class OccurrenceDetailPage implements OnInit {
     return authorName ? { ...occurrence, authorName } : occurrence;
   }
 
+  selectRegisteredAgency(): void {
+    const agency = this.registeredAgencies.find(item => item._id === this.agencyId);
+    this.agencyName = agency?.name ?? '';
+    this.agencyEmail = agency?.emails[0] ?? '';
+  }
+
+  get registeredContacts(): string[] {
+    return this.registeredAgencies.find(item => item._id === this.agencyId)?.emails ?? [];
+  }
+
+  get moderationLabel(): string {
+    const labels: Record<string, string> = {
+      EMPATE_DE_ORGAO_RESPONSAVEL: 'Empate de órgão responsável', ORGAO_NAO_IDENTIFICADO: 'Órgão não identificado',
+      CONTATO_INVALIDO: 'Órgão sem contato válido', FALHA_NO_ENCAMINHAMENTO: 'Falha no encaminhamento',
+      SEM_RETORNO_APOS_REENVIO: 'Sem retorno após o reenvio', RESPOSTA_EM_APURACAO: 'Resposta aguardando análise',
+      REJEITADA_PARA_REAVALIACAO: 'Ocorrência rejeitada e aguardando reavaliação',
+      ENVIO_INTERROMPIDO: 'Envio aguardando conferência da moderação', PROCESSAMENTO_INTERROMPIDO: 'Processamento aguardando conferência da moderação',
+    };
+    return labels[this.occurrence?.moderationReason ?? ''] ?? '';
+  }
+
   private buildAgency(): OccurrenceAgency {
     return {
       id: this.canSuggestAgency && this.agencyDirectoryLoadedEmpty ? undefined : this.agencyId.trim() || undefined,
       name: this.agencyName.trim(),
+      email: this.agencyEmail || undefined,
       hasIntegration: false,
     };
   }
@@ -933,6 +1043,7 @@ export class OccurrenceDetailPage implements OnInit {
   private prefillAgency(agency?: OccurrenceAgency): void {
     this.agencyId = agency?.id ?? '';
     this.agencyName = agency?.name ?? '';
+    this.agencyEmail = agency?.email ?? '';
   }
 
   private getErrorMessage(error: unknown): string {

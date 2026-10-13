@@ -1,10 +1,10 @@
 <label class="field">
-  <span class="field__label">{{ label }}</span>
+  <span class="field__label">{{ (label) | translate }}</span>
   <input
     class="field__control"
     [type]="type"
     [value]="value"
-    [placeholder]="placeholder"
+    [placeholder]="(placeholder) | translate"
     [disabled]="disabled"
     [attr.autocomplete]="autocomplete || null"
     [class.field__control--invalid]="error"
@@ -15,5 +15,5 @@
     class="field__error"
     [class.field__error--visible]="error"
     aria-live="polite"
-  >{{ error }}</span>
+  >{{ (error) | translate }}</span>
 </label>

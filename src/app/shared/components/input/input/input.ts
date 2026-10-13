@@ -1,7 +1,9 @@
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-input',
   templateUrl: './input.html',
   styleUrl: './input.scss',

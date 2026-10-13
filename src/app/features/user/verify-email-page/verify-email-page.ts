@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,7 +11,7 @@ type VerificationStatus = 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-verify-email-page',
-  imports: [AlertPopup, AuthShell, Button],
+  imports: [TranslatePipe, AlertPopup, AuthShell, Button],
   templateUrl: './verify-email-page.html',
   styleUrl: './verify-email-page.scss',
 })

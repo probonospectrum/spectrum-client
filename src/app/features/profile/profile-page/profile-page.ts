@@ -1,16 +1,14 @@
+import { FollowList } from '../../../shared/components/follow-list/follow-list';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap, tap } from 'rxjs';
-import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
+import { EMPTY, catchError, finalize, map, of, switchMap, tap } from 'rxjs';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
-import {
-  PublicProfile,
-  PublicProfileMockService,
-} from '../../../core/services/profile/public-profile-mock.service';
-import { LoggedUser, UserService } from '../../../core/services/user/user.service';
+import { LoggedUser, PublicProfileResponse, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
@@ -24,30 +22,33 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
 export class ProfilePage implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
-  private readonly publicProfileService = inject(PublicProfileMockService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly mockLoadingService = inject(MockLoadingService);
 
   readonly user: LoggedUser | null = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
 
-  reposts = this.postService.getUserReposts(this.user);
+  get reposts(): SpectrumPost[] { return this.authorPosts().filter(post => Boolean(post.originalPostId)); }
   activeTab: 'posts' | 'reposts' | 'saved' = 'posts';
   profileAlert = signal<ProfileAlert | null>(null);
   private readonly hiddenPostIds = new Set<string>();
   private readonly hiddenAuthorNicknames = new Set<string>();
 
   /** Perfil publico carregado quando a rota tem :nickname de outro usuario. */
-  publicProfile = signal<PublicProfile | null>(null);
+  publicProfile = signal<PublicProfileResponse | null>(null);
+  profileError = signal('');
+  private readonly authorPosts = signal<SpectrumPost[]>([]);
+  readonly connections = signal<'followers' | 'following' | null>(null);
+  readonly followSaving = signal(false);
 
   /** true quando estamos vendo o perfil de outra pessoa (nao o proprio). */
   isOwnProfile = signal(true);
@@ -65,22 +66,29 @@ export class ProfilePage implements OnInit {
     // ao navegar entre /perfil (proprio) e /perfil/:nickname (terceiro).
     this.route.paramMap
       .pipe(
-        tap(() => this.profileLoading.set(true)),
-        switchMap((params) =>
-          this.mockLoadingService.load(() => this.resolvePublicProfile(params.get('nickname'))),
-        ),
+        tap(() => { this.connections.set(null); this.profileLoading.set(true); this.profileError.set(''); this.authorPosts.set([]); }),
+        switchMap((params) => this.loadProfile(params.get('nickname') ?? this.user?.nickname ?? '')),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((profile) => this.applyProfile(profile));
+      .subscribe(({ profile, posts }) => { this.applyProfile(profile); this.authorPosts.set(posts); });
   }
 
-  private applyProfile(profile: PublicProfile | null): void {
+  private loadProfile(nickname: string) {
+    return this.userService.getPublicProfile(nickname).pipe(
+      switchMap((profile) => (profile.canViewPosts ? this.postService.getAuthorPosts(profile, this.user) : of([])).pipe(
+        map((posts) => ({ profile, posts })),
+      )),
+      catchError(() => { this.profileLoading.set(false); this.profileError.set('Não foi possível carregar este perfil.'); return EMPTY; }),
+    );
+  }
+
+  private applyProfile(profile: PublicProfileResponse): void {
     this.publicProfile.set(profile);
-    this.isOwnProfile.set(profile === null);
+    this.isOwnProfile.set(profile._id === this.user?._id);
     this.followersBase.set(profile?.followersCount ?? 0);
 
     // Reseta o estado de interacao ao trocar de perfil.
-    this.isFollowing.set(false);
+    this.isFollowing.set(profile.isFollowing);
     this.reportingProfile = false;
     this.reportMenuOpen = false;
     this.activeTab = 'posts';
@@ -119,20 +127,20 @@ export class ProfilePage implements OnInit {
     const publicProfile = this.publicProfile();
 
     if (publicProfile) {
-      return publicProfile.initial;
+      return publicProfile.name.charAt(0).toUpperCase();
     }
     return this.displayName.charAt(0).toUpperCase();
   }
 
   get coverUrl(): string {
     return (
-      this.publicProfile()?.coverUrl ||
       '/Background.png'
     );
   }
 
   get joinedDate(): string {
-    return this.publicProfile()?.joinedDate || 'Janeiro de 2026';
+    const createdAt = this.publicProfile()?.createdAt;
+    return createdAt ? new Intl.DateTimeFormat(this.i18n.language(), { month: 'long', year: 'numeric' }).format(new Date(createdAt)) : '';
   }
 
   get followingCount(): number {
@@ -141,38 +149,22 @@ export class ProfilePage implements OnInit {
     if (publicProfile) {
       return publicProfile.followingCount;
     }
-    return this.user?.following?.length ?? 48;
+    return this.user?.following?.length ?? 0;
   }
 
   get followersCount(): number {
     if (this.publicProfile()) {
-      return this.followersBase() + (this.isFollowing() ? 1 : 0);
+      return this.followersBase();
     }
-    return 72;
+    return 0;
   }
 
   get userPosts(): SpectrumPost[] {
-    const userNickname = this.nickname;
-
-    if (this.publicProfile()) {
-      const mockPosts = this.publicProfileService.getPosts(userNickname);
-
-      if (mockPosts.length) {
-        return mockPosts;
-      }
-
-      // Perfil de terceiro sem posts mocados: usa os posts desse autor no feed.
-      return this.postService
-        .getPosts(this.user)
-        .filter((post) => post.authorNickname === userNickname);
-    }
-
-    const allPosts = this.postService.getPosts(this.user);
-    return allPosts.filter((post) => post.authorNickname === userNickname);
+    return this.authorPosts().filter((post) => !post.originalPostId);
   }
 
   get visibleReposts(): SpectrumPost[] {
-    return this.reposts.filter(
+    return this.authorPosts().filter((post) => Boolean(post.originalPostId)).filter(
       (post) =>
         !this.hiddenPostIds.has(post.id) && !this.hiddenAuthorNicknames.has(post.authorNickname),
     );
@@ -202,7 +194,30 @@ export class ProfilePage implements OnInit {
   }
 
   toggleFollow(): void {
-    this.isFollowing.update((isFollowing) => !isFollowing);
+    const target = this.publicProfile();
+    if (!target || this.followSaving()) return;
+    this.followSaving.set(true);
+    this.userService.followUser(target._id, !this.isFollowing()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        if (this.publicProfile()?._id !== target._id) { this.followSaving.set(false); return; }
+        this.refreshFollowCounts();
+        this.isFollowing.set(response.isFollowing);
+        this.followSaving.set(false);
+      },
+      error: () => { this.followSaving.set(false); this.profileAlert.set({ type: 'error', title: 'Não foi possível atualizar', message: 'A conta pode ser privada. Tente novamente.' }); },
+    });
+  }
+
+  refreshFollowCounts(): void {
+    const target = this.publicProfile();
+    if (!target) return;
+    this.userService.getPublicProfile(target.nickname).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: profile => {
+        if (this.publicProfile()?._id !== target._id) return;
+        this.publicProfile.set(profile); this.followersBase.set(profile.followersCount); this.isFollowing.set(profile.isFollowing);
+      },
+      error: () => this.profileAlert.set({ type: 'error', title: 'Atualização pendente', message: 'A ação foi salva, mas não foi possível atualizar os números. Recarregue o perfil.' }),
+    });
   }
 
   openReport(): void {
@@ -219,35 +234,41 @@ export class ProfilePage implements OnInit {
     void this.router.navigateByUrl('/login');
   }
 
+  readonly repostPendingIds = signal(new Set<string>());
+
   toggleRepost(post: SpectrumPost): void {
-    try {
-      this.postService.toggleRepost(post, this.user);
-      this.reposts = this.postService.getUserReposts(this.user);
-    } catch (error) {
-      this.profileAlert.set({
-        type: 'error',
-        title: 'Nao foi possivel repostar',
-        message: error instanceof Error ? error.message : 'Tente novamente em instantes.',
-      });
-    }
+    if (this.repostPendingIds().has(post.id)) return;
+    this.repostPendingIds.update(ids => new Set([...ids, post.id]));
+    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+      this.repostPendingIds.update(ids => { const next = new Set(ids); next.delete(post.id); return next; });
+    })).subscribe({
+      next: result => { this.authorPosts.update(posts => {
+          posts.forEach(item => { if ((item.originalPostId || item.id) === (post.originalPostId || post.id)) { item.reposts = result.post.reposts; item.reposted = result.reposted; } });
+          return [...posts];
+        });
+          if (this.isOwnProfile() && !result.reposted && post.originalPostId) this.authorPosts.update(posts => posts.filter(item => item.id !== post.id));
+          const profile = this.publicProfile();
+          if (profile && this.isOwnProfile()) {
+            this.postService.getAuthorPosts(profile, this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              next: posts => {
+                if (this.publicProfile()?._id !== profile._id) return;
+                const existing = new Map(this.authorPosts().map(item => [item.id, item]));
+                this.authorPosts.set(posts.map(item => existing.get(item.id) ?? item));
+              },
+              error: () => this.profileAlert.set({ type: 'error', title: 'Repost salvo', message: 'Não foi possível atualizar a lista do perfil. Recarregue a página.' }),
+            });
+          }
+          this.profileAlert.set({ type: 'success', title: result.reposted ? 'Repost realizado' : 'Repost removido', message: result.reposted ? 'A ocorrência foi adicionada ao seu perfil.' : 'O repost foi removido do seu perfil.' });
+        },
+      error: () => this.profileAlert.set({ type: 'error', title: 'Não foi possível repostar', message: 'Tente novamente em instantes.' }),
+    });
   }
 
   deletePost(post: SpectrumPost): void {
-    try {
-      this.postService.deletePost(post.id, this.user);
-      this.reposts = this.postService.getUserReposts(this.user);
-      this.profileAlert.set({
-        type: 'success',
-        title: 'Publicacao excluida',
-        message: 'A publicacao foi removida.',
-      });
-    } catch (error) {
-      this.profileAlert.set({
-        type: 'error',
-        title: 'Nao foi possivel excluir',
-        message: error instanceof Error ? error.message : 'Tente novamente em instantes.',
-      });
-    }
+    this.postService.removeServerPost(post).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.onPostUpdated(),
+      error: () => this.profileAlert.set({ type: 'error', title: 'Não foi possível excluir', message: 'Ocorrências preservam seu histórico. Apenas reposts próprios podem ser excluídos.' }),
+    });
   }
 
   hideAuthor(post: SpectrumPost): void {
@@ -277,7 +298,7 @@ export class ProfilePage implements OnInit {
   }
 
   onPostUpdated(): void {
-    this.reposts = this.postService.getUserReposts(this.user);
+    this.loadProfile(this.nickname).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ profile, posts }) => { this.applyProfile(profile); this.authorPosts.set(posts); });
     this.profileAlert.set({
       type: 'success',
       title: 'Publicacao atualizada',
@@ -307,18 +328,4 @@ export class ProfilePage implements OnInit {
       });
   }
 
-  private resolvePublicProfile(nickname: string | null): PublicProfile | null {
-    if (!nickname) {
-      return null;
-    }
-
-    // Se o nickname da rota for o do proprio usuario logado, trata como perfil proprio.
-    if (nickname === this.user?.nickname) {
-      return null;
-    }
-
-    // Qualquer outro nickname e um perfil de terceiro. Usa o mock quando existir
-    // ou monta um perfil generico a partir dos posts do autor no feed.
-    return this.publicProfileService.getProfileOrFallback(nickname, this.postService.getPosts());
-  }
 }

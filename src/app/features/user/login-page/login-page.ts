@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -25,7 +26,7 @@ type AuthMode = 'login' | 'register';
 @Component({
   selector: 'app-login-page',
 
-  imports: [
+  imports: [TranslatePipe,
     ReactiveFormsModule,
     AlertPopup,
     AuthShell,
@@ -75,7 +76,7 @@ export class LoginPage implements OnInit {
   });
 
   readonly registerForm = this.formBuilder.nonNullable.group({
-    nickname: ['', Validators.required],
+    nickname: ['', [Validators.required, Validators.pattern(/^[a-z0-9._]+$/)]],
     email: ['', [Validators.required, Validators.email]],
     birthDate: ['', Validators.required],
     password: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(30)]],
@@ -331,6 +332,10 @@ export class LoginPage implements OnInit {
 
     if (control.hasError('email')) {
       return 'Digite um email valido';
+    }
+
+    if (controlName === 'nickname' && control.hasError('pattern')) {
+      return 'Use apenas letras minúsculas, números, ponto (.) ou underline (_), sem espaços.';
     }
 
     if (control.hasError('minlength')) {

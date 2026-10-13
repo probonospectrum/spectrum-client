@@ -63,6 +63,15 @@
                 "API_URL": "\"http://localhost:3000\""
               },
               "optimization": false
+            },
+            "visual-preview": {
+              "browser": "tools/visual-preview.ts",
+              "tsConfig": "tsconfig.visual.json",
+              "optimization": false,
+              "sourceMap": true,
+              "define": {
+                "API_URL": "\"http://127.0.0.1:4202/mock\""
+              }
             }
           },
           "defaultConfiguration": "production"

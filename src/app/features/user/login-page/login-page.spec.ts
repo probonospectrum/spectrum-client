@@ -69,6 +69,33 @@ describe('LoginPage', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it.each(['ana silva', 'Ana', 'ANA', 'ana-silva', 'ana@silva', 'josé', 'ana\n', ' ana', 'ana '])(
+    'rejects invalid username %j and blocks both registration flows', (nickname) => {
+      const create = vi.spyOn(TestBed.inject(UserService), 'create');
+      const google = vi.spyOn(TestBed.inject(AuthApiService), 'completeGoogleRegistration');
+      component.registerForm.patchValue({ nickname, email: 'ana@example.com', birthDate: '2000-01-01',
+        password: 'spectrum-password', name: 'Ana', stateId: 'SP', cityUser: 'São Paulo' });
+      component.goToNextRegisterStep();
+      expect(component.registerStep()).toBe(1);
+      expect(component.registerForm.controls.nickname.hasError('pattern')).toBe(true);
+      expect(component.fieldError('register', 'nickname')).toContain('letras minúsculas');
+      component.submitRegister();
+      component.pendingGoogleRegistration = { requiresRegistration: true, registrationToken: 'test', profile: { email: 'ana@example.com', name: 'Ana' } };
+      component.submitRegister();
+      expect(create).not.toHaveBeenCalled();
+      expect(google).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['ana', 'ana.silva', 'ana_silva', 'ana123', 'ana.silva_123'])(
+    'accepts username %s', (nickname) => {
+      component.registerForm.controls.nickname.setValue(nickname);
+      component.registerForm.controls.nickname.markAsTouched();
+      expect(component.registerForm.controls.nickname.valid).toBe(true);
+      expect(component.fieldError('register', 'nickname')).toBe('');
+    },
+  );
   it('preenche e bloqueia o e-mail Google ao completar cadastro', () => {
     const route = TestBed.inject(ActivatedRoute);
     route.snapshot.data['mode'] = 'register';
