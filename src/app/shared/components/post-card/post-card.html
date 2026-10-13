@@ -267,7 +267,7 @@
         <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
         {{ reposts }}
       </button>
-      <button type="button" [disabled]="savedPending || reactionPending" [attr.aria-label]="'Salvar publicacao' | translate" (click)="toggleSaved()">
+      <button type="button" [class.post-card__action--active]="isSaved" [attr.aria-pressed]="isSaved" [disabled]="savedPending || reactionPending" [attr.aria-label]="'Salvar publicacao' | translate" (click)="toggleSaved()">
         <span
           class="material-symbols-outlined"
           [class.post-card__filled-icon]="isSaved"

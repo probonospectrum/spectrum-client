@@ -18,6 +18,26 @@ describe('UserService avatar upload', () => {
   });
   afterEach(() => http.verify());
 
+  it('uploads a cover and persists it in the session', () => {
+    service.updateCover(new Blob(['cover'], { type: 'image/jpeg' })).subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana/cover');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body.get('cover')).toBeInstanceOf(Blob);
+    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    request.flush({ coverUrl: 'https://example.com/cover.jpg' });
+    expect(service.currentUser()?.coverUrl).toBe('https://example.com/cover.jpg');
+    expect(JSON.parse(localStorage.getItem('spectrum-auth-session')!).user.coverUrl).toBe('https://example.com/cover.jpg');
+  });
+
+  it('removes a cover without restoring a logged out session', () => {
+    service.updateCover().subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana/cover');
+    expect(request.request.method).toBe('DELETE');
+    service.logout();
+    request.flush({ coverUrl: '' });
+    expect(service.currentUser()).toBeNull();
+  });
+
   it('deletes the authenticated account and clears the session only after success', () => {
     service.deleteAccount().subscribe();
     const request = http.expectOne(API_BASE_URL + '/user/ana');
