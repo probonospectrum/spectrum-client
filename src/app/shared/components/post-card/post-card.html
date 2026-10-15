@@ -284,6 +284,7 @@
     <app-comment-section
       [postId]="post.originalPostId || post.id"
       [currentUser]="currentUser"
+      [responsibleAgencyId]="post.responsibleAgency?.id"
       [renderDialogs]="false"
       (commentCountChanged)="onCommentCountChanged($event)"
     />

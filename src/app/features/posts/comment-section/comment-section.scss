@@ -230,3 +230,5 @@
 .comment-section__confirm-actions button:disabled { opacity: .5; cursor: not-allowed; }
 .comment-section__confirm-actions button:focus-visible { outline: 3px solid var(--spectrum-focus); outline-offset: 3px; }
 .comment-section__item:target { outline: 2px solid var(--spectrum-primary-600); outline-offset: 2px; }
+.comment-section__official { color: var(--spectrum-action); font-size: 12px; font-weight: 700; }
+.comment-section__reply-context { padding: 10px; border-left: 3px solid var(--spectrum-action); background: var(--spectrum-surface); color: var(--spectrum-text-muted); font-size: 13px; overflow-wrap: anywhere; }

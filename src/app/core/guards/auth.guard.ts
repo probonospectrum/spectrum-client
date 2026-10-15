@@ -19,3 +19,10 @@ export const moderatorGuard: CanActivateFn = () => {
   return user.getCurrentUser()?.occurrenceRole === 'MODERATOR'
     ? true : router.createUrlTree([user.isLoggedIn() ? '/publicacoes' : '/login']);
 };
+
+export const publicAgencyGuard: CanActivateFn = () => {
+  const users = inject(UserService);
+  const router = inject(Router);
+  return users.getCurrentUser()?.accountType === 'PUBLIC_AGENCY'
+    ? true : router.createUrlTree([users.isLoggedIn() ? '/publicacoes' : '/login']);
+};

@@ -136,6 +136,7 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
   reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
   forwardingDueAt?: string | null;
@@ -175,6 +176,7 @@ export interface SpectrumPost {
 }
 
 export interface SpectrumComment {
+  parentCommentId?: string; officialAgencyId?: string; officialAgencyName?: string; officialAgencyCnpj?: string;
   id: string;
   createdAt?: string;
   authorId?: string;
@@ -190,6 +192,7 @@ export interface SpectrumComment {
 }
 
 interface CommentApiResponse {
+  parentCommentId?: string; officialAgencyId?: string; officialAgencyName?: string; officialAgencyCnpj?: string;
   _id: string;
   userId: string;
   text: string;
@@ -244,6 +247,7 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  agencyProgress?: SpectrumPost['agencyProgress'];
   saved?: boolean;
   repostCount?: number;
   reposted?: boolean;
@@ -312,6 +316,10 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  recordAgencyProgress(post: SpectrumPost, user: LoggedUser | null, body: { status: 'EM_RESOLUCAO' | 'RESOLVIDA'; note: string; protocol?: string; evidenceIds: string[] }): Observable<SpectrumPost> {
+    return this.http.post<OccurrenceApiResponse>(`${API_BASE_URL}/public-agencies/occurrences/${post.id}/progress`, body).pipe(
+      map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
   readonly i18n = inject(I18nService);
   getModerationOccurrences(user: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`).pipe(
@@ -465,6 +473,7 @@ export class PostService {
       return throwError(() => new Error('Ocorrência não encontrada.'));
     }
 
+    if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(post => this.cacheOccurrence(post)));
     return forkJoin({ occurrence: this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`), states: this.postStates([id]) })
       .pipe(
         map(({ occurrence, states }) => this.toSpectrumPost({ ...occurrence, ...states[id] }, user)),
@@ -803,6 +812,7 @@ export class PostService {
   }
 
   loadComments(postId: string): Observable<SpectrumComment[]> {
+    if (this.users.currentUser()?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`).pipe(map(comments => comments.map(comment => this.toComment(comment))));
     return forkJoin({
       comments: this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`),
       reactions: this.http.get<Record<string, Pick<SpectrumComment, 'likes' | 'dislikes' | 'liked' | 'disliked'>>>(`${API_BASE_URL}/like/comment/post/${postId}`),
@@ -816,8 +826,8 @@ export class PostService {
     ).pipe(map(state => ({ ...comment, ...state })));
   }
 
-  createComment(postId: string, content: string, user: LoggedUser): Observable<SpectrumComment> {
-    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id }).pipe(map((comment) => this.toComment(comment)));
+  createComment(postId: string, content: string, user: LoggedUser, parentCommentId?: string): Observable<SpectrumComment> {
+    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id, ...(parentCommentId ? { parentCommentId } : {}) }).pipe(map((comment) => this.toComment(comment)));
   }
 
   deleteComment(commentId: string): Observable<unknown> {
@@ -825,7 +835,8 @@ export class PostService {
   }
 
   private toComment(comment: CommentApiResponse): SpectrumComment {
-    return { id: comment._id, createdAt: comment.createdAt, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
+    const official = { parentCommentId: comment.parentCommentId, officialAgencyId: comment.officialAgencyId, officialAgencyName: comment.officialAgencyName, officialAgencyCnpj: comment.officialAgencyCnpj };
+    return { ...official, id: comment._id, createdAt: comment.createdAt, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
       authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
       dateLabel: this.formatPublishedAt(new Date(comment.createdAt)), likes: comment.likeCount ?? 0,
       dislikes: comment.unlikeCount ?? 0, liked: false, disliked: false };
@@ -1580,6 +1591,7 @@ return {
   saved: occurrence.saved ?? false,
   tags: [],
   status: occurrence.status,
+  agencyProgress: occurrence.agencyProgress,
   moderationReason: occurrence.moderationReason,
   forwardingDueAt: occurrence.forwardingDueAt,
   category: occurrence.category,

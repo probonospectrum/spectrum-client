@@ -72,6 +72,30 @@
       (ngSubmit)="submitRegister()"
     >
       @if (registerStep() === 1) {
+        <fieldset class="account-type">
+          <legend>{{ 'Como você quer participar?' | translate }}</legend>
+          <div class="account-type__options">
+            <label class="account-type__option">
+              <input type="radio" name="accountType" [checked]="accountType() === 'CITIZEN'" (change)="chooseAccountType('CITIZEN')" />
+              <span class="account-type__card">
+                <span class="account-type__icon material-symbols-outlined" aria-hidden="true">person</span>
+                <span class="account-type__copy"><strong>{{ 'Cidadão' | translate }}</strong><span>{{ 'Acompanhe e melhore seu bairro.' | translate }}</span></span>
+                <span class="account-type__check material-symbols-outlined" aria-hidden="true">check</span>
+              </span>
+            </label>
+            <label class="account-type__option">
+              <input type="radio" name="accountType" [checked]="accountType() === 'PUBLIC_AGENCY'" (change)="chooseAccountType('PUBLIC_AGENCY')" />
+              <span class="account-type__card">
+                <span class="account-type__icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+                <span class="account-type__copy"><strong>{{ 'Órgão público' | translate }}</strong><span>{{ 'Represente sua instituição.' | translate }}</span></span>
+                <span class="account-type__check material-symbols-outlined" aria-hidden="true">check</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+        @if (accountType() === 'PUBLIC_AGENCY') {
+          <p class="account-type__notice"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span><span>{{ 'Use seu e-mail institucional. As permissões serão liberadas após a verificação do órgão e da representação.' | translate }}</span></p>
+        }
         <app-input
           [label]="'Nome de usuario' | translate"
           [placeholder]="'Seu nome de usuario' | translate"
@@ -113,6 +137,14 @@
 
         <app-button type="button" (click)="goToNextRegisterStep()"> {{ 'Proximo' | translate }} </app-button>
       } @else {
+        @if (accountType() === 'PUBLIC_AGENCY') {
+          <app-input [label]="'Nome oficial do órgão' | translate" formControlName="agencyName" [error]="fieldError('register', 'agencyName')" />
+          <app-input [label]="'CNPJ do órgão público' | translate" formControlName="agencyCnpj" placeholder="00.000.000/0000-00" [error]="fieldError('register', 'agencyCnpj')" />
+          <p>{{ 'Aceitamos CNPJ numérico e alfanumérico. O CNPJ identifica a instituição, mas não comprova a autorização do representante.' | translate }}</p>
+          <app-input [label]="'Cargo ou função do representante' | translate" formControlName="representativePosition" [error]="fieldError('register', 'representativePosition')" />
+          <app-input [label]="'Referência pública de autorização' | translate" formControlName="authorizationReference" [placeholder]="'Portaria, ato de designação ou autorização e endereço da fonte oficial' | translate" [error]="fieldError('register', 'authorizationReference')" />
+          <p>{{ 'Não envie CPF, documentos pessoais ou informações sigilosas neste campo.' | translate }}</p>
+        }
         <app-input
           [label]="'Nome proprio' | translate"
           [placeholder]="'Seu nome' | translate"
