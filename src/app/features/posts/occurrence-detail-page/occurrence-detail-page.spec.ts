@@ -21,6 +21,7 @@ class StubSocialShell {
 
 @Component({ selector: 'app-comment-section', template: '' })
 class StubCommentSection {
+  @Input() responsibleAgencyId?: string;
   @Input() postId = '';
   @Input() currentUser: LoggedUser | null = null;
 }
@@ -125,6 +126,17 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
     expect(fixture.componentInstance.canRegisterResponse).toBe(true);
     expect(fixture.componentInstance.canResolve).toBe(false);
+  });
+
+  it('offers status updates only for an approved related institution and requires evidence for closure', () => {
+    actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
+    user!.agencyRegistrationStatus = 'APPROVED';
+    expect(fixture.componentInstance.canRecordAgencyProgress).toBe(true);
+    fixture.componentInstance.progressStatus = 'RESOLVIDA'; fixture.componentInstance.progressNote = 'Reparo executado pela equipe de manutenção.';
+    fixture.componentInstance.submitAgencyProgress();
+    expect(fixture.componentInstance.errorMessage).toContain('evidência');
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'ABERTA', createdAt: new Date().toISOString() };
+    expect(fixture.componentInstance.canRecordAgencyProgress).toBe(false);
   });
 
   it('does not show agency controls to an unrelated agency', () => {

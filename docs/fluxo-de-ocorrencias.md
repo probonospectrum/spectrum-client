@@ -8,7 +8,7 @@ Um órgão com e-mail válido recebe automaticamente o documento. Empate, ausên
 
 O cliente mostra os status detalhados e mantém os agrupamentos Aberta, Em andamento e Fechada. Rejeição permanece em andamento por exigir reavaliação. O histórico mostra análise, encaminhamento, reenvio, pendências e classificação da resposta.
 
-Os formulários existentes permitem à moderação selecionar órgãos e e-mails do catálogo e classificar respostas como resolvidas, em resolução ou rejeitadas. Não há cadastro de contatos. O órgão não pode validar a própria resolução.
+Os formulários permitem à moderação selecionar órgãos e e-mails do catálogo e classificar respostas como resolvidas, em resolução ou rejeitadas. A aprovação de contas institucionais com CNPJ pode cadastrar o órgão e contatos conferidos no catálogo. Representantes aprovados podem registrar andamento e fechar ocorrências do próprio órgão com justificativa e evidência, sujeitos à contestação. A classificação administrativa de respostas continua exclusiva da moderação. Consulte [contas públicas com CNPJ](contas-publicas-cnpj.md).
 
 ## Painel de moderação
 

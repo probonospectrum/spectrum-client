@@ -1,0 +1,68 @@
+<app-social-shell [user]="user" [showContentHeader]="false" (logout)="logout()">
+  <section class="public-agency">
+    <header>
+      <h1>{{ 'Conta de órgão público' | translate }}</h1>
+      <button type="button" (click)="refresh()" [disabled]="busy()">
+        {{ 'Atualizar' | translate }}
+      </button>
+    </header>
+    @if (error) {
+      <p role="alert">{{ error | translate }}</p>
+    }
+    @if (message) {
+      <p role="status">{{ message | translate }}</p>
+    }
+    @if (busy()) {
+      <p role="status">{{ 'Carregando…' | translate }}</p>
+    }
+    @if (status(); as account) {
+      @if (account.agencyRegistration; as registration) {
+        <article>
+          <h2>{{ registration.name }}</h2>
+          <p>CNPJ: {{ registration.cnpj }}</p>
+          <strong>{{ label(registration.status) | translate }}</strong>
+          <p>{{ 'Cargo ou função do representante' | translate }}: {{ registration.position }}</p>
+          <p>
+            {{ 'Referência pública de autorização' | translate }}:
+            {{ registration.authorizationReference }}
+          </p>
+          <p>
+            {{
+              (account.isVerified ? 'E-mail confirmado' : 'Confirme seu e-mail antes da aprovação.')
+                | translate
+            }}
+          </p>
+          @if (!account.isVerified) {
+            <button type="button" (click)="resend()" [disabled]="busy()">
+              {{ 'Reenviar confirmação de e-mail' | translate }}
+            </button>
+          }
+          @for (review of registration.reviews || []; track review.date) {
+            <p>{{ review.note }}</p>
+          }
+          @if (registration.status === 'PENDING') {
+            <p>
+              {{
+                'A moderação verificará o CNPJ ativo, a natureza pública da entidade, o contato institucional e sua autorização de representação. Enquanto isso, sua conta mantém permissões de cidadão.'
+                  | translate
+              }}
+            </p>
+          }
+        </article>
+        @if (account.occurrenceRole === 'RESPONSIBLE_AGENCY') {
+          <article>
+            <h2>{{ 'Ocorrências atribuídas ao seu órgão' | translate }}</h2>
+            <p>{{ 'Até 100 ocorrências mais recentemente atualizadas.' | translate }}</p>
+            @for (post of occurrences(); track post._id) {
+              <a [routerLink]="['/ocorrencias', post._id]"
+                >{{ post.title }} · {{ occurrenceLabel(post.status) | translate }}</a
+              >
+            } @empty {
+              <p>{{ 'Nenhuma ocorrência atribuída ao seu órgão.' | translate }}</p>
+            }
+          </article>
+        }
+      }
+    }
+  </section>
+</app-social-shell>

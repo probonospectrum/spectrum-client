@@ -132,6 +132,7 @@
 
           @if (canShowAgencyActions) {
             <div class="occurrence-detail__action-group"><span>{{ 'Órgão responsável' | translate }}</span>
+              @if (canRecordAgencyProgress) { <button type="button" (click)="openPanel('agencyProgress')">{{ 'Atualizar situação do atendimento' | translate }}</button><button type="button" (click)="openPanel('evidence')">{{ 'Anexar evidência do atendimento' | translate }}</button> }
               @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>{{ 'Registrar resposta' | translate }}</button> }
             </div>
           }
@@ -186,6 +187,14 @@
       @if (actionPanel) {
         <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
           <fieldset class="occurrence-detail__action-fields"  [disabled]="isSubmitting()">
+          @if (actionPanel === 'agencyProgress') {
+            <label><span>{{ 'Situação do atendimento' | translate }}</span><select [(ngModel)]="progressStatus" name="progressStatus"><option value="EM_RESOLUCAO">{{ 'Em andamento' | translate }}</option><option value="RESOLVIDA">{{ 'Fechada pelo órgão' | translate }}</option></select></label>
+            <label><span>{{ 'Descrição do atendimento' | translate }}</span><textarea [(ngModel)]="progressNote" name="progressNote" minlength="20" maxlength="2000"></textarea></label>
+            <label><span>{{ 'Protocolo do atendimento' | translate }}</span><input [(ngModel)]="progressProtocol" name="progressProtocol" maxlength="120" /></label>
+            <label><span>{{ 'Evidências do atendimento' | translate }}</span><select multiple [(ngModel)]="progressEvidenceIds" name="progressEvidenceIds">@for (evidence of agencyEvidenceOptions; track evidence.id) { <option [value]="evidence.id">{{ evidence.description || evidence.id }}</option> }</select></label>
+            <p>{{ 'Para fechar, anexe e selecione uma evidência enviada por você. Todas as mudanças ficam no histórico e a comunidade pode contestar.' | translate }}</p>
+            <button type="button" class="occurrence-detail__form-inline" (click)="submitAgencyProgress()" [disabled]="isSubmitting()">{{ 'Salvar atendimento' | translate }}</button>
+          }
           @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest') {
             <div class="occurrence-detail__upload">
               <div class="occurrence-detail__upload-info">
@@ -334,6 +343,10 @@
     </section>
 
 
+    @if (occurrence.agencyProgress; as progress) { <section class="occurrence-detail__section"><h2>{{ 'Atendimento do órgão' | translate }}</h2><p>{{ progress.note }}</p>
+      @if (progress.protocol) { <p>{{ 'Protocolo do atendimento' | translate }}: {{ progress.protocol }}</p> }
+      @if (progress.closedByAgency) { <p>{{ 'Fechamento informado pelo órgão, sujeito à contestação da comunidade.' | translate }}</p> }
+    </section> }
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
       <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências do relato' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
       @if (occurrence.evidences.length) {
@@ -423,7 +436,7 @@
 
     <section class="occurrence-detail__section">
       <h2>{{ 'Discussão' | translate }}</h2>
-      <app-comment-section [postId]="occurrence.id" [currentUser]="user" />
+      <app-comment-section [postId]="occurrence.id" [currentUser]="user" [responsibleAgencyId]="occurrence.responsibleAgency?.id" />
     </section>
   } @else if (notFound) {
     <section class="occurrence-detail__state">

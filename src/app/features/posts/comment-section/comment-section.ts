@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef, Component, DestroyRef, Injector, afterNextRender, EventEmitter, HostListener, Input, OnInit, Output, TemplateRef, ViewChild, inject } from '@angular/core';
 import { SettingsDialog } from '../../../shared/components/settings-dialog/settings-dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { tap } from 'rxjs';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 
@@ -18,6 +19,11 @@ import { LoggedUser, UserService } from '../../../core/services/user/user.servic
 export class CommentSection implements OnInit {
   @Input({ required: true }) postId!: string;
   @Input() currentUser: LoggedUser | null = null;
+  @Input() responsibleAgencyId?: string;
+  replyTarget: SpectrumComment | null = null;
+  get canOfficialReply(): boolean { return this.currentUser?.occurrenceRole === 'RESPONSIBLE_AGENCY' && this.currentUser.agencyRegistrationStatus === 'APPROVED' && !!this.responsibleAgencyId && this.currentUser.occurrenceAgencyId === this.responsibleAgencyId; }
+  startReply(comment: SpectrumComment): void { if (this.canOfficialReply && !this.saving) { this.replyTarget = comment; this.newComment = ''; this.showAll = true; } }
+  parentAuthor(comment: SpectrumComment): string { return this.comments.find(parent => parent.id === comment.parentCommentId)?.authorName || 'Comentário anterior'; }
   @Input() renderDialogs = true;
   @ViewChild('dialogs', { static: true }) dialogs!: TemplateRef<unknown>;
   @Output() commentAdded = new EventEmitter<void>();
@@ -98,7 +104,7 @@ export class CommentSection implements OnInit {
 
     this.saving = true;
     this.error = '';
-    this.postService.createComment(this.postId, content, user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.postService.createComment(this.postId, content, user, this.replyTarget?.id).pipe(tap(() => this.replyTarget = null), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (comment) => { this.comments = [comment, ...this.comments]; this.newComment = ''; this.saving = false; this.commentAdded.emit(); this.commentCountChanged.emit(this.comments.length); this.changeDetector.markForCheck(); },
       error: () => { this.saving = false; this.error = 'Não foi possível enviar o comentário. Tente novamente.'; },
     });

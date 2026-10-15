@@ -1,8 +1,9 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, moderatorGuard } from './core/guards/auth.guard';
+import { authGuard, moderatorGuard, publicAgencyGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  { path: 'orgao-publico', loadComponent: () => import('./features/agency/public-agency-page').then(m => m.PublicAgencyPage), canActivate: [authGuard, publicAgencyGuard] },
   {
     path: 'moderacao',
     loadComponent: () => import('./features/moderation/moderation-page').then(m => m.ModerationPage),
