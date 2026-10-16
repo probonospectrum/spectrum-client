@@ -12,20 +12,20 @@
   }
 
   @if (!cityLoading() && location()) {
-    <section class="city-feed" [attr.aria-label]="'Publicacoes da cidade' | translate">
+    <section class="city-feed" [attr.aria-label]="'Publicações da cidade' | translate">
       @for (post of posts; track post.id) {
         <app-post-card [post]="post" [currentUser]="user" (repost)="toggleRepost($event)" />
       } @empty {
         <div class="city-empty">
-          <h3>{{ 'Nenhuma publicacao por aqui' | translate }}</h3>
-          <p>{{ 'Quando alguem publicar nessa cidade, o conteudo aparece aqui.' | translate }}</p>
+          <h3>{{ 'Nenhuma publicação por aqui' | translate }}</h3>
+          <p>{{ 'Quando alguém publicar nessa cidade, o conteúdo aparece aqui.' | translate }}</p>
         </div>
       }
     </section>
   } @else if (!cityLoading()) {
     <section class="city-empty">
-      <h3>{{ 'Cidade nao encontrada' | translate }}</h3>
-      <p>{{ 'Volte para a pesquisa e escolha uma das cidades disponiveis.' | translate }}</p>
+      <h3>{{ 'Cidade não encontrada' | translate }}</h3>
+      <p>{{ 'Volte para a pesquisa e escolha uma das cidades disponíveis.' | translate }}</p>
     </section>
   }
 </app-social-shell>

@@ -70,6 +70,7 @@ export class CityPage implements OnInit {
     return this.postService
       .getPosts(this.user)
       .filter((post) => {
+        if (post.originalPostId) return false;
         const place = post.location;
         const postCity = this.locationService.normalize(place?.cityName || place?.city || '');
         const postState = this.locationService.normalize(place?.stateCode || place?.state || '');
