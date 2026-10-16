@@ -65,10 +65,16 @@ export class CityPage implements OnInit {
     }
 
     const cityName = this.locationService.normalize(location.city);
+    const state = this.locationService.normalize(location.state);
 
     return this.postService
       .getPosts(this.user)
-      .filter((post) => this.locationService.normalize(post.authorCity).includes(cityName));
+      .filter((post) => {
+        const place = post.location;
+        const postCity = this.locationService.normalize(place?.cityName || place?.city || '');
+        const postState = this.locationService.normalize(place?.stateCode || place?.state || '');
+        return postCity === cityName && (!postState || postState === state);
+      });
   }
 
   logout(): void {
