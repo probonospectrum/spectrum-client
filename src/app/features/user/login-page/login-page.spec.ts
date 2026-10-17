@@ -70,6 +70,19 @@ describe('LoginPage', () => {
     expect(component).toBeTruthy();
   });
 
+  it('requires a valid CNPJ and representation details only for institutional accounts', () => {
+    component.chooseAccountType('PUBLIC_AGENCY');
+    expect(component.registerForm.controls.agencyCnpj.invalid).toBe(true);
+    component.registerForm.controls.agencyCnpj.setValue('12.ABC.345/01DE-36');
+    expect(component.registerForm.controls.agencyCnpj.hasError('cnpj')).toBe(true);
+    component.registerForm.controls.agencyCnpj.setValue('12.ABC.345/01DE-35');
+    expect(component.registerForm.controls.agencyCnpj.valid).toBe(true);
+    component.chooseAccountType('CITIZEN');
+    component.registerForm.controls.agencyCnpj.setValue('');
+    expect(component.registerForm.controls.agencyCnpj.valid).toBe(true);
+    expect(component.registerForm.controls.authorizationReference.valid).toBe(true);
+  });
+
   it.each(['ana silva', 'Ana', 'ANA', 'ana-silva', 'ana@silva', 'josé', 'ana\n', ' ana', 'ana '])(
     'rejects invalid username %j and blocks both registration flows', (nickname) => {
       const create = vi.spyOn(TestBed.inject(UserService), 'create');
@@ -137,6 +150,7 @@ describe('LoginPage', () => {
     const normalSignup = vi.spyOn(TestBed.inject(UserService), 'create');
     component.submitRegister();
     expect(api).toHaveBeenCalledWith({
+      accountType: 'CITIZEN',
       registrationToken: 'pending-token',
       name: 'Teste',
       nickname: 'teste',

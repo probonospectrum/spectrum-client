@@ -1,4 +1,5 @@
 <section class="comment-section">
+  @if (replyTarget; as target) { <p class="comment-section__reply-context">{{ 'Respondendo a' | translate }} {{ target.authorName }}: {{ target.content }} <button type="button" [disabled]="saving" (click)="replyTarget = null">{{ 'Cancelar resposta' | translate }}</button></p> }
   <div class="comment-section__input">
     <span class="comment-section__avatar"><app-user-avatar [user]="currentUser" [name]="displayName" /></span>
     <input
@@ -28,6 +29,7 @@
             </span>
             <div class="comment-section__author">
               <strong>{{ comment.authorName }}</strong>
+              @if (comment.officialAgencyId) { <span class="comment-section__official">{{ 'Resposta oficial' | translate }} · {{ comment.officialAgencyName }}</span> }
               <span class="comment-section__date">{{ comment.createdAt | localizedDate:comment.dateLabel }}</span>
             </div>
             <div class="comment-section__menu-wrap" (click)="$event.stopPropagation()">
@@ -56,8 +58,10 @@
           </div>
 
           <p class="comment-section__content">{{ comment.content }}</p>
+          @if (comment.parentCommentId) { <p class="comment-section__reply-context">{{ 'Em resposta a' | translate }} {{ parentAuthor(comment) }}</p> }
 
           <div class="comment-section__actions">
+            @if (canOfficialReply && !comment.officialAgencyId && comment.authorId !== currentUser?._id) { <button type="button" [disabled]="saving" (click)="startReply(comment)">{{ 'Responder como órgão público' | translate }}</button> }
             <button
               type="button"
               [class.comment-section__action--liked]="isLiked(comment.id)"
@@ -96,16 +100,21 @@
   }
 </section>
 
+<ng-template #dialogs>
 @if (reportTarget) {
   <app-report-modal [title]="'Denunciar comentário' | translate"
     (close)="reportTarget = null" (confirm)="reportTarget = null" />
 }
 @if (deleteTarget) {
-  <div class="comment-section__confirm-backdrop" (click)="!actionPending && (deleteTarget = null)">
-  <div class="comment-section__confirm" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Excluir comentário' | translate">
-    <p>{{ 'Excluir seu comentário?' | translate }}</p>
-    <button type="button" [disabled]="actionPending" (click)="confirmDelete()">{{ (actionPending ? 'Excluindo...' : 'Excluir') | translate }}</button>
+  <app-settings-dialog [title]="'Excluir comentário'" [description]="'Excluir seu comentário?'"
+    (closed)="!actionPending && (deleteTarget = null)">
+  <div class="comment-section__confirm-actions">
     <button type="button" [disabled]="actionPending" (click)="deleteTarget = null">{{ 'Cancelar' | translate }}</button>
+    <button type="button" class="comment-section__confirm-danger" [disabled]="actionPending" (click)="confirmDelete()">{{ (actionPending ? 'Excluindo...' : 'Excluir') | translate }}</button>
   </div>
-  </div>
+  </app-settings-dialog>
+}
+</ng-template>
+@if (renderDialogs) {
+  <ng-container [ngTemplateOutlet]="dialogs" />
 }

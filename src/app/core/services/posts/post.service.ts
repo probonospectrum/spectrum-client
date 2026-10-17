@@ -1,7 +1,7 @@
 import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, tap, throwError, switchMap, shareReplay } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, catchError, forkJoin, map, of, tap, throwError, switchMap, shareReplay } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser, UserService } from '../user/user.service';
@@ -142,6 +142,7 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
   reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
   forwardingDueAt?: string | null;
@@ -181,6 +182,7 @@ export interface SpectrumPost {
 }
 
 export interface SpectrumComment {
+  parentCommentId?: string; officialAgencyId?: string; officialAgencyName?: string; officialAgencyCnpj?: string;
   id: string;
   createdAt?: string;
   authorId?: string;
@@ -196,6 +198,7 @@ export interface SpectrumComment {
 }
 
 interface CommentApiResponse {
+  parentCommentId?: string; officialAgencyId?: string; officialAgencyName?: string; officialAgencyCnpj?: string;
   _id: string;
   userId: string;
   text: string;
@@ -250,6 +253,8 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  agencyProgress?: SpectrumPost['agencyProgress'];
+  saved?: boolean;
   repostCount?: number;
   reposted?: boolean;
   commentCount?: number;
@@ -321,6 +326,10 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  recordAgencyProgress(post: SpectrumPost, user: LoggedUser | null, body: { status: 'EM_RESOLUCAO' | 'RESOLVIDA'; note: string; protocol?: string; evidenceIds: string[] }): Observable<SpectrumPost> {
+    return this.http.post<OccurrenceApiResponse>(`${API_BASE_URL}/public-agencies/occurrences/${post.id}/progress`, body).pipe(
+      map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
   readonly i18n = inject(I18nService);
   getModerationOccurrences(user: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`).pipe(
@@ -360,6 +369,33 @@ export class PostService {
   private readonly repostStorageKey = 'spectrum-reposts';
   private readonly postInteractionStorageKey = 'spectrum-post-interactions';
   private readonly commentInteractionStorageKey = 'spectrum-comment-interactions';
+  private readonly savedPosts = signal<SpectrumPost[]>([]);
+
+  private postStates(ids: string[]) {
+    return this.http.get<Record<string, { likeCount: number; unlikeCount: number; reaction: 'LIKE' | 'UNLIKE' | null; saved: boolean }>>(
+      `${API_BASE_URL}/like/post-states`, { params: { ids: [...new Set(ids)].join(',') } });
+  }
+
+  loadSavedPosts(user: LoggedUser | null): Observable<SpectrumPost[]> {
+    return this.http.get<string[]>(`${API_BASE_URL}/like/saved`).pipe(
+      switchMap(ids => ids.length ? forkJoin(ids.map(id => this.getOccurrence(id, user).pipe(catchError(error =>
+        error.status === 404 || error.status === 403 ? of(null) : throwError(() => error))))) : of([])),
+      map(posts => posts.filter((post): post is SpectrumPost => post !== null)),
+      tap(posts => this.savedPosts.set(posts)),
+    );
+  }
+
+  setPostSaved(post: SpectrumPost, user: LoggedUser | null, saved: boolean): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para salvar.');
+    const id = post.originalPostId ?? post.id;
+    return this.http.put<{ saved: boolean }>(`${API_BASE_URL}/like/post/${id}/saved`, { saved }).pipe(
+      map(state => Object.assign(post, state)),
+      tap(updated => {
+        this.cacheOccurrence({ ...updated, id });
+        this.savedPosts.update(posts => updated.saved ? [{ ...updated, id }, ...posts.filter(item => item.id !== id)] : posts.filter(item => item.id !== id));
+      }),
+    );
+  }
 
   getFeed(user: LoggedUser | null, cursor?: string): Observable<FeedPage> {
     return this.http.get<{ data: OccurrenceApiResponse[]; nextCursor: string | null; hasMore: boolean }>(`${API_BASE_URL}/feed`, {
@@ -376,6 +412,8 @@ export class PostService {
 
   getAuthorPosts(author: Pick<LoggedUser, '_id' | 'name' | 'nickname' | 'cityUser' | 'avatarUrl'>, viewer: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/user/${author._id}`, { params: { limit: '50' } }).pipe(
+      switchMap(posts => posts.length ? this.postStates(posts.map(post => post.originalPostId ?? post._id)).pipe(
+        map(states => posts.map(post => ({ ...post, ...states[post.originalPostId ?? post._id] })))) : of(posts)),
       switchMap(posts => {
         if (!posts.length) return of([] as SpectrumPost[]);
         const originals = new Map<string, Observable<SpectrumPost>>();
@@ -460,10 +498,10 @@ export class PostService {
       return of(localOccurrence);
     }
 
-    return this.http
-      .get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`)
+    if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(post => this.cacheOccurrence(post)));
+    return forkJoin({ occurrence: this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`), states: this.postStates([id]) })
       .pipe(
-        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        map(({ occurrence, states }) => this.toSpectrumPost({ ...occurrence, ...states[id] }, user)),
         tap((post) => this.cacheOccurrence(post)),
       );
   }
@@ -832,7 +870,7 @@ export class PostService {
       return [];
     }
 
-    return this.getPosts(user).filter((post) => post.saved);
+    return this.savedPosts();
   }
 
   findPostById(id: string, user: LoggedUser | null = null): SpectrumPost | null {
@@ -847,6 +885,7 @@ export class PostService {
   }
 
   loadComments(postId: string): Observable<SpectrumComment[]> {
+    if (this.users.currentUser()?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`).pipe(map(comments => comments.map(comment => this.toComment(comment))));
     return forkJoin({
       comments: this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`),
       reactions: this.http.get<Record<string, Pick<SpectrumComment, 'likes' | 'dislikes' | 'liked' | 'disliked'>>>(`${API_BASE_URL}/like/comment/post/${postId}`),
@@ -860,8 +899,8 @@ export class PostService {
     ).pipe(map(state => ({ ...comment, ...state })));
   }
 
-  createComment(postId: string, content: string, user: LoggedUser): Observable<SpectrumComment> {
-    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id }).pipe(map((comment) => this.toComment(comment)));
+  createComment(postId: string, content: string, user: LoggedUser, parentCommentId?: string): Observable<SpectrumComment> {
+    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id, ...(parentCommentId ? { parentCommentId } : {}) }).pipe(map((comment) => this.toComment(comment)));
   }
 
   deleteComment(commentId: string): Observable<unknown> {
@@ -869,7 +908,8 @@ export class PostService {
   }
 
   private toComment(comment: CommentApiResponse): SpectrumComment {
-    return { id: comment._id, createdAt: comment.createdAt, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
+    const official = { parentCommentId: comment.parentCommentId, officialAgencyId: comment.officialAgencyId, officialAgencyName: comment.officialAgencyName, officialAgencyCnpj: comment.officialAgencyCnpj };
+    return { ...official, id: comment._id, createdAt: comment.createdAt, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
       authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
       dateLabel: this.formatPublishedAt(new Date(comment.createdAt)), likes: comment.likeCount ?? 0,
       dislikes: comment.unlikeCount ?? 0, liked: false, disliked: false };
@@ -935,17 +975,12 @@ export class PostService {
   }
 
   setPostReaction(post: SpectrumPost, user: LoggedUser | null, reaction: 'LIKE' | 'UNLIKE' | null): Observable<SpectrumPost> {
-    const userId = this.requireUserKey(user, 'Entre na sua conta para reagir.');
+    this.requireUserKey(user, 'Entre na sua conta para reagir.');
     const postId = post.originalPostId ?? post.id;
     return this.http.put<{ likes: number; dislikes: number; liked: boolean; disliked: boolean }>(
       `${API_BASE_URL}/like/post/${postId}`, { reaction },
     ).pipe(map(result => {
-      const records = this.getPostInteractionRecords();
-      const record = this.getOrCreatePostInteractionRecord(records, userId, postId);
-      record.liked = result.liked;
-      record.disliked = result.disliked;
-      this.savePostInteractionRecords(records);
-      const updated = { ...post, ...result, reaction };
+      const updated = Object.assign(post, result, { reaction });
       this.cacheOccurrence({ ...updated, id: postId });
       return updated;
     }));
@@ -1424,7 +1459,7 @@ export class PostService {
       dislikes: normalizedPost.dislikes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.disliked).length),
       liked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'LIKE' : currentUserInteraction?.liked ?? false,
       disliked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'UNLIKE' : currentUserInteraction?.disliked ?? false,
-      saved: currentUserInteraction?.saved ?? normalizedPost.saved,
+      saved: this.isApiId(originalPostId) ? normalizedPost.saved : currentUserInteraction?.saved ?? normalizedPost.saved,
       reposts: this.isApiId(originalPostId) ? normalizedPost.reposts : normalizedPost.reposts + reposts.length,
       reposted: this.isApiId(originalPostId) ? normalizedPost.reposted : userId ? reposts.some((repost) => repost.userId === userId) : false,
     };
@@ -1623,16 +1658,17 @@ return {
   publishedAt: createdAt,
   publishedAtLabel: this.formatPublishedAt(new Date(createdAt)),
   likes: occurrence.likeCount ?? 0,
-  reaction: occurrence.reaction,
+  reaction: occurrence.reaction ?? null,
   liked: occurrence.reaction === 'LIKE',
   dislikes: occurrence.unlikeCount ?? 0,
   disliked: occurrence.reaction === 'UNLIKE',
   comments: occurrence.commentCount ?? 0,
   reposts: occurrence.repostCount ?? 0,
   reposted: occurrence.reposted ?? false,
-  saved: false,
+  saved: occurrence.saved ?? false,
   tags: [],
   status: occurrence.status,
+  agencyProgress: occurrence.agencyProgress,
   moderationReason: occurrence.moderationReason,
   forwardingDueAt: occurrence.forwardingDueAt,
   category: occurrence.category,

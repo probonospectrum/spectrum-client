@@ -3,7 +3,6 @@
   [class.post-card--clickable]="canOpenOccurrence"
   (click)="openOccurrenceFromCard($event)"
 >
-  @if (reactionError) { <p role="alert">{{ (reactionError) | translate }}</p> }
   <header class="post-card__header">
     <button
       type="button"
@@ -232,7 +231,7 @@
         type="button"
         [class.post-card__action--liked]="post.liked"
         [attr.aria-label]="'Curtir publicacao' | translate"
-        [disabled]="reactionPending"
+        [disabled]="reactionPending || savedPending"
         (click)="toggleLike()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
@@ -245,7 +244,7 @@
         type="button"
         [class.post-card__action--disliked]="post.disliked"
         [attr.aria-label]="'Descurtir publicacao' | translate"
-        [disabled]="reactionPending"
+        [disabled]="reactionPending || savedPending"
         (click)="toggleDislike()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>
@@ -268,7 +267,7 @@
         <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
         {{ reposts }}
       </button>
-      <button type="button" [attr.aria-label]="'Salvar publicacao' | translate" (click)="toggleSaved()">
+      <button type="button" [class.post-card__action--active]="isSaved" [attr.aria-pressed]="isSaved" [disabled]="savedPending || reactionPending" [attr.aria-label]="'Salvar publicacao' | translate" (click)="toggleSaved()">
         <span
           class="material-symbols-outlined"
           [class.post-card__filled-icon]="isSaved"
@@ -285,11 +284,21 @@
     <app-comment-section
       [postId]="post.originalPostId || post.id"
       [currentUser]="currentUser"
+      [responsibleAgencyId]="post.responsibleAgency?.id"
+      [renderDialogs]="false"
       (commentCountChanged)="onCommentCountChanged($event)"
     />
   }
 
 </article>
+
+@if (commentsOpen) {
+  <ng-container [ngTemplateOutlet]="commentSection()?.dialogs ?? null" />
+}
+
+@if (reactionError) {
+  <app-alert-popup type="error" [title]="'Não foi possível salvar'" [message]="reactionError" (dismissed)="reactionError = ''" />
+}
 
 @if (lightboxOpen) {
   <app-media-lightbox

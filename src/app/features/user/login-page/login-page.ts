@@ -1,4 +1,5 @@
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { isValidCnpj } from '../../../core/validation/cnpj';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -39,6 +40,16 @@ type AuthMode = 'login' | 'register';
   styleUrl: './login-page.scss',
 })
 export class LoginPage implements OnInit {
+  accountType = signal<'CITIZEN' | 'PUBLIC_AGENCY'>('CITIZEN');
+  chooseAccountType(type: 'CITIZEN' | 'PUBLIC_AGENCY'): void {
+    this.accountType.set(type);
+    const controls = this.registerForm.controls;
+    controls.agencyCnpj.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, control => isValidCnpj(control.value) ? null : { cnpj: true }] : []);
+    controls.agencyName.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, Validators.minLength(3), Validators.maxLength(160)] : []);
+    controls.representativePosition.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, Validators.minLength(3), Validators.maxLength(160)] : []);
+    controls.authorizationReference.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, Validators.minLength(20), Validators.maxLength(1000)] : []);
+    for (const control of [controls.agencyCnpj, controls.agencyName, controls.representativePosition, controls.authorizationReference]) control.updateValueAndValidity();
+  }
   private readonly formBuilder = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly cityService = inject(CityService);
@@ -76,6 +87,7 @@ export class LoginPage implements OnInit {
   });
 
   readonly registerForm = this.formBuilder.nonNullable.group({
+    agencyCnpj: [''], agencyName: [''], representativePosition: [''], authorizationReference: [''],
     nickname: ['', [Validators.required, Validators.pattern(/^[a-z0-9._]+$/)]],
     email: ['', [Validators.required, Validators.email]],
     birthDate: ['', Validators.required],
@@ -249,7 +261,8 @@ export class LoginPage implements OnInit {
       return;
     }
 
-    const { stateId: _stateId, ...payload } = this.registerForm.getRawValue();
+    const { stateId: _stateId, agencyCnpj, agencyName, representativePosition, authorizationReference, ...payload } = this.registerForm.getRawValue();
+    const agency = { accountType: this.accountType(), ...(this.accountType() === 'PUBLIC_AGENCY' ? { agencyCnpj, agencyName, representativePosition, authorizationReference } : {}) };
 
     this.isSubmitting.set(true);
 
@@ -257,6 +270,7 @@ export class LoginPage implements OnInit {
       this.authApiService
         .completeGoogleRegistration({
           registrationToken: this.pendingGoogleRegistration.registrationToken,
+          ...agency,
           name: payload.name,
           nickname: payload.nickname,
           password: payload.password,
@@ -287,6 +301,7 @@ export class LoginPage implements OnInit {
     this.userService
       .create({
         ...payload,
+        ...agency,
       })
       .pipe(
         finalize(() => this.isSubmitting.set(false)),
@@ -325,6 +340,7 @@ export class LoginPage implements OnInit {
     if (!control || !control.touched || control.valid) {
       return '';
     }
+    if (control.hasError('cnpj')) return 'Informe um CNPJ válido, numérico ou alfanumérico.';
 
     if (control.hasError('required')) {
       return 'Campo obrigatorio';

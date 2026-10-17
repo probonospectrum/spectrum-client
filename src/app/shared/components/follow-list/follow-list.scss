@@ -1,13 +1,24 @@
-dialog { width: min(560px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--spectrum-border); border-radius: 20px; color: var(--spectrum-text); background: var(--spectrum-surface); box-sizing: border-box; }
-dialog::backdrop { background: rgb(0 0 0 / 65%); }
-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-h2 { margin: 0; font-size: 20px; }
-button { padding: 8px 12px; border: 1px solid var(--spectrum-border); border-radius: 8px; color: inherit; background: var(--spectrum-surface); cursor: pointer; }
+dialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 28px; border: 1px solid var(--spectrum-border); border-radius: var(--spectrum-radius-lg); color: var(--spectrum-text); background: var(--spectrum-surface); box-shadow: var(--spectrum-shadow-lg); font-family: var(--spectrum-font); box-sizing: border-box; }
+dialog::backdrop { background: rgba(10, 23, 36, .55); backdrop-filter: blur(6px); }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+h2 { margin: 0; font: 600 21px/1.2 var(--spectrum-font); }
+button { padding: 8px 14px; border: 1px solid var(--spectrum-border); border-radius: 999px; color: inherit; background: var(--spectrum-surface); font: 600 13px/1.4 var(--spectrum-font); cursor: pointer; transition: background-color var(--spectrum-transition), border-color var(--spectrum-transition); }
+button:hover { background: var(--spectrum-surface-muted); border-color: var(--spectrum-border-strong); }
+.close-button { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--spectrum-text-muted); }
 button:disabled { opacity: .6; cursor: wait; }
-input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--spectrum-border); border-radius: 8px; color: inherit; background: var(--spectrum-surface); }
+input { width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid var(--spectrum-border); border-radius: var(--spectrum-radius-sm); color: inherit; background: var(--spectrum-surface-muted); font: 400 14px/1.4 var(--spectrum-font); }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--spectrum-primary-800); outline-offset: 2px; }
 .users { max-height: min(440px, 60vh); overflow-y: auto; margin-top: 12px; }
-.user-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
-a { display: flex; align-items: center; gap: 12px; min-width: 0; text-decoration: none; color: inherit; }
-app-user-avatar { width: 44px; height: 44px; flex-shrink: 0; }
-span { display: grid; overflow-wrap: anywhere; }
-small { opacity: .7; }
+.user-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+.user-row + .user-row { border-top: 1px solid var(--spectrum-border); }
+.user-row > button { flex-shrink: 0; max-width: 45%; }
+a { display: flex; align-items: center; gap: 12px; min-width: 0; text-decoration: none; color: inherit; border-radius: var(--spectrum-radius-sm); }
+app-user-avatar { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: var(--spectrum-surface-muted); color: var(--spectrum-primary-800); font: 600 16px/1 var(--spectrum-font); }
+a > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+strong { font: 600 14px/1.4 var(--spectrum-font); }
+small, p { color: var(--spectrum-text-secondary); font: 400 13px/1.5 var(--spectrum-font); }
+@media (max-width: 520px) {
+  dialog { padding: 24px 20px 20px; }
+  .user-row, a { gap: 8px; }
+  .user-row > button { padding: 8px 10px; font-size: 12px; }
+}

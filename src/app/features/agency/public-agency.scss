@@ -1,0 +1,71 @@
+.public-agency {
+  padding: 24px;
+  color: var(--spectrum-text);
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+article {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: 14px;
+  background: var(--spectrum-surface);
+  overflow-wrap: anywhere;
+}
+button {
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--spectrum-action);
+  color: white;
+  cursor: pointer;
+  font: inherit;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+p {
+  line-height: 1.6;
+}
+a {
+  display: block;
+  padding: 12px 0;
+  color: var(--spectrum-action);
+}
+fieldset {
+  padding: 16px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+}
+label {
+  display: grid;
+  gap: 6px;
+}
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  background: var(--spectrum-surface);
+  color: var(--spectrum-text);
+  border: 1px solid var(--spectrum-border);
+  border-radius: 10px;
+  font: inherit;
+}
+textarea {
+  min-height: 90px;
+}
+:is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--spectrum-action);
+  outline-offset: 3px;
+}

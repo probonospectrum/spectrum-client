@@ -27,6 +27,7 @@ import { MediaLightbox } from '../../../shared/components/media-lightbox/media-l
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
+  | 'agencyProgress'
   | 'response'
   | 'evidence'
   | 'agency'
@@ -53,6 +54,22 @@ interface AgencySuggestion {
   styleUrl: './occurrence-detail-page.scss',
 })
 export class OccurrenceDetailPage implements OnInit {
+  progressStatus: 'EM_RESOLUCAO' | 'RESOLVIDA' = 'EM_RESOLUCAO';
+  progressNote = ''; progressProtocol = ''; progressEvidenceIds: string[] = [];
+  get canRecordAgencyProgress(): boolean {
+    return this.isResponsibleAgencyForOccurrence && this.user?.agencyRegistrationStatus === 'APPROVED' &&
+      !!this.occurrence && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 &&
+      !['RESOLVIDA','CONTESTADA','EM_ANALISE_DE_COMPETENCIA'].includes(this.occurrence.status);
+  }
+  get agencyEvidenceOptions() { return this.occurrence?.evidences.filter(e => e.addedBy === this.user?._id) ?? []; }
+  submitAgencyProgress(): void {
+    if (!this.occurrence || !this.canRecordAgencyProgress) return;
+    if (this.progressNote.trim().length < 20) { this.errorMessage = 'Descreva o atendimento com pelo menos 20 caracteres.'; return; }
+    if (this.progressStatus === 'RESOLVIDA' && !this.progressEvidenceIds.length) { this.errorMessage = 'Anexe e selecione uma evidência do atendimento para fechar.'; return; }
+    this.runAction(() => this.postService.recordAgencyProgress(this.occurrence!, this.user, { status: this.progressStatus,
+      note: this.progressNote.trim(), protocol: this.progressProtocol.trim() || undefined, evidenceIds: this.progressEvidenceIds }),
+      this.progressStatus === 'RESOLVIDA' ? 'Ocorrência fechada pelo órgão com evidências. A comunidade pode contestar.' : 'Atendimento atualizado.');
+  }
   readonly i18n = inject(I18nService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -140,6 +157,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get nextStep(): string {
+    if (this.occurrence?.status === 'RESOLVIDA' && this.occurrence.agencyProgress?.closedByAgency) return 'O órgão fechou o atendimento com evidências. A comunidade pode contestar se o problema persistir.';
     const messages: Record<string, string> = {
       AGUARDANDO_ENCAMINHAMENTO: 'Após os 15 minutos de edição, o sistema buscará o órgão responsável e enviará a ocorrência.',
       EM_ANALISE_DE_COMPETENCIA: 'O sistema está conferindo a localização e a categoria para identificar o órgão responsável.',
@@ -331,7 +349,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canAddEvidence(): boolean {
-    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return (this.isCommunityUser || this.canRecordAgencyProgress) && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
   }
 
   get canSuggestAgency(): boolean {
@@ -364,7 +382,7 @@ export class OccurrenceDetailPage implements OnInit {
   get canShowAgencyActions(): boolean {
     return (
       this.isResponsibleAgencyForOccurrence &&
-      (this.canRegisterResponse || this.canInformResolution)
+      (this.canRegisterResponse || this.canRecordAgencyProgress || this.canAddEvidence)
     );
   }
 

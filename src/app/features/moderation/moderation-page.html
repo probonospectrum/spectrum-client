@@ -5,6 +5,7 @@
         <p>{{ 'Acompanhe os envios e ajude cada ocorrência a chegar à solução.' | translate }}</p></div>
       <button type="button" (click)="load()" [disabled]="loading()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>{{ (loading() ? 'Atualizando…' : 'Atualizar') | translate }}</button>
     </header>
+    <app-agency-review-panel />
     <div class="summary" [attr.aria-label]="'Resumo das ocorrências carregadas' | translate">
       <div><strong>{{ items().length }}</strong><span>{{ 'Ocorrências carregadas' | translate }}</span></div>
       <div><strong>{{ pendingCount }}</strong><span>{{ 'Com pendência' | translate }}</span></div>

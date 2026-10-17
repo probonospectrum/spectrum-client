@@ -17,6 +17,29 @@ describe('Occurrence feed API', () => {
   });
   afterEach(() => http.verify());
 
+  it.each(['LIKE', 'UNLIKE'] as const)('restores %s and saved state in occurrence details despite obsolete local storage', reaction => {
+    const id = '66f1c0de0000000000000001';
+    localStorage.setItem('spectrum-post-interactions', JSON.stringify([{ postId: id, userId: 'actor', liked: false, disliked: false, saved: false }]));
+    let result: SpectrumPost | undefined;
+    posts.getOccurrence(id, { _id: 'actor' } as LoggedUser).subscribe(post => result = post);
+    http.expectOne(API_BASE_URL + '/post/' + id).flush({ _id: id, text: 'Post', createdAt: '2026-10-12T12:00:00Z', likeCount: 0 });
+    http.expectOne(r => r.url === API_BASE_URL + '/like/post-states').flush({ [id]: { likeCount: 2, unlikeCount: 1, reaction, saved: true } });
+    expect(result).toMatchObject({ likes: 2, dislikes: 1, liked: reaction === 'LIKE', disliked: reaction === 'UNLIKE', saved: true });
+  });
+
+  it('persists saving through the backend without changing the reaction', () => {
+    const post = { id: '66f1c0de0000000000000001', saved: false, liked: true, reaction: 'LIKE' } as SpectrumPost;
+    let result: SpectrumPost | undefined;
+    posts.setPostSaved(post, { _id: 'actor' } as LoggedUser, true).subscribe(value => result = value);
+    const request = http.expectOne(API_BASE_URL + '/like/post/' + post.id + '/saved');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ saved: true });
+    expect(result).toBeUndefined();
+    request.flush({ saved: true });
+    expect(result).toMatchObject({ saved: true, liked: true, reaction: 'LIKE' });
+    expect(result).toBe(post);
+  });
+
   it('updates only repost metadata and preserves other interactions after repost and undo', () => {
     const id = '66f1c0de0000000000000001';
     const post = { id, likes: 8, dislikes: 2, liked: true, disliked: false, saved: true, comments: 3,
@@ -61,14 +84,16 @@ describe('Occurrence feed API', () => {
     http.expectOne(r => r.url === API_BASE_URL + '/post/user/profile-owner').flush([
       { _id: repostId, originalPostId: originalId, createdBy: owner._id, title: 'Repost: título', text: '', repostCount: 4, reposted: true },
     ]);
+    http.expectOne(r => r.url === API_BASE_URL + '/like/post-states').flush({ [originalId]: { likeCount: 2, unlikeCount: 0, reaction: 'LIKE', saved: true } });
     http.expectOne(API_BASE_URL + '/post/' + originalId).flush({
       _id: originalId, createdBy: 'original-author', title: 'Ocorrência original', text: 'Problema na rua',
       author: { _id: 'original-author', name: 'Bruno', nickname: 'bruno', avatarUrl: '/bruno.png' },
       repostCount: 4, reposted: true, evidences: [], history: [],
     });
+    http.expectOne(r => r.url === API_BASE_URL + '/like/post-states').flush({ [originalId]: { likeCount: 2, unlikeCount: 0, reaction: 'LIKE', saved: true } });
     expect(result[0]).toMatchObject({ id: repostId, originalPostId: originalId, createdBy: owner._id,
       authorName: 'Bruno', authorNickname: 'bruno', authorAvatarUrl: '/bruno.png', title: 'Ocorrência original',
-      content: 'Problema na rua', reposts: 4, reposted: true });
+      content: 'Problema na rua', reposts: 4, reposted: true, liked: true, saved: true });
   });
 
   it('returns an empty profile list without waiting for original occurrence requests', () => {
@@ -112,6 +137,7 @@ describe('Occurrence feed API', () => {
     expect(result).toBeUndefined();
     request.flush({ likes: 5, dislikes: 1, liked: true, disliked: false });
     expect(result?.likes).toBe(5);
+    expect(result).toBe(post);
     expect(posts.findPostById(id, user)?.likes).toBe(5);
     expect(posts.findPostById(id, user)?.liked).toBe(true);
   });
