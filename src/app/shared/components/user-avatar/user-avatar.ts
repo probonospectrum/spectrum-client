@@ -16,13 +16,18 @@ export class UserAvatar {
   readonly failedUrl = signal('');
 
   get avatarUrl(): string {
-    if (this.imageUrl) return this.imageUrl;
+    if (this.imageUrl.trim()) {
+      const url = this.imageUrl.trim();
+      return /^https?:\/\/placehold\.co\//i.test(url) ? '' : url;
+    }
     const currentUser = this.userService.currentUser();
     const user = this.user && this.user._id === currentUser?._id ? currentUser : this.user;
     return this.accountService.getAvatarUrl(user);
   }
 
   get initial(): string {
-    return (this.user?.name || this.name || 'Spectrum').trim().charAt(0).toUpperCase();
+    const currentUser = this.userService.currentUser();
+    const user = this.user && this.user._id === currentUser?._id ? currentUser : this.user;
+    return (user?.name?.trim() || this.name.trim() || 'Spectrum').charAt(0).toUpperCase();
   }
 }
