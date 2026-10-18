@@ -27,6 +27,15 @@ describe('UserAvatar', () => {
     }
   });
 
+  it('uses the name initial when an explicit image is a legacy placeholder', () => {
+    const fixture = TestBed.createComponent(UserAvatar);
+    fixture.componentRef.setInput('name', '  Beatriz Santos  ');
+    fixture.componentRef.setInput('imageUrl', 'https://placehold.co/200x200.png');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('img')).toBeNull();
+    expect(fixture.nativeElement.textContent.trim()).toBe('B');
+  });
+
   it('uses the initial for placeholders and failed images', async () => {
     const fixture = TestBed.createComponent(UserAvatar);
     fixture.componentRef.setInput('user', { ...user, avatarUrl: 'https://placehold.co/200x200.png' });
