@@ -92,6 +92,74 @@
       
     </section>
 
+    @if (isOccurrenceAuthor) {
+      <section class="occurrence-detail__section occurrence-detail__suggestions" aria-labelledby="agency-suggestions-title">
+        <div class="occurrence-detail__section-head">
+          <h2 id="agency-suggestions-title">Sugestões de órgãos públicos</h2>
+          <span class="occurrence-detail__private-label"><span class="material-symbols-outlined" aria-hidden="true">lock</span> Visível só para você</span>
+        </div>
+        <p class="occurrence-detail__suggestion-intro">A comunidade sugere. Você decide qual órgão associar à ocorrência.</p>
+        @if (agencySuggestions.length) {
+          <div class="occurrence-detail__suggestion-toolbar">
+            <label class="occurrence-detail__search">
+              <span>Buscar nas sugestões</span>
+              <div class="occurrence-detail__search-field">
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input type="search" [(ngModel)]="agencySuggestionSearch" name="agencySuggestionSearch" placeholder="Buscar órgão ou participante" />
+              </div>
+            </label>
+            <button
+              type="button"
+              class="occurrence-detail__sort-button"
+              (click)="agencySuggestionOrder = agencySuggestionOrder === 'most' ? 'least' : 'most'"
+              [attr.aria-label]="agencySuggestionOrder === 'most' ? 'Ordenado por mais sugeridos. Alterar para menos sugeridos' : 'Ordenado por menos sugeridos. Alterar para mais sugeridos'"
+              [attr.title]="agencySuggestionOrder === 'most' ? 'Mostrar menos sugeridos primeiro' : 'Mostrar mais sugeridos primeiro'"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">{{ agencySuggestionOrder === 'most' ? 'south' : 'north' }}</span>
+              {{ agencySuggestionOrder === 'most' ? 'Mais sugeridos' : 'Menos sugeridos' }}
+            </button>
+          </div>
+        }
+        @if (filteredAgencySuggestions.length) {
+          <div class="occurrence-detail__suggestion-list">
+            @for (suggestion of filteredAgencySuggestions; track suggestion.event.id) {
+              <article class="occurrence-detail__suggestion">
+                <div>
+                  <div class="occurrence-detail__suggestion-title">
+                    <h3>{{ displayAgencyName(suggestion.agency.name) }}</h3>
+                    @if (agencySuggestions.length > 1 && suggestion.supportCount > agencySuggestions[1].supportCount && suggestion.event.id === agencySuggestions[0].event.id) {
+                      <span class="occurrence-detail__popular-badge">Mais sugerido</span>
+                    }
+                  </div>
+                  <p class="occurrence-detail__support-count">{{ suggestion.supportCount === 1 ? 'Sugerido por 1 pessoa' : 'Sugerido por ' + suggestion.supportCount + ' pessoas' }}</p>
+                  <p class="occurrence-detail__participants">{{ suggestion.suggestedBy }}</p>
+                  <time>{{ formatDate(suggestion.event.createdAt || suggestion.event.occurredAt) }}</time>
+                </div>
+                @if (occurrence.responsibleAgency?.id && occurrence.responsibleAgency?.id === suggestion.agency.id) {
+                  <span class="occurrence-detail__selected-badge"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Órgão escolhido</span>
+                } @else if (canAcceptAgencySuggestion(suggestion)) {
+                  <button type="button" [disabled]="isSubmitting()" (click)="acceptAgencySuggestion(suggestion)">
+                    <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                    {{ isMockOccurrence ? 'Escolher este órgão' : 'Escolher e encaminhar' }}
+                  </button>
+                } @else if (hasSuccessfulAgencyForwarding) {
+                  <span class="occurrence-detail__suggestion-status">Encaminhamento já registrado</span>
+                } @else if (!isRegisteredAgencySuggestion(suggestion)) {
+                  <span class="occurrence-detail__suggestion-status">Órgão sem cadastro para encaminhamento</span>
+                } @else if (isAgencySelectionOnHold) {
+                  <span class="occurrence-detail__suggestion-status">Escolha disponível após o período de edição</span>
+                } @else {
+                  <span class="occurrence-detail__suggestion-status">Escolha indisponível nesta situação</span>
+                }
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="occurrence-detail__empty">{{ agencySuggestions.length ? 'Nenhuma sugestão corresponde à pesquisa.' : 'Ainda não há sugestões. A comunidade pode sugerir um órgão pelo botão abaixo.' }}</p>
+        }
+      </section>
+    }
+
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head">
         <h2>{{ 'Como você pode contribuir' | translate }}</h2>
@@ -225,6 +293,39 @@
                 <span>{{ 'Descrição da evidência' | translate }}</span>
                 <input type="text" [(ngModel)]="evidenceDescription" name="evidenceDescription" />
               </label>
+            }
+          }
+
+          @if (actionPanel === 'agency' || actionPanel === 'forward' || actionPanel === 'forwardFailure') {
+            @if (isMockOccurrence) {
+              <p>Escolha um órgão de exemplo abaixo. Sua sugestão ficará disponível apenas para o autor. Este mock não realiza encaminhamentos reais.</p>
+            }
+            @if (canSuggestAgency && !agencyDirectoryLoading() && agencyDirectoryLoadedEmpty) {
+              <label>
+                <span>Órgão sugerido</span>
+                <input type="text" [(ngModel)]="agencyName" name="agencyName" maxlength="160" placeholder="Informe o nome de um órgão da sua cidade" />
+                <small>Não há órgãos cadastrados. Sua sugestão será enviada ao autor; o encaminhamento depende do cadastro do órgão.</small>
+                <small>Exemplos de nomes: Secretaria Municipal de Obras, Secretaria de Meio Ambiente. Confira o nome na sua cidade.</small>
+              </label>
+            } @else {
+            <label>
+              <span>Buscar órgão cadastrado</span>
+              <input type="search" [(ngModel)]="agencyDirectorySearch" name="agencyDirectorySearch" placeholder="Nome, cidade ou estado" />
+            </label>
+            <label>
+              <span>Órgão responsável</span>
+              <select [(ngModel)]="agencyId" name="agencyId" (ngModelChange)="selectAgencyFromDirectory($event)">
+                <option value="">Selecione um órgão</option>
+                @for (agency of filteredAgencyDirectory; track agency.id) {
+                  <option [value]="agency.id">{{ displayAgencyName(agency.name) }}{{ agency.stateCode ? ' · ' + agency.stateCode : '' }}</option>
+                }
+              </select>
+              @if (agencyDirectoryLoading()) {
+                <small>Carregando órgãos...</small>
+              } @else if (!filteredAgencyDirectory.length) {
+                <small>Nenhum órgão cadastrado encontrado.</small>
+              }
+            </label>
             }
           }
 

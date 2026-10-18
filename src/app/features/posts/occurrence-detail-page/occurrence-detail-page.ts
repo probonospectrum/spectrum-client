@@ -15,6 +15,7 @@ import {
   OccurrenceEventType,
   OccurrenceForwardingChannel,
   OccurrenceHistoryEvent,
+  OccurrenceAgencyOption,
   PostService,
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
@@ -38,6 +39,13 @@ type ActionPanel =
   | 'contest'
   | 'reopen'
   | null;
+
+interface AgencySuggestion {
+  event: OccurrenceHistoryEvent;
+  agency: OccurrenceAgency;
+  suggestedBy: string;
+  supportCount: number;
+}
 
 @Component({
   selector: 'app-occurrence-detail-page',
@@ -104,6 +112,12 @@ export class OccurrenceDetailPage implements OnInit {
   resolutionReviewNote = '';
   contestReason = '';
   reopenReason = '';
+  agencyDirectory: OccurrenceAgencyOption[] = [];
+  agencyDirectorySearch = '';
+  agencySuggestionSearch = '';
+  agencySuggestionOrder: 'most' | 'least' = 'most';
+  readonly agencyDirectoryLoading = signal(false);
+  private agencyDirectoryLoaded = false;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -223,7 +237,7 @@ export class OccurrenceDetailPage implements OnInit {
       .subscribe({
         next: ({ occurrence, history }) => {
           this.occurrence = this.withHistoryAuthor(occurrence, history);
-          this.historyEvents = history;
+          this.historyEvents = this.isMockOccurrence ? occurrence.history : history;
           this.prefillAgency(occurrence.responsibleAgency ?? undefined);
         },
         error: (error: unknown) => {
@@ -236,9 +250,71 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get timeline(): OccurrenceHistoryEvent[] {
-    return [...this.historyEvents].sort(
+    return this.historyEvents.filter(event => this.isOccurrenceAuthor || event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO').sort(
       (first, second) =>
         new Date(first.createdAt ?? first.occurredAt).getTime() - new Date(second.createdAt ?? second.occurredAt).getTime(),
+    );
+  }
+
+  get isMockOccurrence(): boolean {
+    return Boolean(this.occurrence?.id.startsWith('mock-'));
+  }
+
+  displayAgencyName(name: string): string {
+    return this.isMockOccurrence ? name.replace(/\s*\(exemplo\)/gi, '').trim() : name;
+  }
+
+  get isOccurrenceAuthor(): boolean {
+    return Boolean(this.user?._id && this.user._id === this.occurrence?.createdBy);
+  }
+
+  get agencySuggestions(): AgencySuggestion[] {
+    const groups = new Map<string, AgencySuggestion & { participants: Map<string, string> }>();
+    for (const event of this.timeline) {
+      if (event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO') continue;
+      const agency = event.metadata?.['agency'] as OccurrenceAgency | undefined;
+      const name = (agency?.name || String(event.metadata?.['agencyName'] ?? '')).trim();
+      if (!name) continue;
+      const key = agency?.id || this.normalizeSearch(name).replace(/\s+/g, ' ');
+      const participantName = event.actorName || event.actorOrigin || 'Usuário da comunidade';
+      // Events without an actor identifier do not establish distinct supporters.
+      const participantKey = event.actorId || 'unknown';
+      let group = groups.get(key);
+      if (!group) {
+        group = { event, agency: { id: agency?.id, name }, suggestedBy: '', supportCount: 0, participants: new Map() };
+        groups.set(key, group);
+      }
+      group.participants.set(participantKey, participantName);
+      group.suggestedBy = [...group.participants.values()].join(', ');
+      group.supportCount = [...group.participants.keys()].filter(id => id !== 'unknown').length;
+    }
+    return [...groups.values()].sort((first, second) =>
+      second.supportCount - first.supportCount || first.agency.name.localeCompare(second.agency.name, 'pt-BR'),
+    );
+  }
+
+  get filteredAgencySuggestions(): AgencySuggestion[] {
+    const query = this.normalizeSearch(this.agencySuggestionSearch);
+    return this.agencySuggestions
+      .filter(({ agency, suggestedBy }) => !query || this.normalizeSearch(`${agency.name} ${suggestedBy}`).includes(query))
+      .sort((first, second) =>
+        (this.agencySuggestionOrder === 'most'
+          ? second.supportCount - first.supportCount
+          : first.supportCount - second.supportCount) || first.agency.name.localeCompare(second.agency.name, 'pt-BR'),
+      );
+  }
+
+  get filteredAgencyDirectory(): OccurrenceAgencyOption[] {
+    const query = this.normalizeSearch(this.agencyDirectorySearch);
+    if (!query) return this.agencyDirectory;
+
+    return this.agencyDirectory.filter((agency) =>
+      this.normalizeSearch([
+        agency.name,
+        agency.stateCode,
+        ...(agency.cities ?? []),
+        ...(agency.categories ?? []),
+      ].join(' ')).includes(query),
     );
   }
 
@@ -353,7 +429,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get responsibleAgencyLabel(): string {
-    return this.occurrence?.responsibleAgency?.name || 'Órgão responsável ainda não identificado';
+    return this.displayAgencyName(this.occurrence?.responsibleAgency?.name || 'Órgão responsável ainda não identificado');
   }
 
   get latestUpdateDate(): string {
@@ -410,6 +486,59 @@ export class OccurrenceDetailPage implements OnInit {
     this.analysisNote = '';
     this.errorMessage = '';
     this.successMessage = '';
+    if (panel === 'agency' || panel === 'forward' || panel === 'forwardFailure') {
+      this.loadAgencyDirectory();
+    }
+  }
+
+  acceptAgencySuggestion(suggestion: AgencySuggestion): void {
+    if (!this.occurrence || !this.canAcceptAgencySuggestion(suggestion)) return;
+
+    this.runAction(
+      () => this.postService.acceptAgencySuggestion(
+        this.occurrence!,
+        this.user,
+        suggestion.agency.id!,
+      ),
+      this.isMockOccurrence ? `Órgão de exemplo escolhido: ${this.displayAgencyName(suggestion.agency.name)}. Nenhum encaminhamento real foi realizado.` : `Ocorrência encaminhada para ${this.displayAgencyName(suggestion.agency.name)}.`,
+    );
+  }
+
+  canAcceptAgencySuggestion(suggestion: AgencySuggestion): boolean {
+    const createdAt = Date.parse(this.occurrence?.createdAt ?? '');
+    return Boolean(
+      this.isOccurrenceAuthor &&
+        this.isRegisteredAgencySuggestion(suggestion) &&
+        (this.isMockOccurrence || (Number.isFinite(createdAt) && Date.now() - createdAt >= 15 * 60 * 1000)) &&
+        [
+          'ABERTA',
+          'SEM_ORGAO_IDENTIFICADO',
+          'AGUARDANDO_ENCAMINHAMENTO',
+          'EM_ANALISE_DE_COMPETENCIA',
+          'FALHA_NO_ENCAMINHAMENTO',
+        ].includes(this.occurrence?.status ?? '') &&
+        !this.hasSuccessfulAgencyForwarding,
+    );
+  }
+
+  isRegisteredAgencySuggestion(suggestion: AgencySuggestion): boolean {
+    return this.isMockOccurrence
+      ? this.postService.mockAgencies.some(agency => agency.id === suggestion.agency.id)
+      : /^[a-f\d]{24}$/i.test(suggestion.agency.id ?? '');
+  }
+
+  get hasSuccessfulAgencyForwarding(): boolean {
+    return Boolean(this.occurrence?.forwardingHistory.some((forwarding) => forwarding.success));
+  }
+
+  get isAgencySelectionOnHold(): boolean {
+    const createdAt = Date.parse(this.occurrence?.createdAt ?? '');
+    return Number.isFinite(createdAt) && Date.now() - createdAt < 15 * 60 * 1000;
+  }
+
+  selectAgencyFromDirectory(agencyId: string): void {
+    const agency = this.agencyDirectory.find((item) => item.id === agencyId);
+    this.agencyName = agency?.name ?? '';
   }
 
   onEvidenceSelected(event: Event): void {
@@ -455,8 +584,8 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitAgency(): void {
-    if (!this.occurrence || (!this.canAssociateAgency && !this.canSuggestAgency) || !this.agencyName.trim()) {
-      this.errorMessage = 'Informe o nome do órgão responsável.';
+    if (!this.occurrence || (!this.canAssociateAgency && !this.canSuggestAgency) || (!this.agencyId && !this.canSuggestAgency) || !this.agencyName.trim()) {
+      this.errorMessage = this.canSuggestAgency ? 'Informe o nome do órgão sugerido.' : 'Selecione um órgão cadastrado.';
       return;
     }
 
@@ -473,7 +602,7 @@ export class OccurrenceDetailPage implements OnInit {
         );
     const message = this.canAssociateAgency
       ? 'Órgão responsável associado à ocorrência.'
-      : 'Sugestão de órgão responsável registrada no histórico.';
+      : 'Sugestão enviada para avaliação do autor da ocorrência.';
 
     this.runAction(() => action, message);
   }
@@ -683,11 +812,12 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_IDENTIFICADO') {
-      return this.i18n.translate('{agency} foi identificado como responsável pela ocorrência.', { agency: metadata['agencyName'] ?? this.i18n.translate('Um órgão') });
+  return this.i18n.translate('{agency} foi identificado como responsável pela ocorrência.', { agency: this.displayAgencyName(String(metadata['agencyName'] ?? this.i18n.translate('Um órgão'))) });
     }
 
     if (event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO') {
-      return this.i18n.translate('{agency} foi sugerido pela comunidade.', { agency: metadata['agencyName'] ?? this.i18n.translate('Um órgão') });
+      const agency = metadata['agency'] as OccurrenceAgency | undefined;
+        return this.i18n.translate('{agency} foi sugerido pela comunidade.', { agency: this.displayAgencyName(String(metadata['agencyName'] ?? agency?.name ?? this.i18n.translate('Um órgão'))) });
     }
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {
@@ -726,6 +856,7 @@ export class OccurrenceDetailPage implements OnInit {
 
     const actorName =
       event.actorName ||
+      event.actorOrigin ||
       (event.actorType === 'RESPONSIBLE_AGENCY' ? this.occurrence?.responsibleAgency?.name : '') ||
       (event.eventType === 'OCORRENCIA_CRIADA' ? this.occurrence?.authorName : '');
 
@@ -833,7 +964,7 @@ export class OccurrenceDetailPage implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (history) => {
-          this.historyEvents = history;
+          this.historyEvents = this.isMockOccurrence ? occurrence.history : history;
           this.occurrence = this.withHistoryAuthor(occurrence, history);
         },
         error: (error: unknown) => { this.errorMessage = this.getErrorMessage(error); },
@@ -883,11 +1014,48 @@ export class OccurrenceDetailPage implements OnInit {
 
   private buildAgency(): OccurrenceAgency {
     return {
-      id: this.agencyId.trim() || undefined,
+      id: this.canSuggestAgency && this.agencyDirectoryLoadedEmpty ? undefined : this.agencyId.trim() || undefined,
       name: this.agencyName.trim(),
       email: this.agencyEmail || undefined,
       hasIntegration: false,
     };
+  }
+
+  get agencyDirectoryLoadedEmpty(): boolean {
+    return this.agencyDirectoryLoaded && this.agencyDirectory.length === 0;
+  }
+
+  private loadAgencyDirectory(): void {
+    if (this.agencyDirectoryLoaded || this.agencyDirectoryLoading()) return;
+
+    this.agencyDirectoryLoading.set(true);
+    this.postService
+      .getResponsibleAgencies(this.occurrence?.id)
+      .pipe(
+        finalize(() => this.agencyDirectoryLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (agencies) => {
+          this.agencyDirectory = agencies;
+          if (!agencies.length && this.canSuggestAgency) {
+            this.agencyId = '';
+            this.agencyName = '';
+          }
+          this.agencyDirectoryLoaded = true;
+        },
+        error: (error: unknown) => {
+          this.errorMessage = this.getErrorMessage(error);
+        },
+      });
+  }
+
+  private normalizeSearch(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('pt-BR')
+      .trim();
   }
 
   private prefillAgency(agency?: OccurrenceAgency): void {
