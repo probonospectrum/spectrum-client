@@ -16,7 +16,7 @@ export interface CreateUserRequest {
   nickname: string;
   email: string;
   password: string;
-  birthDate: string;
+  birthDate?: string;
   avatarUrl?: string;
   cityUser: string;
 }

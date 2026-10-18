@@ -152,6 +152,45 @@
       }
     </section>
 
+    @if (!isEditing) {
+      <section class="agency-picker" aria-labelledby="agency-picker-title" [attr.aria-busy]="agenciesLoading()">
+        <div class="agency-picker__heading">
+          <span class="material-symbols-outlined agency-picker__icon" aria-hidden="true">account_balance</span>
+          <div><h3 id="agency-picker-title">Vincular órgão público</h3><p>Direcione seu relato a quem pode ajudar.</p></div>
+          <span class="agency-picker__optional">Opcional</span>
+        </div>
+        @if (!selectedCity || !selectedState) {
+          <p class="agency-picker__hint"><span class="material-symbols-outlined" aria-hidden="true">location_on</span> Selecione o estado e a cidade para consultar os órgãos cadastrados.</p>
+        } @else {
+          <p class="agency-picker__region"><span class="material-symbols-outlined" aria-hidden="true">location_on</span> {{ locationLabel }}</p>
+          @if (agenciesError()) {
+            <p role="alert">{{ agenciesError() }} <button type="button" (click)="loadAvailableAgencies()">Tentar novamente</button></p>
+          } @else if (agenciesLoading()) {
+            <p role="status">Consultando órgãos desta cidade…</p>
+          } @else if (!availableAgencies().length) {
+            <p class="agency-picker__hint" role="status">Nenhum órgão cadastrado para esta cidade e estado. Você pode publicar a ocorrência normalmente.</p>
+          } @else {
+            <label class="create-post-modal__select-field">
+              <span class="create-post-modal__label">Órgão responsável</span>
+              <select [(ngModel)]="selectedAgencyId" aria-describedby="agency-selection-help">
+                <option value="">Publicar sem vincular um órgão</option>
+                @for (agency of availableAgencies(); track agency.id) {
+                  <option [value]="agency.id">{{ agency.name }}</option>
+                }
+              </select>
+            </label>
+            @if (selectedAgency; as agency) {
+              <div class="agency-picker__selected" role="status">
+                <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                <div><strong>{{ agency.name }}</strong><p>A ocorrência aparecerá na caixa de entrada do órgão assim que for publicada.</p></div>
+              </div>
+            }
+            <small id="agency-selection-help">{{ selectedAgencyId ? 'Com um órgão vinculado, novas sugestões de responsável ficam desabilitadas.' : 'Sem vínculo, a comunidade poderá sugerir um órgão após a publicação.' }}</small>
+          }
+        }
+      </section>
+    }
+
     <section class="create-post-modal__section" aria-labelledby="occurrence-evidence-label">
       <div class="create-post-modal__toolbar">
         <div>

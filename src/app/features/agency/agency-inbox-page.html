@@ -1,0 +1,127 @@
+<app-social-shell [user]="users.currentUser()" [showContentHeader]="false" (logout)="logout()">
+  <div class="agency-inbox">
+    <header class="inbox-heading">
+      <div class="inbox-heading__icon">
+        <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+      </div>
+      <div>
+        <span class="eyebrow">ATENDIMENTO INSTITUCIONAL</span>
+        <h1>Caixa de entrada</h1>
+        <p>Ocorrências vinculadas ao seu órgão público.</p>
+      </div>
+      <button
+        class="refresh"
+        type="button"
+        (click)="inbox.reload()"
+        [disabled]="inbox.loading()"
+        aria-label="Atualizar ocorrências"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+      </button>
+    </header>
+    @if (!inbox.enabled()) {
+      <div class="inbox-empty" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+        <h2>Aguardando aprovação institucional</h2>
+        <p>
+          A caixa de entrada está disponível para representantes aprovados e vinculados a um órgão
+          cadastrado.
+        </p>
+        <a routerLink="/orgao-publico">Consultar conta institucional</a>
+      </div>
+    } @else {
+      <div class="inbox-summary">
+        <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+        <p>
+          <strong
+            >{{ inbox.total() }}
+            {{ inbox.total() === 1 ? 'ocorrência vinculada' : 'ocorrências vinculadas' }}</strong
+          ><span>Os relatos permanecem disponíveis aqui, inclusive após a resolução.</span>
+        </p>
+        <a routerLink="/notificacoes">Ver notificações <span aria-hidden="true">↗</span></a>
+      </div>
+      <section class="inbox-panel" aria-label="Ocorrências vinculadas">
+        <div class="inbox-toolbar">
+          <label class="search"
+            ><span class="material-symbols-outlined" aria-hidden="true">search</span
+            ><input
+              type="search"
+              placeholder="Buscar por título, cidade ou protocolo"
+              aria-label="Buscar nas ocorrências carregadas"
+              [value]="search()"
+              (input)="search.set($any($event.target).value)"
+          /></label>
+          <label class="status-filter"
+            ><span class="sr-only">Filtrar situação</span
+            ><select [value]="filter()" (change)="filter.set($any($event.target).value)">
+              <option value="all">Todas as situações</option>
+              <option value="open">Em acompanhamento</option>
+              <option value="resolved">Resolvidas</option>
+            </select></label
+          >
+        </div>
+        @if (inbox.error()) {
+          <p class="inbox-error" role="alert">
+            {{ inbox.error() }}
+            <button type="button" (click)="inbox.reload()">Tentar novamente</button>
+          </p>
+        }
+        @if (inbox.loading()) {
+          <div class="inbox-empty" role="status">Carregando ocorrências…</div>
+        }
+        @for (post of filtered(); track post._id) {
+          <a class="inbox-row" [routerLink]="['/ocorrencias', post._id]">
+            <span class="row-icon material-symbols-outlined" aria-hidden="true">{{
+              post.status === 'RESOLVIDA' ? 'task_alt' : 'description'
+            }}</span>
+            <div class="row-content">
+              <span class="row-meta"
+                >{{ post.location?.cityName || 'Ocorrência'
+                }}{{ post.location?.stateCode ? ' · ' + post.location?.stateCode : '' }}
+                <time>{{ post.createdAt | localizedDate }}</time></span
+              >
+              <h2>{{ post.title }}</h2>
+              <span class="protocol">Protocolo {{ post._id }}</span
+              ><span class="status" [class.status--resolved]="post.status === 'RESOLVIDA'"
+                ><span aria-hidden="true">●</span> {{ label(post.status) }}</span
+              >
+            </div>
+            <span class="material-symbols-outlined row-arrow" aria-hidden="true"
+              >arrow_forward</span
+            >
+          </a>
+        } @empty {
+          @if (!inbox.loading() && !inbox.error()) {
+            <div class="inbox-empty">
+              <span class="material-symbols-outlined" aria-hidden="true">{{
+                search() || filter() !== 'all' ? 'search_off' : 'inbox'
+              }}</span>
+              <h2>
+                {{
+                  search() || filter() !== 'all'
+                    ? 'Nenhum resultado nesta lista'
+                    : 'Sua caixa de entrada está em dia'
+                }}
+              </h2>
+              <p>
+                {{
+                  search() || filter() !== 'all'
+                    ? 'Ajuste os filtros ou carregue mais ocorrências.'
+                    : 'Quando um cidadão vincular um relato ao seu órgão, ele aparecerá aqui e nas suas notificações.'
+                }}
+              </p>
+            </div>
+          }
+        }
+        <footer>
+          <span>{{ inbox.items().length }} de {{ inbox.total() }} ocorrências carregadas</span>
+          @if (inbox.cursor()) {
+            <button type="button" (click)="inbox.loadMore()" [disabled]="inbox.loadingMore()">
+              {{ inbox.loadingMore() ? 'Carregando…' : 'Carregar mais ocorrências' }}
+            </button>
+          }
+        </footer>
+      </section>
+    }
+  </div>
+</app-social-shell>

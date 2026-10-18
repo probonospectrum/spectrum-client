@@ -175,6 +175,7 @@ export interface SpectrumPost {
   category?: OccurrenceCategory;
   location?: OccurrenceLocation;
   responsibleAgency?: OccurrenceAgency | null;
+  linkedAgencyIds?: string[];
   evidences: OccurrenceEvidence[];
   forwardingHistory: OccurrenceForwarding[];
   confirmedByIds: string[];
@@ -233,6 +234,7 @@ export interface CreateOccurrenceEvidencePayload {
 }
 
 export interface CreateOccurrencePayload {
+  agencyId?: string;
   text: string;
   title: string;
   description: string;
@@ -272,6 +274,7 @@ interface OccurrenceApiResponse {
   status: OccurrenceStatus;
   location: OccurrenceLocation;
   responsibleAgency?: OccurrenceAgency | null;
+  linkedAgencyIds?: string[];
   evidences: OccurrenceEvidence[];
   forwardingHistory?: OccurrenceForwarding[];
   confirmedByIds?: string[];
@@ -351,6 +354,9 @@ export class PostService {
     return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/response`, {
       forwardingId, responseReceived, responseCode: responseCode || undefined, protocol: protocol.trim() || undefined,
     }).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
+  getAgenciesForLocation(stateCode: string, cityName: string): Observable<OccurrenceAgencyOption[]> {
+    return this.http.get<OccurrenceAgencyOption[]>(`${this.apiUrl}/agencies/available`, { params: { stateCode, cityName } });
   }
   getRegisteredAgencies(): Observable<{ _id: string; name: string; emails: string[] }[]> {
     return this.http.get<{ _id: string; name: string; emails: string[] }[]>(`${this.apiUrl}/agencies`);
@@ -1295,6 +1301,7 @@ export class PostService {
       evidence?: OccurrenceEvidence;
       confirmedById?: string;
       responsibleAgency?: OccurrenceAgency | null;
+  linkedAgencyIds?: string[];
       forwarding?: OccurrenceForwarding;
     },
   ): SpectrumPost {
@@ -1675,6 +1682,7 @@ return {
   importance: occurrence.importance,
   location: occurrence.location,
   responsibleAgency: occurrence.responsibleAgency,
+  linkedAgencyIds: occurrence.linkedAgencyIds,
   evidences: occurrence.evidences ?? [],
   forwardingHistory: occurrence.forwardingHistory ?? [],
   confirmedByIds: occurrence.confirmedByIds ?? [],

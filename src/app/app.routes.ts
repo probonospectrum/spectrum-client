@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { authGuard, moderatorGuard, publicAgencyGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  { path: 'orgao-publico/caixa-de-entrada', loadComponent: () => import('./features/agency/agency-inbox-page').then(m => m.AgencyInboxPage), canActivate: [authGuard, publicAgencyGuard] },
   { path: 'orgao-publico', loadComponent: () => import('./features/agency/public-agency-page').then(m => m.PublicAgencyPage), canActivate: [authGuard, publicAgencyGuard] },
   {
     path: 'moderacao',

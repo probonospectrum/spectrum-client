@@ -52,7 +52,8 @@
         @if (account.occurrenceRole === 'RESPONSIBLE_AGENCY') {
           <article>
             <h2>{{ 'Ocorrências atribuídas ao seu órgão' | translate }}</h2>
-            <p>{{ 'Até 100 ocorrências mais recentemente atualizadas.' | translate }}</p>
+            <a routerLink="/orgao-publico/caixa-de-entrada">Abrir caixa de entrada →</a>
+            <p>{{ 'Consulte a caixa de entrada para ver todas as ocorrências vinculadas.' | translate }}</p>
             @for (post of occurrences(); track post._id) {
               <a [routerLink]="['/ocorrencias', post._id]"
                 >{{ post.title }} · {{ occurrenceLabel(post.status) | translate }}</a

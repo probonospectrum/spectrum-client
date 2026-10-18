@@ -26,7 +26,7 @@ export interface GoogleRegistrationRequest {
   name: string;
   nickname: string;
   password: string;
-  birthDate: string;
+  birthDate?: string;
   cityUser: string;
 }
 

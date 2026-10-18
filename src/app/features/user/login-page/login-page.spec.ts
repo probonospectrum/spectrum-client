@@ -83,6 +83,33 @@ describe('LoginPage', () => {
     expect(component.registerForm.controls.authorizationReference.valid).toBe(true);
   });
 
+  it('does not require or send a birth date for institutional accounts', () => {
+    const create = vi
+      .spyOn(TestBed.inject(UserService), 'create')
+      .mockReturnValue(of({ message: 'created' }) as never);
+    component.chooseAccountType('PUBLIC_AGENCY');
+    component.registerForm.patchValue({
+      nickname: 'secretaria',
+      email: 'contato@prefeitura.gov.br',
+      password: 'spectrum-password',
+      name: 'Ana Silva',
+      stateId: '29',
+      cityUser: 'Salvador - BA',
+      agencyCnpj: '12.ABC.345/01DE-35',
+      agencyName: 'Secretaria Municipal de Serviços',
+      representativePosition: 'Diretora',
+      authorizationReference: 'Portaria 123/2026 https://prefeitura.gov.br/atos/123',
+    });
+
+    component.goToNextRegisterStep();
+    expect(component.registerStep()).toBe(2);
+    component.submitRegister();
+
+    expect(create).toHaveBeenCalledOnce();
+    expect(create.mock.calls[0][0]).not.toHaveProperty('birthDate');
+    expect(create.mock.calls[0][0].cityUser).toBe('Salvador - BA');
+  });
+
   it.each(['ana silva', 'Ana', 'ANA', 'ana-silva', 'ana@silva', 'josé', 'ana\n', ' ana', 'ana '])(
     'rejects invalid username %j and blocks both registration flows', (nickname) => {
       const create = vi.spyOn(TestBed.inject(UserService), 'create');
