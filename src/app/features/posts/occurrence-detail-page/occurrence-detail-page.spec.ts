@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { vi } from 'vitest';
 
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
@@ -121,18 +122,19 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows only related agency actions at the same URL', () => {
-    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual([]);
+    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência']);
     fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
     expect(fixture.componentInstance.canRegisterResponse).toBe(true);
     expect(fixture.componentInstance.canResolve).toBe(false);
   });
 
   it('does not show agency controls to an unrelated agency', () => {
-    expect(actionsFor('RESPONSIBLE_AGENCY', 'outro-orgao')).toEqual([]);
+    expect(actionsFor('RESPONSIBLE_AGENCY', 'outro-orgao')).toEqual(['add_photo_alternate Adicionar evidência']);
   });
 
   it('shows moderator operations at the same URL', () => {
     expect(actionsFor('MODERATOR')).toEqual([
+      'add_photo_alternate Adicionar evidência',
       'send Encaminhar por e-mail',
     ]);
   });
@@ -190,6 +192,40 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.canReopen).toBe(true);
     fixture.componentInstance.occurrence = { ...occurrence, status: 'REABERTA' };
     expect(fixture.componentInstance.formatStatus()).toBe('Aberta');
+  });
+
+  it('lets only the creator decide pending evidence and prevents duplicate decisions', () => {
+    actionsFor('USER');
+    const page = fixture.componentInstance;
+    const pending = { id: 'pending', type: 'IMAGE' as const, addedAt: occurrence.createdAt, status: 'PENDING' as const, description: 'Foto enviada pela comunidade' };
+    page.occurrence = { ...occurrence, createdBy: 'USER', evidences: [pending] };
+    fixture.changeDetectorRef.markForCheck(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Aguardando análise do criador');
+    const accept = fixture.nativeElement.querySelector('button[aria-label="Aceitar evidência: Foto enviada pela comunidade"]');
+    expect(accept).not.toBeNull();
+    const review = vi.fn().mockReturnValue(of({ ...page.occurrence, evidences: [{ ...pending, status: 'APPROVED' }] }));
+    Object.assign(TestBed.inject(PostService), { reviewOccurrenceEvidence: review });
+    accept.click();
+    expect(review).toHaveBeenCalledWith(expect.objectContaining({ id: occurrenceId }), user, 'pending', true);
+    expect(page.successMessage).toContain('aceita');
+    expect(page.canReviewEvidence(page.occurrence!.evidences[0])).toBe(false);
+    page.occurrence = { ...occurrence, createdBy: 'someone-else', evidences: [pending] };
+    fixture.changeDetectorRef.markForCheck(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('button[aria-label^="Rejeitar evidência"]')).toBeNull();
+    page.reviewEvidence(pending, false);
+    expect(review).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps pending evidence available for retry after a review error', () => {
+    actionsFor('USER');
+    const page = fixture.componentInstance;
+    const pending = { id: 'pending', type: 'IMAGE' as const, addedAt: occurrence.createdAt, status: 'PENDING' as const };
+    page.occurrence = { ...occurrence, createdBy: 'USER', evidences: [pending] };
+    Object.assign(TestBed.inject(PostService), { getOccurrence: () => of(page.occurrence), reviewOccurrenceEvidence: vi.fn().mockReturnValue(throwError(() => new Error('Falha de conexão'))) });
+    page.reviewEvidence(pending, false);
+    expect(page.isSubmitting()).toBe(false);
+    expect(page.errorMessage).toBeTruthy();
+    expect(page.canReviewEvidence(pending)).toBe(true);
   });
 
 });

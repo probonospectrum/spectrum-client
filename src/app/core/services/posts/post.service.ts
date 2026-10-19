@@ -46,6 +46,8 @@ export type OccurrenceEventType =
   | 'COMMENT_EDITED'
   | 'COMMENT_REMOVED'
   | 'EVIDENCIA_ADICIONADA'
+  | 'EVIDENCIA_ACEITA'
+  | 'EVIDENCIA_REJEITADA'
   | 'OCORRENCIA_CONFIRMADA'
   | 'ORGAO_RESPONSAVEL_IDENTIFICADO'
   | 'ORGAO_RESPONSAVEL_SUGERIDO'
@@ -62,6 +64,9 @@ export type OccurrenceEventType =
   | 'MODERATION_APPLIED';
 
 export interface OccurrenceEvidence {
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: string;
+  reviewedAt?: string;
   id: string;
   type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'TEXT' | 'LINK' | 'OTHER';
   url?: string;
@@ -449,6 +454,22 @@ export class PostService {
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
       );
+  }
+
+  reviewOccurrenceEvidence(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    evidenceId: string,
+    approved: boolean,
+  ): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para analisar evidências.');
+    return this.http.patch<OccurrenceApiResponse>(
+      `${this.apiUrl}/${post.id}/evidence/${encodeURIComponent(evidenceId)}/review`,
+      { approved },
+    ).pipe(
+      map((occurrence) => this.toSpectrumPost(occurrence, user)),
+      tap((updated) => this.cacheOccurrence(updated)),
+    );
   }
 
   identifyResponsibleAgency(

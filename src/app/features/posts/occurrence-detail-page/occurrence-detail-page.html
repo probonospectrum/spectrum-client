@@ -258,6 +258,7 @@
           }
 
           @if (actionPanel === 'evidence') {
+            <p>As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.</p>
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">Adicionar evidência</button>
           }
 
@@ -314,11 +315,20 @@
 
 
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
-      <div class="occurrence-detail__section-head"><h2 id="evidence-title">Evidências do relato</h2><span>{{ occurrence.evidences.length }} {{ occurrence.evidences.length === 1 ? 'anexo' : 'anexos' }}</span></div>
+      <div class="occurrence-detail__section-head"><h2 id="evidence-title">Evidências e solicitações</h2><span>{{ occurrence.evidences.length }} {{ occurrence.evidences.length === 1 ? 'anexo' : 'anexos' }}</span></div>
       @if (occurrence.evidences.length) {
         <div class="occurrence-detail__evidence-list">
           @for (evidence of occurrence.evidences; track evidence.id) {
             <article class="occurrence-detail__attachment">
+              <div class="occurrence-detail__evidence-review" [attr.data-status]="evidence.status || 'APPROVED'">
+                <span>{{ evidenceStatusLabel(evidence) }}</span>
+                @if (canReviewEvidence(evidence)) {
+                  <div class="occurrence-detail__evidence-decisions">
+                    <button type="button" [disabled]="isSubmitting()" (click)="reviewEvidence(evidence, true)" [attr.aria-label]="'Aceitar evidência: ' + (evidence.description || 'anexo')">Aceitar</button>
+                    <button type="button" class="occurrence-detail__reject-evidence" [disabled]="isSubmitting()" (click)="reviewEvidence(evidence, false)" [attr.aria-label]="'Rejeitar evidência: ' + (evidence.description || 'anexo')">Rejeitar</button>
+                  </div>
+                }
+              </div>
               @if (evidenceUrl(evidence); as url) {
                 @if (evidence.type === 'IMAGE') { <a [href]="url" target="_blank" rel="noopener noreferrer"><img [src]="url" [alt]="evidence.description || 'Evidência da ocorrência'" loading="lazy" /></a> }
                 @else if (evidence.type === 'VIDEO') { <video [src]="url" controls preload="metadata" [attr.aria-label]="evidence.description || 'Vídeo da ocorrência'"></video> }
