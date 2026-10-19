@@ -349,7 +349,25 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canAddEvidence(): boolean {
-    return (this.isCommunityUser || this.canRecordAgencyProgress) && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return !!this.user && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  canReviewEvidence(evidence: OccurrenceEvidence): boolean {
+    return !!this.user?._id && this.user._id === this.occurrence?.createdBy && evidence.status === 'PENDING';
+  }
+
+  evidenceStatusLabel(evidence: OccurrenceEvidence): string {
+    if (evidence.status === 'PENDING') return 'Aguardando análise do criador';
+    if (evidence.status === 'REJECTED') return 'Rejeitada pelo criador';
+    return 'Aceita';
+  }
+
+  reviewEvidence(evidence: OccurrenceEvidence, approved: boolean): void {
+    if (!this.occurrence || !this.canReviewEvidence(evidence) || this.isSubmitting()) return;
+    this.runAction(
+      () => this.postService.reviewOccurrenceEvidence(this.occurrence!, this.user, evidence.id, approved),
+      approved ? 'Evidência aceita e incluída no relato.' : 'Evidência rejeitada.',
+    );
   }
 
   get canSuggestAgency(): boolean {
@@ -374,7 +392,6 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canShowCommunityActions(): boolean {
     return (
-      this.isCommunityUser &&
       (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
     );
   }
@@ -578,7 +595,9 @@ export class OccurrenceDetailPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (occurrence) => this.afterAction(occurrence, 'Evidência adicionada ao histórico.'),
+        next: (occurrence) => this.afterAction(occurrence, this.user?._id === occurrence.createdBy
+          ? 'Evidência adicionada ao relato.'
+          : 'Evidência enviada. Aguarde a análise do criador da ocorrência.'),
         error: (error: unknown) => (this.errorMessage = this.getErrorMessage(error)),
       });
   }
@@ -745,6 +764,8 @@ export class OccurrenceDetailPage implements OnInit {
       COMMENT_EDITED: 'Comentário editado',
       COMMENT_REMOVED: 'Comentário removido',
       EVIDENCIA_ADICIONADA: 'Nova evidência',
+      EVIDENCIA_ACEITA: 'Evidência aceita',
+      EVIDENCIA_REJEITADA: 'Evidência rejeitada',
       OCORRENCIA_CONFIRMADA: 'Também identificado',
       ORGAO_RESPONSAVEL_IDENTIFICADO: 'Órgão responsável identificado',
       ORGAO_RESPONSAVEL_SUGERIDO: 'Órgão responsável sugerido',
@@ -819,6 +840,9 @@ export class OccurrenceDetailPage implements OnInit {
       const agency = metadata['agency'] as OccurrenceAgency | undefined;
         return this.i18n.translate('{agency} foi sugerido pela comunidade.', { agency: this.displayAgencyName(String(metadata['agencyName'] ?? agency?.name ?? this.i18n.translate('Um órgão'))) });
     }
+
+    if (event.eventType === 'EVIDENCIA_ACEITA') return 'O criador da ocorrência aceitou a evidência.';
+    if (event.eventType === 'EVIDENCIA_REJEITADA') return 'O criador da ocorrência rejeitou a evidência.';
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {
       return 'Uma nova evidência foi adicionada à ocorrência.';
@@ -920,7 +944,8 @@ export class OccurrenceDetailPage implements OnInit {
         ),
         switchMap((updated) => {
           this.occurrence = updated;
-          const evidenceId = updated.evidences[updated.evidences.length - 1]?.id;
+          const evidence = updated.evidences.at(-1);
+          const evidenceId = evidence && (!evidence.status || evidence.status === 'APPROVED') ? evidence.id : undefined;
           return action(evidenceId ? [evidenceId] : []);
         }),
         finalize(() => this.isSubmitting.set(false)),

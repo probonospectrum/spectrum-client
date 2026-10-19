@@ -381,6 +381,7 @@
           }
 
           @if (actionPanel === 'evidence') {
+            <p>{{ 'As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.' | translate }}</p>
             <div class="occurrence-detail__suggestion-actions">
               <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ 'Adicionar evidência' | translate }}</button>
               <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
@@ -449,11 +450,20 @@
       @if (progress.closedByAgency) { <p>{{ 'Fechamento informado pelo órgão, sujeito à contestação da comunidade.' | translate }}</p> }
     </section> }
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
-      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências do relato' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
+      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências e solicitações' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
       @if (occurrence.evidences.length) {
         <div class="occurrence-detail__evidence-list">
           @for (evidence of occurrence.evidences; track evidence.id) {
             <article class="occurrence-detail__attachment">
+              <div class="occurrence-detail__evidence-review" [attr.data-status]="evidence.status || 'APPROVED'">
+                <span>{{ evidenceStatusLabel(evidence) | translate }}</span>
+                @if (canReviewEvidence(evidence)) {
+                  <div class="occurrence-detail__evidence-decisions">
+                    <button type="button" [disabled]="isSubmitting()" (click)="reviewEvidence(evidence, true)" [attr.aria-label]="('Aceitar evidência: {description}' | translate: { description: evidence.description || ('anexo' | translate) })">{{ 'Aceitar' | translate }}</button>
+                    <button type="button" class="occurrence-detail__reject-evidence" [disabled]="isSubmitting()" (click)="reviewEvidence(evidence, false)" [attr.aria-label]="('Rejeitar evidência: {description}' | translate: { description: evidence.description || ('anexo' | translate) })">{{ 'Rejeitar' | translate }}</button>
+                  </div>
+                }
+              </div>
               @if (evidenceUrl(evidence); as url) {
                 @if (evidence.type === 'IMAGE') {
                   <button
