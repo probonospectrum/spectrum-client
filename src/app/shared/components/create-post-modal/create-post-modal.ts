@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -40,7 +41,7 @@ interface SelectedEvidence {
 
 @Component({
   selector: 'app-create-post-modal',
-  imports: [UserAvatar, CommonModule, FormsModule, LoadingIndicator],
+  imports: [TranslatePipe, UserAvatar, CommonModule, FormsModule, LoadingIndicator],
   templateUrl: './create-post-modal.html',
   styleUrl: './create-post-modal.scss',
 })
@@ -287,9 +288,9 @@ export class CreatePostModal implements OnChanges {
     }
 
     return forkJoin(
-      this.selectedEvidences.map(({ file, type }) =>
+      this.selectedEvidences.map(({ file }) =>
         this.postService.uploadEvidence(file).pipe(
-          map((upload) => ({ type, url: upload.url, description: file.name })),
+          map((upload) => ({ type: upload.type, url: upload.url, description: file.name })),
         ),
       ),
     );

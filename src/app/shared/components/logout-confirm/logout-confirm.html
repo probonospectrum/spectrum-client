@@ -10,7 +10,7 @@
     <button
       class="logout-popup__close"
       type="button"
-      aria-label="Cancelar e fechar"
+      [attr.aria-label]="'Cancelar e fechar' | translate"
       (click)="onCancel()"
     >
       <span class="material-symbols-outlined" aria-hidden="true">close</span>
@@ -21,18 +21,18 @@
     </div>
 
     <div class="logout-popup__content">
-      <h2 id="logout-title">Sair da sua conta</h2>
+      <h2 id="logout-title">{{ 'Sair da sua conta' | translate }}</h2>
       <p id="logout-desc">
-        Você pode entrar novamente a qualquer momento. Deseja realmente sair?
+        {{ 'Você pode entrar novamente a qualquer momento. Deseja realmente sair?' | translate }}
       </p>
     </div>
 
     <div class="logout-popup__actions">
       <button class="logout-popup__btn logout-popup__btn--ghost" type="button" (click)="onCancel()">
-        Cancelar
+        {{ 'Cancelar' | translate }}
       </button>
       <button class="logout-popup__btn logout-popup__btn--danger" type="button" (click)="onConfirm()">
-        Sair
+        {{ 'Sair' | translate }}
       </button>
     </div>
   </section>

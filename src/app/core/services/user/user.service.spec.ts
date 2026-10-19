@@ -18,6 +18,53 @@ describe('UserService avatar upload', () => {
   });
   afterEach(() => http.verify());
 
+  it('uploads a cover and persists it in the session', () => {
+    service.updateCover(new Blob(['cover'], { type: 'image/jpeg' })).subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana/cover');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body.get('cover')).toBeInstanceOf(Blob);
+    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    request.flush({ coverUrl: 'https://example.com/cover.jpg' });
+    expect(service.currentUser()?.coverUrl).toBe('https://example.com/cover.jpg');
+    expect(JSON.parse(localStorage.getItem('spectrum-auth-session')!).user.coverUrl).toBe('https://example.com/cover.jpg');
+  });
+
+  it('removes a cover without restoring a logged out session', () => {
+    service.updateCover().subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana/cover');
+    expect(request.request.method).toBe('DELETE');
+    service.logout();
+    request.flush({ coverUrl: '' });
+    expect(service.currentUser()).toBeNull();
+  });
+
+  it('deletes the authenticated account and clears the session only after success', () => {
+    service.deleteAccount().subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    expect(service.getCurrentUser()).toEqual(session.user);
+    request.flush(null);
+    expect(service.getCurrentUser()).toBeNull();
+    expect(service.getToken()).toBeNull();
+    expect(localStorage.getItem('spectrum-auth-session')).toBeNull();
+  });
+
+  it('retains the session when account deletion fails', () => {
+    service.deleteAccount().subscribe({ error: () => {} });
+    http.expectOne(API_BASE_URL + '/user/ana').flush({}, { status: 500, statusText: 'Error' });
+    expect(service.getCurrentUser()).toEqual(session.user);
+  });
+
+  it('does not log out another account when deletion finishes late', () => {
+    service.deleteAccount().subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/ana');
+    const other = { ...session, user: { ...session.user, _id: 'other' } };
+    service.saveSession(other);
+    request.flush(null);
+    expect(service.getCurrentUser()).toEqual(other.user);
+  });
+
   it('sends multipart and bearer token and persists only the returned URL after success', () => {
     service.uploadAvatar(new Blob(['photo'], { type: 'image/png' })).subscribe();
     const request = http.expectOne(API_BASE_URL + '/user/ana/avatar');

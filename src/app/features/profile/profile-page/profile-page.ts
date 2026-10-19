@@ -1,9 +1,12 @@
+import { FollowList } from '../../../shared/components/follow-list/follow-list';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EMPTY, catchError, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, finalize, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, PublicProfileResponse, UserService } from '../../../core/services/user/user.service';
 import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-popup/alert-popup';
@@ -19,11 +22,12 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
 export class ProfilePage implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly route = inject(ActivatedRoute);
@@ -33,7 +37,7 @@ export class ProfilePage implements OnInit {
   readonly user: LoggedUser | null = this.userService.getCurrentUser();
   readonly suggestions = this.postService.suggestions;
 
-  reposts = this.postService.getUserReposts(this.user);
+  get reposts(): SpectrumPost[] { return this.authorPosts().filter(post => Boolean(post.originalPostId)); }
   activeTab: 'posts' | 'reposts' | 'saved' = 'posts';
   profileAlert = signal<ProfileAlert | null>(null);
   private readonly hiddenPostIds = new Set<string>();
@@ -43,6 +47,7 @@ export class ProfilePage implements OnInit {
   publicProfile = signal<PublicProfileResponse | null>(null);
   profileError = signal('');
   private readonly authorPosts = signal<SpectrumPost[]>([]);
+  readonly connections = signal<'followers' | 'following' | null>(null);
   readonly followSaving = signal(false);
 
   /** true quando estamos vendo o perfil de outra pessoa (nao o proprio). */
@@ -61,7 +66,7 @@ export class ProfilePage implements OnInit {
     // ao navegar entre /perfil (proprio) e /perfil/:nickname (terceiro).
     this.route.paramMap
       .pipe(
-        tap(() => { this.profileLoading.set(true); this.profileError.set(''); this.authorPosts.set([]); }),
+        tap(() => { this.connections.set(null); this.profileLoading.set(true); this.profileError.set(''); this.authorPosts.set([]); }),
         switchMap((params) => this.loadProfile(params.get('nickname') ?? this.user?.nickname ?? '')),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -70,8 +75,11 @@ export class ProfilePage implements OnInit {
 
   private loadProfile(nickname: string) {
     return this.userService.getPublicProfile(nickname).pipe(
-      switchMap((profile) => (profile.canViewPosts ? this.postService.getAuthorPosts(profile, this.user) : of([])).pipe(
-        map((posts) => ({ profile, posts })),
+      switchMap((profile) => forkJoin({
+        posts: profile.canViewPosts ? this.postService.getAuthorPosts(profile, this.user) : of([]),
+        saved: profile._id === this.user?._id ? this.postService.loadSavedPosts(this.user) : of([]),
+      }).pipe(
+        map(({ posts }) => ({ profile, posts })),
       )),
       catchError(() => { this.profileLoading.set(false); this.profileError.set('Não foi possível carregar este perfil.'); return EMPTY; }),
     );
@@ -128,14 +136,12 @@ export class ProfilePage implements OnInit {
   }
 
   get coverUrl(): string {
-    return (
-      '/Background.png'
-    );
+    return (this.isOwnProfile() ? this.user?.coverUrl : this.publicProfile()?.coverUrl) || '/Background.png';
   }
 
   get joinedDate(): string {
     const createdAt = this.publicProfile()?.createdAt;
-    return createdAt ? new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(createdAt)) : '';
+    return createdAt ? new Intl.DateTimeFormat(this.i18n.language(), { month: 'long', year: 'numeric' }).format(new Date(createdAt)) : '';
   }
 
   get followingCount(): number {
@@ -194,11 +200,24 @@ export class ProfilePage implements OnInit {
     this.followSaving.set(true);
     this.userService.followUser(target._id, !this.isFollowing()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
-        this.followersBase.update((count) => count + (response.isFollowing ? 1 : -1));
+        if (this.publicProfile()?._id !== target._id) { this.followSaving.set(false); return; }
+        this.refreshFollowCounts();
         this.isFollowing.set(response.isFollowing);
         this.followSaving.set(false);
       },
       error: () => { this.followSaving.set(false); this.profileAlert.set({ type: 'error', title: 'Não foi possível atualizar', message: 'A conta pode ser privada. Tente novamente.' }); },
+    });
+  }
+
+  refreshFollowCounts(): void {
+    const target = this.publicProfile();
+    if (!target) return;
+    this.userService.getPublicProfile(target.nickname).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: profile => {
+        if (this.publicProfile()?._id !== target._id) return;
+        this.publicProfile.set(profile); this.followersBase.set(profile.followersCount); this.isFollowing.set(profile.isFollowing);
+      },
+      error: () => this.profileAlert.set({ type: 'error', title: 'Atualização pendente', message: 'A ação foi salva, mas não foi possível atualizar os números. Recarregue o perfil.' }),
     });
   }
 
@@ -216,9 +235,32 @@ export class ProfilePage implements OnInit {
     void this.router.navigateByUrl('/login');
   }
 
+  readonly repostPendingIds = signal(new Set<string>());
+
   toggleRepost(post: SpectrumPost): void {
-    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.onPostUpdated(),
+    if (this.repostPendingIds().has(post.id)) return;
+    this.repostPendingIds.update(ids => new Set([...ids, post.id]));
+    this.postService.toggleServerRepost(post, this.user).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+      this.repostPendingIds.update(ids => { const next = new Set(ids); next.delete(post.id); return next; });
+    })).subscribe({
+      next: result => { this.authorPosts.update(posts => {
+          posts.forEach(item => { if ((item.originalPostId || item.id) === (post.originalPostId || post.id)) { item.reposts = result.post.reposts; item.reposted = result.reposted; } });
+          return [...posts];
+        });
+          if (this.isOwnProfile() && !result.reposted && post.originalPostId) this.authorPosts.update(posts => posts.filter(item => item.id !== post.id));
+          const profile = this.publicProfile();
+          if (profile && this.isOwnProfile()) {
+            this.postService.getAuthorPosts(profile, this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              next: posts => {
+                if (this.publicProfile()?._id !== profile._id) return;
+                const existing = new Map(this.authorPosts().map(item => [item.id, item]));
+                this.authorPosts.set(posts.map(item => existing.get(item.id) ?? item));
+              },
+              error: () => this.profileAlert.set({ type: 'error', title: 'Repost salvo', message: 'Não foi possível atualizar a lista do perfil. Recarregue a página.' }),
+            });
+          }
+          this.profileAlert.set({ type: 'success', title: result.reposted ? 'Repost realizado' : 'Repost removido', message: result.reposted ? 'A ocorrência foi adicionada ao seu perfil.' : 'O repost foi removido do seu perfil.' });
+        },
       error: () => this.profileAlert.set({ type: 'error', title: 'Não foi possível repostar', message: 'Tente novamente em instantes.' }),
     });
   }
@@ -257,7 +299,6 @@ export class ProfilePage implements OnInit {
   }
 
   onPostUpdated(): void {
-    this.reposts = this.postService.getUserReposts(this.user);
     this.loadProfile(this.nickname).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ profile, posts }) => { this.applyProfile(profile); this.authorPosts.set(posts); });
     this.profileAlert.set({
       type: 'success',

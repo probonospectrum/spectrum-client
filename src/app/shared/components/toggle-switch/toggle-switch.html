@@ -1,6 +1,6 @@
 <label class="toggle">
   @if (label) {
-    <span>{{ label }}</span>
+    <span>{{ (label) | translate }}</span>
   }
   <input type="checkbox" [checked]="checked" [disabled]="disabled" (change)="change($event)" />
   <i aria-hidden="true"></i>

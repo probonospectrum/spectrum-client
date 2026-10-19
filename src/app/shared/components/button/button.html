@@ -1,6 +1,6 @@
 <button class="spectrum-button" [type]="type" [disabled]="disabled || loading">
   @if (loading) {
-    <app-loading-indicator [label]="loadingLabel" />
+    <app-loading-indicator [label]="(loadingLabel) | translate" />
   } @else {
     <ng-content></ng-content>
   }

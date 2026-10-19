@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { Component, ElementRef, OnDestroy, ViewChild, effect, inject, signal } from '@angular/core';
@@ -14,14 +15,16 @@ import { ToggleSwitch } from '../../../shared/components/toggle-switch/toggle-sw
 
 type SettingsDialogKind =
   | 'avatar'
+  | 'cover'
   | 'name'
   | 'username'
   | 'password'
+  | 'deleteAccount'
   | null;
 
 @Component({
   selector: 'app-settings-page',
-  imports: [UserAvatar, FormsModule, SocialShell, SettingsSection, ToggleSwitch, SettingsDialog],
+  imports: [TranslatePipe, UserAvatar, FormsModule, SocialShell, SettingsSection, ToggleSwitch, SettingsDialog],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })
@@ -43,6 +46,8 @@ export class SettingsPage implements OnDestroy {
     return this.accountService.getAvatarUrl(this.user);
   }
   readonly avatarSaving = signal(false);
+  get editingCover(): boolean { return this.activeDialog === 'cover'; }
+  get coverUrl(): string { return this.user?.coverUrl || '/Background.png'; }
   private destroyed = false;
   avatarOffsetX = 0;
   avatarOffsetY = 0;
@@ -73,6 +78,25 @@ export class SettingsPage implements OnDestroy {
   usernameStatus: 'idle' | 'checking' | 'available' = 'idle';
   passwordSaving = false;
   toastMessage = '';
+  readonly deleteConfirmationPhrase = 'EXCLUIR CONTA';
+  deleteConfirmation = '';
+  readonly accountDeleting = signal(false);
+
+  get canDeleteAccount(): boolean {
+    return this.deleteConfirmation === this.deleteConfirmationPhrase && !!this.user && !this.accountDeleting();
+  }
+
+  async deleteAccount(): Promise<void> {
+    if (this.activeDialog !== 'deleteAccount' || !this.canDeleteAccount) return;
+    this.accountDeleting.set(true);
+    this.formError = '';
+    try {
+      await firstValueFrom(this.userService.deleteAccount());
+      if (!this.destroyed && !this.user) void this.router.navigateByUrl('/login');
+    } catch {
+      if (!this.destroyed) this.formError = 'Não foi possível excluir sua conta. Tente novamente.';
+    } finally { this.accountDeleting.set(false); }
+  }
 
   constructor() {
     effect(() => { this.settings = { ...this.settings, ...this.preferencesService.preferences() }; });
@@ -112,10 +136,12 @@ export class SettingsPage implements OnDestroy {
   }
 
   openDialog(kind: Exclude<SettingsDialogKind, null>): void {
+    if (this.accountDeleting() || this.avatarSaving()) return;
     this.clearAvatarDraft();
     this.activeDialog = kind;
     this.formError = '';
     this.passwordSaving = false;
+    this.deleteConfirmation = '';
 
     if (kind === 'name') {
       this.nameDraft = this.account.name;
@@ -136,9 +162,10 @@ export class SettingsPage implements OnDestroy {
   }
 
   closeDialog(): void {
-    if (this.avatarSaving()) return;
+    if (this.avatarSaving() || this.accountDeleting()) return;
     this.clearAvatarDraft();
     this.activeDialog = null;
+    this.deleteConfirmation = '';
     this.formError = '';
     this.passwordSaving = false;
     this.clearUsernameTimer();
@@ -186,9 +213,10 @@ export class SettingsPage implements OnDestroy {
   onAvatarLoaded(): void {
     const image = this.avatarImage?.nativeElement;
     if (!image?.naturalWidth || !image.naturalHeight) return;
-    const size = Math.min(image.naturalWidth, image.naturalHeight);
-    this.avatarWidth = image.naturalWidth / size;
-    this.avatarHeight = image.naturalHeight / size;
+    const ratio = this.editingCover ? 3 : 1;
+    const width = Math.min(image.naturalWidth, image.naturalHeight * ratio);
+    this.avatarWidth = image.naturalWidth / width;
+    this.avatarHeight = image.naturalHeight / (width / ratio);
     this.avatarReady.set(true);
   }
 
@@ -205,10 +233,10 @@ export class SettingsPage implements OnDestroy {
     if (this.avatarSaving()) return;
     const drag = this.avatarDrag;
     if (!drag || drag.id !== event.pointerId) return;
-    const width = (event.currentTarget as HTMLElement).getBoundingClientRect().width;
-    if (!width) return;
-    this.avatarOffsetX += (event.clientX - drag.x) / width;
-    this.avatarOffsetY += (event.clientY - drag.y) / width;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    this.avatarOffsetX += (event.clientX - drag.x) / rect.width;
+    this.avatarOffsetY += (event.clientY - drag.y) / rect.height;
     this.avatarDrag = { id: drag.id, x: event.clientX, y: event.clientY };
     this.clampAvatarOffset();
   }
@@ -248,17 +276,19 @@ export class SettingsPage implements OnDestroy {
   }
 
   async removeAvatar(): Promise<void> {
-    if (this.avatarSaving() || !this.avatarUrl) return;
+    if (this.avatarSaving() || !(this.editingCover ? this.user?.coverUrl : this.avatarUrl)) return;
+    const cover = this.editingCover;
     this.avatarSaving.set(true);
     this.formError = '';
     try {
-      await firstValueFrom(this.userService.removeAvatar());
+      if (cover) await firstValueFrom(this.userService.updateCover());
+      else await firstValueFrom(this.userService.removeAvatar());
       if (this.destroyed) return;
       this.avatarSaving.set(false);
       this.closeDialog();
-      this.showToast('Foto de perfil removida.');
+      this.showToast(cover ? 'Capa removida.' : 'Foto de perfil removida.');
     } catch {
-      if (!this.destroyed) this.formError = 'Não foi possível remover a foto. Tente novamente.';
+      if (!this.destroyed) this.formError = cover ? 'Não foi possível remover a capa. Tente novamente.' : 'Não foi possível remover a foto. Tente novamente.';
     } finally {
       this.avatarSaving.set(false);
     }
@@ -267,6 +297,7 @@ export class SettingsPage implements OnDestroy {
   async saveAvatar(): Promise<void> {
     if (this.avatarSaving() || !this.avatarDraft() || this.avatarReading() || !this.avatarReady()) return;
     const userId = this.user?._id;
+    const cover = this.editingCover;
     if (!userId) {
       this.formError = 'Entre na sua conta para salvar a foto.';
       return;
@@ -277,29 +308,34 @@ export class SettingsPage implements OnDestroy {
     this.avatarSaving.set(true);
     this.formError = '';
     try {
-      const size = Math.min(image.naturalWidth, image.naturalHeight) / this.avatarZoom;
+      const ratio = cover ? 3 : 1;
+      const baseWidth = Math.min(image.naturalWidth, image.naturalHeight * ratio);
+      const width = baseWidth / this.avatarZoom;
+      const height = width / ratio;
       const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 512;
+      canvas.width = cover ? 1500 : 512;
+      canvas.height = cover ? 500 : 512;
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Não foi possível preparar a foto.');
       context.drawImage(image,
-        (image.naturalWidth - size) / 2 - this.avatarOffsetX * size,
-        (image.naturalHeight - size) / 2 - this.avatarOffsetY * size,
-        size, size, 0, 0, 512, 512);
+        (image.naturalWidth - width) / 2 - this.avatarOffsetX * baseWidth / this.avatarZoom,
+        (image.naturalHeight - height) / 2 - this.avatarOffsetY * baseWidth / ratio / this.avatarZoom,
+        width, height, 0, 0, canvas.width, canvas.height);
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => result
           ? resolve(result)
-          : reject(new Error('Não foi possível preparar a foto.')), 'image/png');
+          : reject(new Error('Não foi possível preparar a foto.')), cover ? 'image/jpeg' : 'image/png', 0.9);
       });
       if (this.destroyed) return;
       if (this.user?._id !== userId) throw new Error('A sessão foi alterada. Entre novamente.');
-      await firstValueFrom(this.userService.uploadAvatar(blob));
+      if (cover) await firstValueFrom(this.userService.updateCover(blob));
+      else await firstValueFrom(this.userService.uploadAvatar(blob));
       if (this.destroyed) return;
       this.avatarSaving.set(false);
       this.closeDialog();
-      this.showToast('Foto de perfil atualizada.');
+      this.showToast(cover ? 'Capa atualizada.' : 'Foto de perfil atualizada.');
     } catch {
-      if (!this.destroyed) this.formError = 'Não foi possível salvar a foto. Tente novamente.';
+      if (!this.destroyed) this.formError = cover ? 'Não foi possível salvar a capa. Tente novamente.' : 'Não foi possível salvar a foto. Tente novamente.';
     } finally {
       this.avatarSaving.set(false);
     }

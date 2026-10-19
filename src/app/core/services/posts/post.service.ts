@@ -1,6 +1,7 @@
+import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, map, of, tap, throwError } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, catchError, forkJoin, map, of, tap, throwError, switchMap, shareReplay } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser, UserService } from '../user/user.service';
@@ -101,6 +102,12 @@ export interface OccurrenceAgency {
   website?: string;
 }
 
+export interface OccurrenceAgencyOption extends OccurrenceAgency {
+  stateCode?: string;
+  cities?: string[];
+  categories?: OccurrenceCategory[];
+}
+
 export interface OccurrenceHistoryEvent {
   id: string;
   occurrenceId: string;
@@ -140,6 +147,8 @@ export interface OccurrenceForwarding {
 }
 
 export interface SpectrumPost {
+  agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
+  reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
   forwardingDueAt?: string | null;
   id: string;
@@ -178,8 +187,11 @@ export interface SpectrumPost {
 }
 
 export interface SpectrumComment {
+  parentCommentId?: string; officialAgencyId?: string; officialAgencyName?: string; officialAgencyCnpj?: string;
   id: string;
+  createdAt?: string;
   authorId?: string;
+  authorAvatarUrl?: string;
   authorName: string;
   authorInitial: string;
   content: string;
@@ -191,6 +203,7 @@ export interface SpectrumComment {
 }
 
 interface CommentApiResponse {
+  parentCommentId?: string; officialAgencyId?: string; officialAgencyName?: string; officialAgencyCnpj?: string;
   _id: string;
   userId: string;
   text: string;
@@ -245,6 +258,12 @@ export interface UploadedEvidenceResponse {
 }
 
 interface OccurrenceApiResponse {
+  agencyProgress?: SpectrumPost['agencyProgress'];
+  saved?: boolean;
+  repostCount?: number;
+  reposted?: boolean;
+  commentCount?: number;
+  reaction?: 'LIKE' | 'UNLIKE' | null;
   author?: { _id: string; name: string; nickname: string; avatarUrl?: string; cityUser: string };
   unlikeCount?: number;
   moderationReason?: string | null;
@@ -267,6 +286,10 @@ interface OccurrenceApiResponse {
   createdAt: string;
   updatedAt: string;
   likeCount?: number;
+}
+
+interface OccurrenceAgencyApiResponse extends Omit<OccurrenceAgencyOption, 'id'> {
+  _id: string;
 }
 
 export interface RepostRecord {
@@ -308,6 +331,11 @@ export const POST_EDIT_WINDOW_MS = 15 * 60 * 1000;
   providedIn: 'root',
 })
 export class PostService {
+  recordAgencyProgress(post: SpectrumPost, user: LoggedUser | null, body: { status: 'EM_RESOLUCAO' | 'RESOLVIDA'; note: string; protocol?: string; evidenceIds: string[] }): Observable<SpectrumPost> {
+    return this.http.post<OccurrenceApiResponse>(`${API_BASE_URL}/public-agencies/occurrences/${post.id}/progress`, body).pipe(
+      map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
+  readonly i18n = inject(I18nService);
   getModerationOccurrences(user: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`).pipe(
       map(items => items.map(item => this.toSpectrumPost(item, user))),
@@ -346,6 +374,33 @@ export class PostService {
   private readonly repostStorageKey = 'spectrum-reposts';
   private readonly postInteractionStorageKey = 'spectrum-post-interactions';
   private readonly commentInteractionStorageKey = 'spectrum-comment-interactions';
+  private readonly savedPosts = signal<SpectrumPost[]>([]);
+
+  private postStates(ids: string[]) {
+    return this.http.get<Record<string, { likeCount: number; unlikeCount: number; reaction: 'LIKE' | 'UNLIKE' | null; saved: boolean }>>(
+      `${API_BASE_URL}/like/post-states`, { params: { ids: [...new Set(ids)].join(',') } });
+  }
+
+  loadSavedPosts(user: LoggedUser | null): Observable<SpectrumPost[]> {
+    return this.http.get<string[]>(`${API_BASE_URL}/like/saved`).pipe(
+      switchMap(ids => ids.length ? forkJoin(ids.map(id => this.getOccurrence(id, user).pipe(catchError(error =>
+        error.status === 404 || error.status === 403 ? of(null) : throwError(() => error))))) : of([])),
+      map(posts => posts.filter((post): post is SpectrumPost => post !== null)),
+      tap(posts => this.savedPosts.set(posts)),
+    );
+  }
+
+  setPostSaved(post: SpectrumPost, user: LoggedUser | null, saved: boolean): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para salvar.');
+    const id = post.originalPostId ?? post.id;
+    return this.http.put<{ saved: boolean }>(`${API_BASE_URL}/like/post/${id}/saved`, { saved }).pipe(
+      map(state => Object.assign(post, state)),
+      tap(updated => {
+        this.cacheOccurrence({ ...updated, id });
+        this.savedPosts.update(posts => updated.saved ? [{ ...updated, id }, ...posts.filter(item => item.id !== id)] : posts.filter(item => item.id !== id));
+      }),
+    );
+  }
 
   getFeed(user: LoggedUser | null, cursor?: string): Observable<FeedPage> {
     return this.http.get<{ data: OccurrenceApiResponse[]; nextCursor: string | null; hasMore: boolean }>(`${API_BASE_URL}/feed`, {
@@ -362,9 +417,34 @@ export class PostService {
 
   getAuthorPosts(author: Pick<LoggedUser, '_id' | 'name' | 'nickname' | 'cityUser' | 'avatarUrl'>, viewer: LoggedUser | null): Observable<SpectrumPost[]> {
     return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/user/${author._id}`, { params: { limit: '50' } }).pipe(
-      map((posts) => posts.map((post) => this.withPostState(this.toSpectrumPost({ ...post, author: {
-        _id: author._id, name: author.name, nickname: author.nickname, cityUser: author.cityUser ?? '', avatarUrl: author.avatarUrl,
-      } }, viewer), viewer))), tap((posts) => posts.forEach((post) => this.cacheOccurrence(post))),
+      switchMap(posts => posts.length ? this.postStates(posts.map(post => post.originalPostId ?? post._id)).pipe(
+        map(states => posts.map(post => ({ ...post, ...states[post.originalPostId ?? post._id] })))) : of(posts)),
+      switchMap(posts => {
+        if (!posts.length) return of([] as SpectrumPost[]);
+        const originals = new Map<string, Observable<SpectrumPost>>();
+        return forkJoin(posts.map(post => {
+          if (!post.originalPostId) {
+            return of(this.withPostState(this.toSpectrumPost({ ...post, author: post.author?.name ? post.author : {
+              _id: author._id, name: author.name, nickname: author.nickname, cityUser: author.cityUser ?? '', avatarUrl: author.avatarUrl,
+            } }, viewer), viewer));
+          }
+          let original = originals.get(post.originalPostId);
+          if (!original) {
+            original = this.getOccurrence(post.originalPostId, viewer).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+            originals.set(post.originalPostId, original);
+          }
+          return original.pipe(map(occurrence => this.withPostState({
+            ...occurrence,
+            id: post._id,
+            originalPostId: post.originalPostId,
+            // Ownership of the repost is separate from the displayed original author.
+            createdBy: post.createdBy,
+            reposts: post.repostCount ?? occurrence.reposts,
+            reposted: post.reposted ?? occurrence.reposted,
+          }, viewer)));
+        }));
+      }),
+      tap(posts => posts.forEach(post => this.cacheOccurrence(post))),
     );
   }
 
@@ -373,8 +453,14 @@ export class PostService {
   }
 
   toggleServerRepost(post: SpectrumPost, user: LoggedUser | null): Observable<RepostToggleResult> {
-    return this.http.post<{ post: OccurrenceApiResponse; reposted: boolean }>(`${this.apiUrl}/${post.id}/repost/toggle`, {}).pipe(
-      map((result) => ({ post: { ...this.toSpectrumPost(result.post, user), reposted: result.reposted }, reposted: result.reposted })),
+    return this.http.post<{ post: OccurrenceApiResponse; reposted: boolean; repostCount: number }>(`${this.apiUrl}/${post.id}/repost/toggle`, {}).pipe(
+      map((result) => {
+        // Reposting only changes repost metadata, never reactions, saved state or history.
+        post.reposts = result.repostCount;
+        post.reposted = result.reposted;
+        return { post, reposted: result.reposted };
+      }),
+      tap(result => this.cacheOccurrence(result.post)),
     );
   }
 
@@ -399,20 +485,52 @@ export class PostService {
 
   getOccurrence(id: string, user: LoggedUser | null): Observable<SpectrumPost> {
     if (!this.isApiId(id)) {
-      return throwError(() => new Error('Ocorrência não encontrada.'));
+      let localOccurrence = this.findPostById(id, user);
+
+      if (!localOccurrence) {
+        return throwError(() => new Error('Ocorrência não encontrada.'));
+      }
+
+      if (id.startsWith('mock-') && user && !localStorage.getItem(`spectrum-agency-test-v2-${id}`)) {
+        localOccurrence = {
+          ...localOccurrence, createdBy: user._id, status: 'ABERTA', responsibleAgency: null,
+          forwardingHistory: [],
+          history: localOccurrence.history.filter(event => !event.actorId?.startsWith('mock-participant-')),
+        };
+        this.cacheOccurrence(localOccurrence);
+        localStorage.setItem(`spectrum-agency-test-v2-${id}`, 'ready');
+      }
+      return of(localOccurrence);
     }
 
-    return this.http
-      .get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`)
+    if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(post => this.cacheOccurrence(post)));
+    return forkJoin({ occurrence: this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`), states: this.postStates([id]) })
       .pipe(
-        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        map(({ occurrence, states }) => this.toSpectrumPost({ ...occurrence, ...states[id] }, user)),
         tap((post) => this.cacheOccurrence(post)),
+      );
+  }
+
+  readonly mockAgencies: OccurrenceAgencyOption[] = [
+    { id: 'mock-agency-lighting', name: 'Secretaria Municipal de Iluminação Pública', stateCode: 'SP' },
+    { id: 'mock-agency-works', name: 'Secretaria Municipal de Obras', stateCode: 'SP' },
+  ];
+
+  getResponsibleAgencies(occurrenceId?: string): Observable<OccurrenceAgencyOption[]> {
+    if (occurrenceId?.startsWith('mock-')) return of(this.mockAgencies);
+
+    return this.http
+      .get<OccurrenceAgencyApiResponse[]>(`${this.apiUrl}/agencies`)
+      .pipe(
+        map((agencies) =>
+          agencies.map(({ _id, ...agency }) => ({ ...agency, id: _id })),
+        ),
       );
   }
 
   getOccurrenceHistory(id: string): Observable<OccurrenceHistoryEvent[]> {
     if (!this.isApiId(id)) {
-      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
+      return of(this.findPostById(id)?.history ?? []);
     }
 
     return this.http.get<OccurrenceHistoryEvent[]>(`${this.apiUrl}/${id}/history`, {
@@ -429,7 +547,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/confirm`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -449,7 +567,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/evidence`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -485,7 +603,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -505,10 +623,41 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, payload)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion`, { ...payload, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
+      );
+  }
+
+  acceptAgencySuggestion(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    agencyId: string,
+  ): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para escolher o órgão responsável.');
+
+    if (!this.isApiId(post.id)) {
+      const current = this.findPostById(post.id);
+      const agency = this.mockAgencies.find(item => item.id === agencyId);
+      if (!post.id.startsWith('mock-') || !current || current.createdBy !== user?._id || !agency ||
+          !current.history.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO' &&
+            (event.metadata?.['agency'] as OccurrenceAgency | undefined)?.id === agencyId)) {
+        throw new Error('Somente o autor pode escolher um órgão de exemplo sugerido no mock.');
+      }
+      return of(this.updateLocalOccurrence(post.id, user, {
+        eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO', responsibleAgency: agency,
+        metadata: { agency, agencyName: agency.name, simulation: true },
+      }));
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion/accept`, {
+        agencyId,
+      })
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((updated) => this.cacheOccurrence(updated)),
       );
   }
 
@@ -545,7 +694,7 @@ export class PostService {
     if (!this.isApiId(post.id)) throw new Error('O envio por e-mail exige uma ocorrência salva no servidor.');
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -570,7 +719,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/failure`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -594,7 +743,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/analysis`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -621,7 +770,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -648,7 +797,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolve`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -674,7 +823,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/contest`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -696,7 +845,7 @@ export class PostService {
     }
 
     return this.http
-      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, body)
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/reopen`, { ...body, actorType: this.actorTypeForUser(user) })
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -742,7 +891,7 @@ export class PostService {
       return [];
     }
 
-    return this.getPosts(user).filter((post) => post.saved);
+    return this.savedPosts();
   }
 
   findPostById(id: string, user: LoggedUser | null = null): SpectrumPost | null {
@@ -757,15 +906,31 @@ export class PostService {
   }
 
   loadComments(postId: string): Observable<SpectrumComment[]> {
-    return this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`).pipe(map((comments) => comments.map((comment) => this.toComment(comment))));
+    if (this.users.currentUser()?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`).pipe(map(comments => comments.map(comment => this.toComment(comment))));
+    return forkJoin({
+      comments: this.http.get<CommentApiResponse[]>(`${API_BASE_URL}/comment/post/${postId}`),
+      reactions: this.http.get<Record<string, Pick<SpectrumComment, 'likes' | 'dislikes' | 'liked' | 'disliked'>>>(`${API_BASE_URL}/like/comment/post/${postId}`),
+    }).pipe(map(({ comments, reactions }) => comments.map(comment => ({ ...this.toComment(comment),
+      ...(reactions[comment._id] ?? { likes: 0, dislikes: 0, liked: false, disliked: false }) }))));
   }
 
-  createComment(postId: string, content: string, user: LoggedUser): Observable<SpectrumComment> {
-    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id }).pipe(map((comment) => this.toComment(comment)));
+  setCommentReaction(comment: SpectrumComment, reaction: 'LIKE' | 'UNLIKE' | null): Observable<SpectrumComment> {
+    return this.http.put<Pick<SpectrumComment, 'likes' | 'dislikes' | 'liked' | 'disliked'>>(
+      `${API_BASE_URL}/like/comment/${comment.id}`, { reaction },
+    ).pipe(map(state => ({ ...comment, ...state })));
+  }
+
+  createComment(postId: string, content: string, user: LoggedUser, parentCommentId?: string): Observable<SpectrumComment> {
+    return this.http.post<CommentApiResponse>(`${API_BASE_URL}/comment`, { postId, text: content, userId: user._id, ...(parentCommentId ? { parentCommentId } : {}) }).pipe(map((comment) => this.toComment(comment)));
+  }
+
+  deleteComment(commentId: string): Observable<unknown> {
+    return this.http.delete(API_BASE_URL + '/comment/' + encodeURIComponent(commentId));
   }
 
   private toComment(comment: CommentApiResponse): SpectrumComment {
-    return { id: comment._id, authorId: comment.userId, authorName: comment.author.name,
+    const official = { parentCommentId: comment.parentCommentId, officialAgencyId: comment.officialAgencyId, officialAgencyName: comment.officialAgencyName, officialAgencyCnpj: comment.officialAgencyCnpj };
+    return { ...official, id: comment._id, createdAt: comment.createdAt, authorId: comment.userId, authorName: comment.author.name, authorAvatarUrl: comment.author.avatarUrl,
       authorInitial: comment.author.name.charAt(0).toUpperCase(), content: comment.text,
       dateLabel: this.formatPublishedAt(new Date(comment.createdAt)), likes: comment.likeCount ?? 0,
       dislikes: comment.unlikeCount ?? 0, liked: false, disliked: false };
@@ -828,6 +993,18 @@ export class PostService {
 
     localStorage.setItem(this.storageKey, JSON.stringify([post, ...this.getUserPosts()]));
     return post;
+  }
+
+  setPostReaction(post: SpectrumPost, user: LoggedUser | null, reaction: 'LIKE' | 'UNLIKE' | null): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para reagir.');
+    const postId = post.originalPostId ?? post.id;
+    return this.http.put<{ likes: number; dislikes: number; liked: boolean; disliked: boolean }>(
+      `${API_BASE_URL}/like/post/${postId}`, { reaction },
+    ).pipe(map(result => {
+      const updated = Object.assign(post, result, { reaction });
+      this.cacheOccurrence({ ...updated, id: postId });
+      return updated;
+    }));
   }
 
   togglePostLike(post: SpectrumPost, user: LoggedUser | null): SpectrumPost {
@@ -1143,7 +1320,11 @@ export class PostService {
     },
   ): SpectrumPost {
     const posts = this.getUserPosts();
-    const index = posts.findIndex((item) => item.id === id);
+    let index = posts.findIndex((item) => item.id === id);
+    if (index < 0 && id.startsWith('mock-')) {
+      const mock = this.findPostById(id);
+      if (mock) { posts.push(mock); index = posts.length - 1; }
+    }
 
     if (index < 0) {
       throw new Error('Somente ocorrencias locais podem ser atualizadas neste modo.');
@@ -1295,13 +1476,13 @@ export class PostService {
 
     return {
       ...normalizedPost,
-      likes: normalizedPost.likes + postInteractions.filter((record) => record.liked).length,
-      dislikes: normalizedPost.dislikes + postInteractions.filter((record) => record.disliked).length,
-      liked: currentUserInteraction?.liked ?? false,
-      disliked: currentUserInteraction?.disliked ?? false,
-      saved: currentUserInteraction?.saved ?? normalizedPost.saved,
-      reposts: normalizedPost.reposts + reposts.length,
-      reposted: userId ? reposts.some((repost) => repost.userId === userId) : false,
+      likes: normalizedPost.likes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.liked).length),
+      dislikes: normalizedPost.dislikes + (this.isApiId(originalPostId) ? 0 : postInteractions.filter((record) => record.disliked).length),
+      liked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'LIKE' : currentUserInteraction?.liked ?? false,
+      disliked: normalizedPost.reaction !== undefined ? normalizedPost.reaction === 'UNLIKE' : currentUserInteraction?.disliked ?? false,
+      saved: this.isApiId(originalPostId) ? normalizedPost.saved : currentUserInteraction?.saved ?? normalizedPost.saved,
+      reposts: this.isApiId(originalPostId) ? normalizedPost.reposts : normalizedPost.reposts + reposts.length,
+      reposted: this.isApiId(originalPostId) ? normalizedPost.reposted : userId ? reposts.some((repost) => repost.userId === userId) : false,
     };
   }
 
@@ -1364,12 +1545,12 @@ export class PostService {
 
     return {
       ...post,
-      likes: Math.max(0, post.likes - interactionLikes),
-      dislikes: Math.max(0, post.dislikes - interactionDislikes),
+      likes: Math.max(0, post.likes - (this.isApiId(postId) ? 0 : interactionLikes)),
+      dislikes: Math.max(0, post.dislikes - (this.isApiId(postId) ? 0 : interactionDislikes)),
       liked: false,
       disliked: false,
-      reposts: Math.max(0, post.reposts - reposts),
-      reposted: false,
+      reposts: this.isApiId(postId) ? post.reposts : Math.max(0, post.reposts - reposts),
+      reposted: this.isApiId(postId) ? post.reposted : false,
     };
   }
 
@@ -1498,15 +1679,17 @@ return {
   publishedAt: createdAt,
   publishedAtLabel: this.formatPublishedAt(new Date(createdAt)),
   likes: occurrence.likeCount ?? 0,
-  liked: false,
+  reaction: occurrence.reaction ?? null,
+  liked: occurrence.reaction === 'LIKE',
   dislikes: occurrence.unlikeCount ?? 0,
-  disliked: false,
-  comments: 0,
-  reposts: 0,
-  reposted: false,
-  saved: false,
+  disliked: occurrence.reaction === 'UNLIKE',
+  comments: occurrence.commentCount ?? 0,
+  reposts: occurrence.repostCount ?? 0,
+  reposted: occurrence.reposted ?? false,
+  saved: occurrence.saved ?? false,
   tags: [],
   status: occurrence.status,
+  agencyProgress: occurrence.agencyProgress,
   moderationReason: occurrence.moderationReason,
   forwardingDueAt: occurrence.forwardingDueAt,
   category: occurrence.category,
@@ -1584,12 +1767,12 @@ return {
   }
 
   private formatPublishedAt(date: Date): string {
-    const day = new Intl.DateTimeFormat('pt-BR').format(date);
-    const time = new Intl.DateTimeFormat('pt-BR', {
+    const day = new Intl.DateTimeFormat(this.i18n.language()).format(date);
+    const time = new Intl.DateTimeFormat(this.i18n.language(), {
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
 
-    return `Publicado em ${day}, as ${time}`;
+    return this.i18n.translate('Publicado em {date}, as {time}', { date: day, time });
   }
 }

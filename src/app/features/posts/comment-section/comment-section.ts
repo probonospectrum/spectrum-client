@@ -1,21 +1,33 @@
+import { LocalizedDatePipe, TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
+import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, Injector, afterNextRender, EventEmitter, HostListener, Input, OnInit, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { SettingsDialog } from '../../../shared/components/settings-dialog/settings-dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { tap } from 'rxjs';
 import { PostService, SpectrumComment } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 
 @Component({
   selector: 'app-comment-section',
-  imports: [UserAvatar, CommonModule, FormsModule],
+  imports: [SettingsDialog, LocalizedDatePipe, TranslatePipe, ReportModal, UserAvatar, CommonModule, FormsModule],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
 export class CommentSection implements OnInit {
   @Input({ required: true }) postId!: string;
   @Input() currentUser: LoggedUser | null = null;
+  @Input() responsibleAgencyId?: string;
+  replyTarget: SpectrumComment | null = null;
+  get canOfficialReply(): boolean { return this.currentUser?.occurrenceRole === 'RESPONSIBLE_AGENCY' && this.currentUser.agencyRegistrationStatus === 'APPROVED' && !!this.responsibleAgencyId && this.currentUser.occurrenceAgencyId === this.responsibleAgencyId; }
+  startReply(comment: SpectrumComment): void { if (this.canOfficialReply && !this.saving) { this.replyTarget = comment; this.newComment = ''; this.showAll = true; } }
+  parentAuthor(comment: SpectrumComment): string { return this.comments.find(parent => parent.id === comment.parentCommentId)?.authorName || 'Comentário anterior'; }
+  @Input() renderDialogs = true;
+  @ViewChild('dialogs', { static: true }) dialogs!: TemplateRef<unknown>;
   @Output() commentAdded = new EventEmitter<void>();
+  @Output() commentCountChanged = new EventEmitter<number>();
 
   readonly visibleCount = 2;
 
@@ -25,7 +37,15 @@ export class CommentSection implements OnInit {
   loading = false;
   saving = false;
   error = '';
+  menuCommentId: string | null = null;
+  reportTarget: SpectrumComment | null = null;
+  deleteTarget: SpectrumComment | null = null;
+  actionPending = false;
+  actionMessage = '';
+  private readonly pendingReactions = new Set<string>();
   private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly injector = inject(Injector);
 
   constructor(
     private readonly postService: PostService,
@@ -35,7 +55,18 @@ export class CommentSection implements OnInit {
   ngOnInit(): void {
     this.loading = true;
     this.postService.loadComments(this.postId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (comments) => { this.comments = comments; this.loading = false; },
+      next: (comments) => {
+        this.comments = comments;
+        this.commentCountChanged.emit(this.comments.length);
+        this.changeDetector.markForCheck();
+        this.loading = false;
+        const target = comments.find(comment => window.location.hash === '#comment-' + comment.id);
+        if (target) {
+          this.showAll = true;
+          afterNextRender(() => document.getElementById('comment-' + target.id)?.scrollIntoView({ block: 'center' }),
+            { injector: this.injector });
+        }
+      },
       error: () => { this.error = 'Não foi possível carregar os comentários.'; this.loading = false; },
     });
   }
@@ -73,8 +104,8 @@ export class CommentSection implements OnInit {
 
     this.saving = true;
     this.error = '';
-    this.postService.createComment(this.postId, content, user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (comment) => { this.comments = [comment, ...this.comments]; this.newComment = ''; this.saving = false; this.commentAdded.emit(); },
+    this.postService.createComment(this.postId, content, user, this.replyTarget?.id).pipe(tap(() => this.replyTarget = null), takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (comment) => { this.comments = [comment, ...this.comments]; this.newComment = ''; this.saving = false; this.commentAdded.emit(); this.commentCountChanged.emit(this.comments.length); this.changeDetector.markForCheck(); },
       error: () => { this.saving = false; this.error = 'Não foi possível enviar o comentário. Tente novamente.'; },
     });
   }
@@ -96,6 +127,7 @@ export class CommentSection implements OnInit {
   }
 
   toggleLike(commentId: string): void {
+    if (!this.currentUser || this.pendingReactions.has(commentId)) return;
     const comment = this.findComment(commentId);
 
     if (!comment) {
@@ -114,14 +146,11 @@ export class CommentSection implements OnInit {
 
     this.replaceComment(optimisticComment);
 
-    try {
-      this.replaceComment(this.postService.toggleCommentLike(previousComment, this.currentUser));
-    } catch {
-      this.replaceComment(previousComment);
-    }
+    this.saveReaction(previousComment, nextLiked ? 'LIKE' : null);
   }
 
   toggleDislike(commentId: string): void {
+    if (!this.currentUser || this.pendingReactions.has(commentId)) return;
     const comment = this.findComment(commentId);
 
     if (!comment) {
@@ -140,15 +169,77 @@ export class CommentSection implements OnInit {
 
     this.replaceComment(optimisticComment);
 
-    try {
-      this.replaceComment(this.postService.toggleCommentDislike(previousComment, this.currentUser));
-    } catch {
-      this.replaceComment(previousComment);
-    }
+    this.saveReaction(previousComment, nextDisliked ? 'UNLIKE' : null);
   }
 
-  reportComment(commentId: string): void {
-    return;
+  private saveReaction(previous: SpectrumComment, reaction: 'LIKE' | 'UNLIKE' | null): void {
+    this.pendingReactions.add(previous.id);
+    this.postService.setCommentReaction(previous, reaction).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: comment => { this.replaceComment(comment); this.pendingReactions.delete(previous.id); this.changeDetector.markForCheck(); },
+      error: () => {
+        this.replaceComment(previous);
+        this.pendingReactions.delete(previous.id);
+        this.error = 'Não foi possível salvar a reação. Tente novamente.';
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  closeMenu(): void { this.menuCommentId = null; }
+
+  toggleMenu(commentId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuCommentId = this.menuCommentId === commentId ? null : commentId;
+  }
+
+  isOwnComment(comment: SpectrumComment): boolean {
+    const user = this.currentUser ?? this.userService.getCurrentUser();
+    return !!user && comment.authorId === user._id;
+  }
+
+  async copyCommentLink(comment: SpectrumComment): Promise<void> {
+    this.closeMenu();
+    this.error = '';
+    this.actionMessage = '';
+    try {
+      await navigator.clipboard.writeText(window.location.origin + '/occurrences/' +
+        encodeURIComponent(this.postId) + '#comment-' + encodeURIComponent(comment.id));
+      this.actionMessage = 'Link do comentário copiado.';
+    } catch { this.error = 'Não foi possível copiar o link. Tente novamente.'; }
+  }
+
+  reportComment(comment: SpectrumComment): void {
+    this.closeMenu();
+    this.reportTarget = comment;
+  }
+
+  requestDelete(comment: SpectrumComment): void {
+    this.closeMenu();
+    if (this.isOwnComment(comment)) this.deleteTarget = comment;
+  }
+
+  confirmDelete(): void {
+    const target = this.deleteTarget;
+    if (!target || !this.isOwnComment(target) || this.actionPending) return;
+    this.actionPending = true;
+    this.error = '';
+    this.actionMessage = '';
+    this.postService.deleteComment(target.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.comments = this.comments.filter(comment => comment.id !== target.id);
+        this.commentCountChanged.emit(this.comments.length);
+        this.changeDetector.markForCheck();
+        this.actionPending = false;
+        this.deleteTarget = null;
+        this.actionMessage = 'Comentário excluído.';
+      },
+      error: () => {
+        this.actionPending = false;
+        this.error = 'Não foi possível excluir o comentário. Tente novamente.';
+      },
+    });
   }
 
   private findComment(commentId: string): SpectrumComment | undefined {

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -7,6 +8,7 @@ export interface SelectOption {
 }
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-select',
   templateUrl: './select.html',
   styleUrl: './select.scss',

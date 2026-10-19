@@ -1,4 +1,5 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -12,20 +13,20 @@ import { AlertPopup } from '../../shared/components/alert-popup/alert-popup';
 @Component({
   selector: 'app-callback',
   standalone: true,
-  imports: [AlertPopup],
+  imports: [TranslatePipe, AlertPopup],
   template: `
     <div class="callback-loading" role="status" aria-live="polite">
       @if (!errorMessage()) {
         <div class="spinner" aria-hidden="true"></div>
-        <p>Concluindo seu login com Google...</p>
+        <p>{{ 'Concluindo seu login com Google...' | translate }}</p>
       }
     </div>
     @if (errorMessage(); as message) {
       <app-alert-popup
         type="error"
-        title="Não foi possível entrar com Google"
-        [message]="message"
-        actionLabel="Voltar ao login"
+        [title]="'Não foi possível entrar com Google' | translate"
+        [message]="message | translate"
+        [actionLabel]="'Voltar ao login' | translate"
         (dismissed)="backToLogin()"
       />
     }

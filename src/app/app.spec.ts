@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { NotificationService } from './core/services/notifications/notification.service';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [{ provide: NotificationService, useValue: {} }],
     }).compileComponents();
   });
 
