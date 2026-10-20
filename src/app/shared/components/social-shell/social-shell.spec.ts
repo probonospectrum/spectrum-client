@@ -13,8 +13,8 @@ describe('SocialShell profile search', () => {
     TestBed.configureTestingModule({ providers: [
       provideRouter([]),
       { provide: ActivatedRoute, useValue: {} },
-      { provide: UserService, useValue: api },
-      { provide: NotificationService, useValue: {} },
+      { provide: UserService, useValue: { ...api, currentUser: () => null } },
+      { provide: NotificationService, useValue: { notifications: () => [] } },
     ] });
   });
   afterEach(() => vi.useRealTimers());

@@ -44,11 +44,12 @@ export class LoginPage implements OnInit {
   chooseAccountType(type: 'CITIZEN' | 'PUBLIC_AGENCY'): void {
     this.accountType.set(type);
     const controls = this.registerForm.controls;
+    controls.birthDate.setValidators(type === 'CITIZEN' ? [Validators.required] : []);
     controls.agencyCnpj.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, control => isValidCnpj(control.value) ? null : { cnpj: true }] : []);
     controls.agencyName.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, Validators.minLength(3), Validators.maxLength(160)] : []);
     controls.representativePosition.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, Validators.minLength(3), Validators.maxLength(160)] : []);
     controls.authorizationReference.setValidators(type === 'PUBLIC_AGENCY' ? [Validators.required, Validators.minLength(20), Validators.maxLength(1000)] : []);
-    for (const control of [controls.agencyCnpj, controls.agencyName, controls.representativePosition, controls.authorizationReference]) control.updateValueAndValidity();
+    for (const control of [controls.birthDate, controls.agencyCnpj, controls.agencyName, controls.representativePosition, controls.authorizationReference]) control.updateValueAndValidity();
   }
   private readonly formBuilder = inject(FormBuilder);
   private readonly userService = inject(UserService);
@@ -171,7 +172,12 @@ export class LoginPage implements OnInit {
   }
 
   goToNextRegisterStep(): void {
-    const firstStepControls = ['nickname', 'email', 'birthDate', 'password'] as const;
+    const firstStepControls = [
+      'nickname',
+      'email',
+      ...(this.accountType() === 'CITIZEN' ? (['birthDate'] as const) : []),
+      'password',
+    ] as const;
 
     firstStepControls.forEach((controlName) => {
       this.registerForm.controls[controlName].markAsTouched();
@@ -261,7 +267,19 @@ export class LoginPage implements OnInit {
       return;
     }
 
-    const { stateId: _stateId, agencyCnpj, agencyName, representativePosition, authorizationReference, ...payload } = this.registerForm.getRawValue();
+    const {
+      stateId: _stateId,
+      agencyCnpj,
+      agencyName,
+      representativePosition,
+      authorizationReference,
+      birthDate,
+      ...payload
+    } = this.registerForm.getRawValue();
+    const accountPayload = {
+      ...payload,
+      ...(this.accountType() === 'CITIZEN' ? { birthDate } : {}),
+    };
     const agency = { accountType: this.accountType(), ...(this.accountType() === 'PUBLIC_AGENCY' ? { agencyCnpj, agencyName, representativePosition, authorizationReference } : {}) };
 
     this.isSubmitting.set(true);
@@ -274,7 +292,7 @@ export class LoginPage implements OnInit {
           name: payload.name,
           nickname: payload.nickname,
           password: payload.password,
-          birthDate: payload.birthDate,
+          ...(this.accountType() === 'CITIZEN' ? { birthDate } : {}),
           cityUser: payload.cityUser,
         })
         .pipe(
@@ -300,7 +318,7 @@ export class LoginPage implements OnInit {
 
     this.userService
       .create({
-        ...payload,
+        ...accountPayload,
         ...agency,
       })
       .pipe(
@@ -355,11 +373,15 @@ export class LoginPage implements OnInit {
     }
 
     if (control.hasError('minlength')) {
-      return 'A senha deve ter no minimo 10 caracteres';
+      return controlName === 'password'
+        ? 'A senha deve ter no minimo 10 caracteres'
+        : `Use pelo menos ${control.getError('minlength').requiredLength} caracteres`;
     }
 
     if (control.hasError('maxlength')) {
-      return 'A senha deve ter no maximo 30 caracteres';
+      return controlName === 'password'
+        ? 'A senha deve ter no maximo 30 caracteres'
+        : `Use no máximo ${control.getError('maxlength').requiredLength} caracteres`;
     }
 
     return 'Valor invalido';
