@@ -6,7 +6,8 @@ import { authInterceptor } from '../../interceptors/auth.interceptor';
 import { LoggedUser, UserService } from './user.service';
 
 describe('UserService avatar upload', () => {
-  const session = { token: 'session-token', message: 'login', user: { _id: 'ana', name: 'Ana', avatarUrl: 'https://example.com/old.png', following: ['friend'] } as LoggedUser };
+  const token = `header.${btoa(JSON.stringify({ exp: 4102444800 }))}.signature`;
+  const session = { token, message: 'login', user: { _id: 'ana', name: 'Ana', avatarUrl: 'https://example.com/old.png', following: ['friend'] } as LoggedUser };
   let service: UserService;
   let http: HttpTestingController;
   beforeEach(() => {
@@ -23,7 +24,7 @@ describe('UserService avatar upload', () => {
     const request = http.expectOne(API_BASE_URL + '/user/ana/cover');
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body.get('cover')).toBeInstanceOf(Blob);
-    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    expect(request.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
     request.flush({ coverUrl: 'https://example.com/cover.jpg' });
     expect(service.currentUser()?.coverUrl).toBe('https://example.com/cover.jpg');
     expect(JSON.parse(localStorage.getItem('spectrum-auth-session')!).user.coverUrl).toBe('https://example.com/cover.jpg');
@@ -42,7 +43,7 @@ describe('UserService avatar upload', () => {
     service.deleteAccount().subscribe();
     const request = http.expectOne(API_BASE_URL + '/user/ana');
     expect(request.request.method).toBe('DELETE');
-    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    expect(request.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
     expect(service.getCurrentUser()).toEqual(session.user);
     request.flush(null);
     expect(service.getCurrentUser()).toBeNull();
@@ -72,7 +73,7 @@ describe('UserService avatar upload', () => {
     expect(request.request.body instanceof FormData).toBe(true);
     expect(request.request.body.get('avatar').name).toBe('avatar.png');
     expect(request.request.headers.has('Content-Type')).toBe(false);
-    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    expect(request.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
     expect(service.getCurrentUser()).toEqual(session.user);
     request.flush({ message: 'ok', avatarUrl: 'https://example.com/new.png' });
     const expected = { ...session, user: { ...session.user, avatarUrl: 'https://example.com/new.png' } };
@@ -85,7 +86,7 @@ describe('UserService avatar upload', () => {
     service.removeAvatar().subscribe();
     const request = http.expectOne(API_BASE_URL + '/user/ana/avatar');
     expect(request.request.method).toBe('DELETE');
-    expect(request.request.headers.get('Authorization')).toBe('Bearer session-token');
+    expect(request.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
     expect(service.getCurrentUser()).toEqual(session.user);
     request.flush({ message: 'ok', avatarUrl: '' });
     expect(service.getCurrentUser()?.avatarUrl).toBe('');
