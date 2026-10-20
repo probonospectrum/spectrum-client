@@ -63,6 +63,17 @@ describe('Institutional inbox session and pagination', () => {
     expect(inbox.enabled()).toBe(false);
     http.expectNone(url);
   });
+  it('loads direct assignments for a pending institutional account without a catalog identifier', () => {
+    http.expectOne(url).flush({ data: [], total: 0, nextCursor: null });
+    user.set({ _id: 'institutional-account', accountType: 'PUBLIC_AGENCY', occurrenceRole: 'USER',
+      agencyRegistrationStatus: 'PENDING' } as LoggedUser);
+    TestBed.tick();
+    vi.advanceTimersByTime(1);
+    http.expectOne(url).flush({ data: [{ _id: 'direct', title: 'Vínculo direto', status: 'ABERTA' }], total: 1, nextCursor: null });
+    expect(inbox.enabled()).toBe(true);
+    expect(inbox.items()[0]._id).toBe('direct');
+  });
+
   it('preserves the visible list on a temporary refresh failure', () => {
     http
       .expectOne(url)

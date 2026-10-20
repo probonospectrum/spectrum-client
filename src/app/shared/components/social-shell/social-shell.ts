@@ -23,7 +23,6 @@ import { CreatePostModal } from '../create-post-modal/create-post-modal';
 import { LogoutConfirm } from '../logout-confirm/logout-confirm';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
 
-import { AgencyInboxSidebar } from '../agency-inbox-sidebar/agency-inbox-sidebar';
 import { AgencyInboxService } from '../../../core/services/user/agency-inbox.service';
 
 interface SearchResult {
@@ -46,7 +45,6 @@ interface SearchResult {
     RouterLinkActive,
     LogoutConfirm,
     CreatePostModal,
-    AgencyInboxSidebar,
   ],
   templateUrl: './social-shell.html',
   styleUrl: './social-shell.scss',

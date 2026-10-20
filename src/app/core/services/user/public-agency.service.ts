@@ -58,8 +58,10 @@ export class PublicAgencyService {
   resend() {
     return this.http.post<{ message: string }>(`${this.url}/me/resend-verification`, {});
   }
-  inbox(cursor?: string) {
-    return this.http.get<AgencyInboxPage>(`${API_BASE_URL}/post/agency/inbox`, { params: cursor ? { cursor } : {} });
+  inbox(cursor?: string, filters: { search?: string; status?: string; order?: string } = {}) {
+    return this.http.get<AgencyInboxPage>(`${API_BASE_URL}/post/agency/inbox`, {
+      params: { ...filters, ...(cursor ? { cursor } : {}) },
+    });
   }
   assigned() { return this.inbox().pipe(map(page => page.data)); }
   requests() {

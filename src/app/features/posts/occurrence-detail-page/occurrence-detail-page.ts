@@ -7,7 +7,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, defer, finalize, forkJoin, switchMap } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, switchMap, of } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
   OccurrenceAgency,
@@ -389,14 +389,11 @@ export class OccurrenceDetailPage implements OnInit {
     const stateCode = this.normalizeAgencySearch(this.occurrenceStateCode);
     if (!city && !stateCode) return [];
 
-    return this.agencyDirectory.filter((agency) => {
-      const agencyState = this.normalizeAgencySearch(agency.stateCode ?? '');
-      if (stateCode && agencyState && agencyState !== stateCode) return false;
-      if (agency.cities?.length) {
-        return Boolean(city && agency.cities.some((agencyCity) => this.normalizeAgencyCity(agencyCity) === city));
-      }
-      return Boolean(stateCode && agencyState === stateCode);
-    });
+    if (!city || !stateCode) return [];
+    return this.agencyDirectory.filter(agency =>
+      this.normalizeAgencySearch(agency.stateCode ?? '') === stateCode &&
+      agency.cities?.some(agencyCity => this.normalizeAgencyCity(agencyCity) === city),
+    );
   }
 
   private normalizeAgencyCity(city: string): string {
@@ -547,16 +544,14 @@ export class OccurrenceDetailPage implements OnInit {
       () => this.postService.acceptAgencySuggestion(this.occurrence!, this.user, suggestion.agency.id!),
       this.isMockOccurrence
         ? `Órgão de exemplo escolhido: ${this.displayAgencyName(suggestion.agency.name)}. Nenhum encaminhamento real foi realizado.`
-        : `Ocorrência encaminhada para ${this.displayAgencyName(suggestion.agency.name)}.`,
+        : `Órgão responsável escolhido: ${this.displayAgencyName(suggestion.agency.name)}.`,
     );
   }
 
   canAcceptAgencySuggestion(suggestion: AgencySuggestion): boolean {
-    const createdAt = Date.parse(this.occurrence?.createdAt ?? '');
     return Boolean(
       this.isOccurrenceAuthor && !this.occurrence?.responsibleAgency?.id && !this.occurrence?.linkedAgencyIds?.length &&
         this.isRegisteredAgencySuggestion(suggestion) &&
-        (this.isMockOccurrence || (Number.isFinite(createdAt) && Date.now() - createdAt >= 15 * 60_000)) &&
         ['ABERTA', 'SEM_ORGAO_IDENTIFICADO', 'AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO'].includes(this.occurrence?.status ?? '') &&
         !this.hasSuccessfulAgencyForwarding,
     );
@@ -599,7 +594,11 @@ export class OccurrenceDetailPage implements OnInit {
     if (this.agencyDirectoryLoaded || this.agencyDirectoryLoading()) return;
     this.agencyDirectoryError = '';
     this.agencyDirectoryLoading.set(true);
-    this.postService.getResponsibleAgencies(this.occurrence?.id).pipe(
+    (this.isMockOccurrence
+      ? this.postService.getResponsibleAgencies(this.occurrence?.id)
+      : this.occurrenceCity && this.occurrenceStateCode
+        ? this.postService.getAgenciesForLocation(this.occurrenceStateCode, this.occurrenceCity)
+        : of([])).pipe(
       finalize(() => this.agencyDirectoryLoading.set(false)),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
@@ -658,6 +657,11 @@ export class OccurrenceDetailPage implements OnInit {
   submitAgency(): void {
     if (!this.occurrence || (!this.canAssociateAgency && !this.canSuggestAgency) || !this.agencyName.trim()) {
       this.errorMessage = 'Informe o nome do órgão responsável.';
+      return;
+    }
+
+    if (!this.canAssociateAgency && !this.agencyDirectoryForOccurrence.some(agency => agency.id === this.agencyId)) {
+      this.errorMessage = 'Selecione um órgão cadastrado na cidade da ocorrência.';
       return;
     }
 

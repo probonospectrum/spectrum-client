@@ -20,9 +20,9 @@ export class AgencyInboxService {
   readonly enabled = computed(() => {
     const user = this.users.currentUser();
     return (
-      user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
+      user?.accountType === 'PUBLIC_AGENCY' || (user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
       user.agencyRegistrationStatus === 'APPROVED' &&
-      !!user.occurrenceAgencyId
+      !!user.occurrenceAgencyId)
     );
   });
   constructor() {
@@ -35,7 +35,7 @@ export class AgencyInboxService {
       this.cursor.set(null);
       this.error.set('');
       this.loading.set(false);
-      if (!enabled || !userId || !agencyId) return;
+      if (!enabled || !userId) return;
       this.loading.set(true);
       const subscription = merge(timer(0, 30000), this.refresh)
         .pipe(

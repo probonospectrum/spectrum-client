@@ -150,7 +150,7 @@
                 } @else if (canAcceptAgencySuggestion(suggestion)) {
                   <button type="button" [disabled]="isSubmitting()" (click)="acceptAgencySuggestion(suggestion)">
                     <span class="material-symbols-outlined" aria-hidden="true">send</span>
-                    {{ isMockOccurrence ? 'Escolher este órgão' : 'Escolher e encaminhar' }}
+                    Escolher este órgão
                   </button>
                 } @else if (hasSuccessfulAgencyForwarding) {
                   <span class="occurrence-detail__suggestion-status">Encaminhamento já registrado</span>
@@ -337,7 +337,7 @@
           }
           @if (actionPanel === 'agency' && !isModerator) {
             <label class="occurrence-detail__agency-field">
-              <span>Buscar ou sugerir</span>
+              <span>Selecionar órgão da cidade</span>
               <div class="occurrence-detail__agency-search">
                 <span class="material-symbols-outlined" aria-hidden="true">search</span>
                 <input
@@ -352,9 +352,9 @@
                   role="combobox"
                   aria-autocomplete="list"
                   aria-controls="agency-directory-options"
-                  [attr.aria-expanded]="agencyDirectoryOpen && !!agencyDirectorySearch.trim() && filteredAgencyDirectory.length > 0"
+                  [attr.aria-expanded]="agencyDirectoryOpen && filteredAgencyDirectory.length > 0"
                 />
-                @if (agencyDirectoryOpen && agencyDirectorySearch.trim() && filteredAgencyDirectory.length) {
+                @if (agencyDirectoryOpen && filteredAgencyDirectory.length) {
                   <div id="agency-directory-options" class="occurrence-detail__agency-options" role="listbox" aria-label="Sugestões cadastradas">
                     @for (agency of filteredAgencyDirectory; track agency.id) {
                       <button
@@ -400,11 +400,11 @@
           @if (actionPanel === 'agency') {
             @if (!isModerator) {
               <div class="occurrence-detail__suggestion-actions occurrence-detail__suggestion-actions--agency">
-                <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
+                <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !agencyId" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
                 <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
               </div>
             } @else {
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !agencyId" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
             }
           }
 

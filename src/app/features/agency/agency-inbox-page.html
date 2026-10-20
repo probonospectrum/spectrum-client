@@ -6,14 +6,14 @@
       </div>
       <div>
         <span class="eyebrow">ATENDIMENTO INSTITUCIONAL</span>
-        <h1>Caixa de entrada</h1>
+        <h1>Ocorrências</h1>
         <p>Ocorrências vinculadas ao seu órgão público.</p>
       </div>
       <button
         class="refresh"
         type="button"
-        (click)="inbox.reload()"
-        [disabled]="inbox.loading()"
+        (click)="reload()"
+        [disabled]="loading()"
         aria-label="Atualizar ocorrências"
       >
         <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
@@ -22,10 +22,9 @@
     @if (!inbox.enabled()) {
       <div class="inbox-empty" role="status">
         <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
-        <h2>Aguardando aprovação institucional</h2>
+        <h2>Conta institucional necessária</h2>
         <p>
-          A caixa de entrada está disponível para representantes aprovados e vinculados a um órgão
-          cadastrado.
+          As ocorrências estão disponíveis para a conta institucional à qual foram vinculadas.
         </p>
         <a routerLink="/orgao-publico">Consultar conta institucional</a>
       </div>
@@ -34,42 +33,46 @@
         <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
         <p>
           <strong
-            >{{ inbox.total() }}
-            {{ inbox.total() === 1 ? 'ocorrência vinculada' : 'ocorrências vinculadas' }}</strong
+            >{{ total() }}
+            {{ total() === 1 ? 'ocorrência vinculada' : 'ocorrências vinculadas' }}</strong
           ><span>Os relatos permanecem disponíveis aqui, inclusive após a resolução.</span>
         </p>
         <a routerLink="/notificacoes">Ver notificações <span aria-hidden="true">↗</span></a>
       </div>
       <section class="inbox-panel" aria-label="Ocorrências vinculadas">
+        <div class="inbox-tabs" role="group" aria-label="Situação das ocorrências">
+          <button type="button" [attr.aria-pressed]="filter() === 'open'" (click)="filter.set('open')">Em andamento</button>
+          <button type="button" [attr.aria-pressed]="filter() === 'resolved'" (click)="filter.set('resolved')">Resolvidas</button>
+          <button type="button" [attr.aria-pressed]="filter() === 'all'" (click)="filter.set('all')">Todas</button>
+        </div>
         <div class="inbox-toolbar">
           <label class="search"
             ><span class="material-symbols-outlined" aria-hidden="true">search</span
             ><input
               type="search"
               placeholder="Buscar por título, cidade ou protocolo"
-              aria-label="Buscar nas ocorrências carregadas"
+              aria-label="Buscar em todas as ocorrências vinculadas"
               [value]="search()"
               (input)="search.set($any($event.target).value)"
           /></label>
-          <label class="status-filter"
-            ><span class="sr-only">Filtrar situação</span
-            ><select [value]="filter()" (change)="filter.set($any($event.target).value)">
-              <option value="all">Todas as situações</option>
-              <option value="open">Em acompanhamento</option>
-              <option value="resolved">Resolvidas</option>
-            </select></label
-          >
+          <label class="status-filter">
+            <span class="sr-only">Ordenar ocorrências</span>
+            <select [value]="order()" (change)="order.set($any($event.target).value)">
+              <option value="newest">Mais recentes</option>
+              <option value="oldest">Menos recentes</option>
+            </select>
+          </label>
         </div>
-        @if (inbox.error()) {
+        @if (error()) {
           <p class="inbox-error" role="alert">
-            {{ inbox.error() }}
-            <button type="button" (click)="inbox.reload()">Tentar novamente</button>
+            {{ error() }}
+            <button type="button" (click)="reload()">Tentar novamente</button>
           </p>
         }
-        @if (inbox.loading()) {
+        @if (loading()) {
           <div class="inbox-empty" role="status">Carregando ocorrências…</div>
         }
-        @for (post of filtered(); track post._id) {
+        @for (post of items(); track post._id) {
           <a class="inbox-row" [routerLink]="['/ocorrencias', post._id]">
             <span class="row-icon material-symbols-outlined" aria-hidden="true">{{
               post.status === 'RESOLVIDA' ? 'task_alt' : 'description'
@@ -91,7 +94,7 @@
             >
           </a>
         } @empty {
-          @if (!inbox.loading() && !inbox.error()) {
+          @if (!loading() && !error()) {
             <div class="inbox-empty">
               <span class="material-symbols-outlined" aria-hidden="true">{{
                 search() || filter() !== 'all' ? 'search_off' : 'inbox'
@@ -100,13 +103,13 @@
                 {{
                   search() || filter() !== 'all'
                     ? 'Nenhum resultado nesta lista'
-                    : 'Sua caixa de entrada está em dia'
+                    : 'Nenhuma ocorrência vinculada'
                 }}
               </h2>
               <p>
                 {{
                   search() || filter() !== 'all'
-                    ? 'Ajuste os filtros ou carregue mais ocorrências.'
+                    ? 'Ajuste a busca ou a situação selecionada.'
                     : 'Quando um cidadão vincular um relato ao seu órgão, ele aparecerá aqui e nas suas notificações.'
                 }}
               </p>
@@ -114,10 +117,10 @@
           }
         }
         <footer>
-          <span>{{ inbox.items().length }} de {{ inbox.total() }} ocorrências carregadas</span>
-          @if (inbox.cursor()) {
-            <button type="button" (click)="inbox.loadMore()" [disabled]="inbox.loadingMore()">
-              {{ inbox.loadingMore() ? 'Carregando…' : 'Carregar mais ocorrências' }}
+          <span>{{ items().length }} de {{ total() }} ocorrências carregadas</span>
+          @if (cursor()) {
+            <button type="button" (click)="loadMore()" [disabled]="loadingMore()">
+              {{ loadingMore() ? 'Carregando…' : 'Carregar mais ocorrências' }}
             </button>
           }
         </footer>
