@@ -6,13 +6,16 @@ import { PostService } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 import { NotificationItem } from '../../../shared/components/notification-item/notification-item';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+import { AgencyInboxSidebar } from '../../../shared/components/agency-inbox-sidebar/agency-inbox-sidebar';
+import { AgencyInboxService } from '../../../core/services/user/agency-inbox.service';
 @Component({
   selector: 'app-notifications-page',
-  imports: [TranslatePipe, SocialShell, NotificationItem],
+  imports: [TranslatePipe, SocialShell, NotificationItem, AgencyInboxSidebar],
   templateUrl: './notifications-page.html',
   styleUrl: './notifications-page.scss',
 })
 export class NotificationsPage {
+  readonly agencyInbox = inject(AgencyInboxService);
   readonly service = inject(NotificationService);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);

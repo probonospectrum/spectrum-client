@@ -9,6 +9,7 @@ import { SpectrumNotification } from '../account/account-mock.service';
 
 export interface UserNotification extends SpectrumNotification {
   postId?: string;
+  eventType?: string;
   createdAt: string;
 }
 interface ApiNotification extends Omit<UserNotification, 'type' | 'dateLabel'> {
@@ -144,6 +145,7 @@ export class NotificationService {
     return {
       ...item,
       type: 'confirmation',
+      eventType: item.type,
       dateLabel: new Date(item.createdAt).toLocaleString(this.i18n.language()),
     };
   }

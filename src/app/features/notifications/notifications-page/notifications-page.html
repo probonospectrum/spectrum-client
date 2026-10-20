@@ -4,6 +4,10 @@
   [showContentHeader]="false"
   (logout)="logout()"
 >
+  @if (agencyInbox.enabled()) {
+    <div class="notifications-agency-intro"><span class="material-symbols-outlined" aria-hidden="true">account_balance</span><div><strong>Atividade da sua instituição</strong><p>Novos vínculos chegam nas notificações. Todas as ocorrências continuam disponíveis na caixa de entrada do órgão.</p></div></div>
+    <app-agency-inbox-sidebar class="notifications-agency-mobile" />
+  }
   @if (service.error()) {
     <p role="alert">{{ (service.error()) | translate }} <button type="button" (click)="service.reload()">{{ 'Tentar novamente' | translate }}</button></p>
   }
