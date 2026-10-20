@@ -233,3 +233,10 @@
   .occurrence-detail__empty-state { align-items: flex-start; padding: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .occurrence-detail button { transition: none; } }
+
+.occurrence-detail__evidence-review { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; font-size: 12px; color: var(--spectrum-text-secondary); }
+.occurrence-detail__evidence-review[data-status='PENDING'] { background: var(--spectrum-surface-secondary, #fff7e6); }
+.occurrence-detail__evidence-decisions { display: flex; flex-wrap: wrap; gap: 8px; }
+.occurrence-detail__evidence-decisions button { cursor: pointer; padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: var(--spectrum-action); font: inherit; }
+.occurrence-detail__evidence-decisions button.occurrence-detail__reject-evidence { color: #b42318; }
+.occurrence-detail__evidence-decisions button:disabled { cursor: wait; opacity: .6; }

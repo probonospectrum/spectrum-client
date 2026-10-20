@@ -1,3 +1,4 @@
+import { UserAvatar } from '../user-avatar/user-avatar';
 import { LocalizedDatePipe, TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { SpectrumNotification } from '../../../core/services/account/account-mock.service';
@@ -5,7 +6,7 @@ import { Router } from '@angular/router';
 import { inject } from '@angular/core';
 
 @Component({
-  imports: [LocalizedDatePipe, TranslatePipe],
+  imports: [UserAvatar, LocalizedDatePipe, TranslatePipe],
   selector: 'app-notification-item',
   templateUrl: './notification-item.html',
   styleUrl: './notification-item.scss',

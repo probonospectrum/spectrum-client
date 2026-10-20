@@ -1,6 +1,15 @@
 // Source text is the key so existing labels and API status values stay unchanged.
 export const normalizeText = (value: string): string => value.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const rows = `
+Evidências e solicitações|Evidence and submissions|Evidencias y solicitudes
+Aguardando análise do criador|Awaiting creator review|Pendiente de revisión del creador
+Rejeitada pelo criador|Rejected by the creator|Rechazada por el creador
+Aceita|Accepted|Aceptada
+Aceitar|Accept|Aceptar
+Rejeitar|Reject|Rechazar
+Aceitar evidência: {description}|Accept evidence: {description}|Aceptar evidencia: {description}
+Rejeitar evidência: {description}|Reject evidence: {description}|Rechazar evidencia: {description}
+As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.|Contributions from other people must be accepted by the report creator to be included in the report.|Las contribuciones de otras personas deben ser aceptadas por el creador de la incidencia para incluirse en el relato.
 Conta|Account|Cuenta
 Capa do perfil|Profile cover|Portada del perfil
 Alterar capa|Change cover|Cambiar portada
