@@ -4,7 +4,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
-import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
+import { OccurrenceHistoryEvent, PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { CommentSection } from '../comment-section/comment-section';
 import { OccurrenceDetailPage } from './occurrence-detail-page';
@@ -178,6 +178,7 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.nativeElement.textContent).toContain('Secretaria de Obras');
     expect(fixture.nativeElement.textContent).toContain('Ana da Silva');
     expect(fixture.nativeElement.textContent).toContain('Escolher e encaminhar');
+    expect(fixture.componentInstance.timeline).toHaveLength(0);
     expect(fixture.componentInstance.canAcceptAgencySuggestion(fixture.componentInstance.agencySuggestions[0])).toBe(true);
 
     fixture.componentInstance.occurrence = { ...occurrence, createdAt: new Date().toISOString() };
@@ -199,6 +200,33 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[aria-labelledby="agency-suggestions-title"]')).toBeNull();
     expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
+  });
+
+  it('shows only official and creator actions to every viewer', () => {
+    actionsFor('USER');
+    const base = { occurrenceId, eventType: 'EVIDENCIA_ADICIONADA', occurredAt: '2026-09-02T12:00:00Z' };
+    fixture.componentInstance.historyEvents = [
+      { ...base, id: 'creator', actorId: occurrence.createdBy, actorType: 'USER' },
+      { ...base, id: 'community', actorId: 'other', actorType: 'USER' },
+      { ...base, id: 'unknown', actorType: 'USER' },
+      { ...base, id: 'agency', actorId: 'agency', actorType: 'RESPONSIBLE_AGENCY' },
+      { ...base, id: 'moderation', actorId: 'moderator', actorType: 'MODERATOR' },
+      { ...base, id: 'system', actorType: 'SYSTEM' },
+    ] as OccurrenceHistoryEvent[];
+    expect(fixture.componentInstance.timeline.map(event => event.id)).toEqual(['creator', 'agency', 'moderation', 'system']);
+    fixture.componentInstance.occurrence = { ...occurrence, createdBy: 'other' };
+    expect(fixture.componentInstance.timeline.map(event => event.id)).toEqual(['community', 'agency', 'moderation', 'system']);
+  });
+
+  it('preserves community suggestions in the creator panel when the API timeline is filtered', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = { ...occurrence, history: [{
+      id: 'community-suggestion', occurrenceId, eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
+      actorId: 'other', actorType: 'USER', actorOrigin: 'Ana', occurredAt: '2026-09-02T12:00:00Z',
+      metadata: { agency: { id: 'works', name: 'Obras' } },
+    }] };
+    expect(fixture.componentInstance.timeline).toHaveLength(0);
+    expect(fixture.componentInstance.agencySuggestions[0]).toMatchObject({ suggestedBy: 'Ana', supportCount: 1 });
   });
 
   it('does not allow an agency to validate its own response while keeping confirmation visible', () => {

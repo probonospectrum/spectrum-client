@@ -250,7 +250,11 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get timeline(): OccurrenceHistoryEvent[] {
-    return this.historyEvents.filter(event => this.isOccurrenceAuthor || event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO').sort(
+    return this.historyEvents.filter(event =>
+      (Boolean(event.actorId && event.actorId === this.occurrence?.createdBy) ||
+        ['RESPONSIBLE_AGENCY', 'AGENCY', 'MODERATOR', 'SYSTEM'].includes(event.actorType)) &&
+      (this.isOccurrenceAuthor || event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO'),
+    ).sort(
       (first, second) =>
         new Date(first.createdAt ?? first.occurredAt).getTime() - new Date(second.createdAt ?? second.occurredAt).getTime(),
     );
@@ -269,8 +273,13 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get agencySuggestions(): AgencySuggestion[] {
+    if (!this.isOccurrenceAuthor) return [];
     const groups = new Map<string, AgencySuggestion & { participants: Map<string, string> }>();
-    for (const event of this.timeline) {
+    // As sugestões comunitárias ficam no painel do criador, fora da linha do tempo.
+    const events = new Map([
+      ...(this.occurrence?.history ?? []), ...this.historyEvents,
+    ].map(event => [event.id, event]));
+    for (const event of events.values()) {
       if (event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO') continue;
       const agency = event.metadata?.['agency'] as OccurrenceAgency | undefined;
       const name = (agency?.name || String(event.metadata?.['agencyName'] ?? '')).trim();
