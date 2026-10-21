@@ -151,14 +151,7 @@
       <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'" [class.social-nav--agency]="user?.accountType === 'PUBLIC_AGENCY'" [class.social-nav--inbox]="agencyInbox.enabled()">
         @if (user?.accountType === 'PUBLIC_AGENCY') {
         <a class="social-nav__item" routerLink="/orgao-publico" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="social-nav__item--active">
-          <span class="social-nav__notification-icon">
-            <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-            @if (assignedOccurrenceCount()) {
-              <span class="social-nav__notification-badge" [attr.aria-label]="('Ocorrências atribuídas ao seu órgão' | translate) + ': ' + (assignedOccurrenceCount() > 99 ? '99+' : assignedOccurrenceCount())">
-                {{ assignedOccurrenceCount() > 99 ? '99+' : assignedOccurrenceCount() }}
-              </span>
-            }
-          </span>
+          <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
           {{ 'Órgão público' | translate }}
         </a>
         }
@@ -200,8 +193,15 @@
 
         @if (agencyInbox.enabled()) {
           <a class="social-nav__item" routerLink="/orgao-publico/caixa-de-entrada" routerLinkActive="social-nav__item--active">
-            <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
-            Ocorrências <span class="social-inbox-count">{{ agencyInbox.total() }}</span>
+            <span class="social-nav__notification-icon">
+              <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+              @if (agencyInbox.total()) {
+                <span class="social-nav__notification-badge" [attr.aria-label]="('Ocorrências atribuídas ao seu órgão' | translate) + ': ' + agencyInbox.total()">
+                  {{ agencyInbox.total() > 99 ? '99+' : agencyInbox.total() }}
+                </span>
+              }
+            </span>
+            {{ 'Ocorrências' | translate }}
           </a>
         }
         <a

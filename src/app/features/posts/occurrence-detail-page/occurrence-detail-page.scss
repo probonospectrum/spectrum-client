@@ -247,5 +247,22 @@
 .occurrence-detail__evidence-review[data-status='PENDING'] { background: var(--spectrum-surface-secondary, #fff7e6); }
 .occurrence-detail__evidence-decisions { display: flex; flex-wrap: wrap; gap: 8px; }
 .occurrence-detail__evidence-decisions button { cursor: pointer; padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: var(--spectrum-action); font: inherit; }
-.occurrence-detail__evidence-decisions button.occurrence-detail__reject-evidence { color: #b42318; }
+.occurrence-detail__evidence-decisions button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--spectrum-accent) 10%, var(--spectrum-surface));
+  color: var(--spectrum-text);
+  border-color: var(--spectrum-accent);
+}
+.occurrence-detail__evidence-decisions button.occurrence-detail__reject-evidence {
+  color: var(--spectrum-error);
+  background: color-mix(in srgb, var(--spectrum-error) 8%, var(--spectrum-surface));
+  border-color: var(--spectrum-error);
+}
+.occurrence-detail__evidence-decisions button.occurrence-detail__reject-evidence:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--spectrum-error) 15%, var(--spectrum-surface));
+  color: var(--spectrum-error);
+  border-color: var(--spectrum-error);
+}
+.occurrence-detail__evidence-decisions button.occurrence-detail__reject-evidence:focus-visible {
+  outline-color: color-mix(in srgb, var(--spectrum-error) 35%, transparent);
+}
 .occurrence-detail__evidence-decisions button:disabled { cursor: wait; opacity: .6; }
