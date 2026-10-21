@@ -1,4 +1,5 @@
 :host { display: block; }
+:host-context(html[data-theme="dark"]) { color-scheme: dark; }
 .occurrence-detail {
   display: grid; gap: 22px; max-width: 1060px; width: 100%; margin: 0 auto;
   padding: 8px 0 32px; color: var(--spectrum-text);
@@ -141,6 +142,8 @@
 .occurrence-detail__supporters-list li { padding: 10px 12px; border: 1px solid var(--spectrum-border); border-radius: var(--spectrum-radius-sm); color: var(--spectrum-text-secondary); font-size: 13px; overflow-wrap: anywhere; }
 .occurrence-detail__form textarea { min-height: 125px; resize: vertical; }
 .occurrence-detail__form select:disabled { color: var(--spectrum-text-muted); background: var(--spectrum-surface-soft); }
+.occurrence-detail__form select option { background: var(--spectrum-surface); color: var(--spectrum-text); }
+.occurrence-detail__form select[multiple] option:checked { background: var(--spectrum-action); color: #ffffff; }
 .occurrence-detail__form input::placeholder, .occurrence-detail__form textarea::placeholder { color: var(--spectrum-text-muted); }
 .occurrence-detail__upload { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1px dashed var(--spectrum-border-strong); border-radius: 12px; background: var(--spectrum-surface-soft); }
 .occurrence-detail__upload-info { display: grid; gap: 6px; min-width: 0; }
@@ -195,11 +198,11 @@
 .occurrence-detail__timeline-evidences { display: flex; flex-wrap: wrap; gap: 8px; }
 .occurrence-detail button.occurrence-detail__timeline-evidence-btn {
   display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 12px;
-  border-radius: 999px; background: var(--spectrum-accent-soft); color: var(--spectrum-action);
-  border: 1px solid rgba(47, 111, 149, 0.15); font-size: 11px; font-weight: 600; cursor: pointer;
+  border-radius: 999px; background: var(--spectrum-accent-soft); color: var(--spectrum-accent);
+  border: 1px solid var(--spectrum-border-strong); font-size: 11px; font-weight: 600; cursor: pointer;
   transition: background 150ms ease, transform 150ms ease;
   .material-symbols-outlined { font-size: 16px; }
-  &:hover { background: color-mix(in srgb, var(--spectrum-accent-soft) 80%, var(--spectrum-action)); transform: translateY(-1px); }
+  &:hover:not(:disabled) { background: var(--spectrum-action); color: #ffffff; border-color: var(--spectrum-action); transform: translateY(-1px); }
 }
 .occurrence-detail__notice { padding: 14px 18px; border: 1px solid var(--spectrum-border); border-radius: 12px; margin: 0; font-size: 13px; line-height: 1.6; }
 .occurrence-detail__notice--success { background: var(--spectrum-accent-soft); color: var(--spectrum-text); }
