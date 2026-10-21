@@ -8,6 +8,8 @@ import {
   HostListener,
   Input,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   Output,
   inject,
   signal,
@@ -22,6 +24,7 @@ import { LoggedUser, UserService } from '../../../core/services/user/user.servic
 import { CreatePostModal } from '../create-post-modal/create-post-modal';
 import { LogoutConfirm } from '../logout-confirm/logout-confirm';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
+import { PublicAgencyService } from '../../../core/services/user/public-agency.service';
 
 interface SearchResult {
   id: string;
@@ -47,13 +50,29 @@ interface SearchResult {
   templateUrl: './social-shell.html',
   styleUrl: './social-shell.scss',
 })
-export class SocialShell implements OnInit {
+export class SocialShell implements OnInit, OnChanges {
   readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly userService = inject(UserService);
   private readonly locationService = inject(LocationService);
+  private readonly publicAgencyService = inject(PublicAgencyService);
+  readonly assignedOccurrenceCount = signal(0);
+  private assignedRequest?: Subscription;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['user']) return;
+    this.assignedRequest?.unsubscribe();
+    this.assignedOccurrenceCount.set(0);
+    if (this.user?.accountType !== 'PUBLIC_AGENCY' || this.user.occurrenceRole !== 'RESPONSIBLE_AGENCY') return;
+    this.assignedRequest = this.publicAgencyService.assigned()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => this.assignedOccurrenceCount.set(items.length),
+        error: () => this.assignedOccurrenceCount.set(0),
+      });
+  }
 
   readonly suggestedCities = this.locationService.getLocations().slice(0, 4);
 

@@ -316,7 +316,7 @@
               <span>{{ 'Justificativa da análise (mínimo de 20 caracteres)' | translate }}</span>
               <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote" maxlength="1000" [placeholder]="'Explique como as informações do órgão foram verificadas.' | translate"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolve()">{{ 'Classificar resposta' | translate }}</button>
+            <button type="button" class="occurrence-detail__form-inline" [class.occurrence-detail__danger]="responseCode === '01'" [disabled]="isSubmitting()" (click)="submitResolve()">{{ 'Classificar resposta' | translate }}</button>
           }
 
           @if (actionPanel === 'contest') {
@@ -324,7 +324,7 @@
               <span>{{ 'Por que você está contestando?' | translate }}</span>
               <textarea [(ngModel)]="contestReason" name="contestReason" [placeholder]="'A prefeitura informou que o buraco foi consertado, mas ele continua aberto.' | translate"></textarea>
             </label>
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitContest()">{{ 'Contestar resolução' | translate }}</button>
+            <button type="button" class="occurrence-detail__form-inline occurrence-detail__danger" [disabled]="isSubmitting()" (click)="submitContest()">{{ 'Contestar resolução' | translate }}</button>
           }
 
           @if (actionPanel === 'reopen') {

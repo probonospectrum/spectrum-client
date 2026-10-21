@@ -4,20 +4,55 @@ import { Subject, of } from 'rxjs';
 import { SocialShell } from './social-shell';
 import { UserService } from '../../../core/services/user/user.service';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
+import { PublicAgencyService } from '../../../core/services/user/public-agency.service';
+import { LoggedUser } from '../../../core/services/user/user.service';
 
 describe('SocialShell profile search', () => {
   let api: { searchProfiles: ReturnType<typeof vi.fn> };
+  let assigned: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     vi.useFakeTimers();
+    assigned = vi.fn().mockReturnValue(of([]));
     api = { searchProfiles: vi.fn().mockReturnValue(of([{ name: 'Maria', nickname: 'mariazinha', avatarUrl: 'https://example.test/maria.png' }])) };
     TestBed.configureTestingModule({ providers: [
       provideRouter([]),
       { provide: ActivatedRoute, useValue: {} },
       { provide: UserService, useValue: api },
       { provide: NotificationService, useValue: {} },
+      { provide: PublicAgencyService, useValue: { assigned } },
     ] });
   });
   afterEach(() => vi.useRealTimers());
+
+  it('counts assigned occurrences only for an approved public agency', () => {
+    const shell = TestBed.runInInjectionContext(() => new SocialShell());
+    const changes = { user: {} as import('@angular/core').SimpleChange };
+    shell.user = { accountType: 'CITIZEN', occurrenceRole: 'USER' } as LoggedUser;
+    shell.ngOnChanges(changes);
+    expect(assigned).not.toHaveBeenCalled();
+    shell.user = { accountType: 'PUBLIC_AGENCY', occurrenceRole: 'USER' } as LoggedUser;
+    shell.ngOnChanges(changes);
+    expect(assigned).not.toHaveBeenCalled();
+    assigned.mockReturnValue(of([{ _id: 'one' }, { _id: 'two' }]));
+    shell.user = { accountType: 'PUBLIC_AGENCY', occurrenceRole: 'RESPONSIBLE_AGENCY' } as LoggedUser;
+    shell.ngOnChanges(changes);
+    expect(shell.assignedOccurrenceCount()).toBe(2);
+  });
+
+  it('clears the counter and ignores a previous account response after switching accounts', () => {
+    const response = new Subject<{ _id: string; title: string; status: string }[]>();
+    assigned.mockReturnValue(response);
+    const shell = TestBed.runInInjectionContext(() => new SocialShell());
+    const changes = { user: {} as import('@angular/core').SimpleChange };
+    shell.user = { accountType: 'PUBLIC_AGENCY', occurrenceRole: 'RESPONSIBLE_AGENCY' } as LoggedUser;
+    shell.ngOnChanges(changes);
+    response.next([{ _id: 'one', title: 'Post', status: 'ENCAMINHADA' }]);
+    expect(shell.assignedOccurrenceCount()).toBe(1);
+    shell.user = null;
+    shell.ngOnChanges(changes);
+    response.next([{ _id: 'one', title: 'Post', status: 'ENCAMINHADA' }]);
+    expect(shell.assignedOccurrenceCount()).toBe(0);
+  });
 
   it('finds a server profile without cached posts, suggestions or visiting the profile', () => {
     const shell = TestBed.runInInjectionContext(() => new SocialShell());
