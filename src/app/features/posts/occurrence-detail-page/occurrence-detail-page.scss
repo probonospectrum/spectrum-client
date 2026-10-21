@@ -63,14 +63,16 @@
 .occurrence-detail__facts dt { font-size: 11px; line-height: 1.7; color: var(--spectrum-text-muted); }
 .occurrence-detail__facts dd { margin: 0; font-size: 12px; line-height: 1.6; font-weight: 550; overflow-wrap: anywhere; }
 .occurrence-detail button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; border: 1px solid transparent; border-radius: 999px; padding: 9px 16px; color: white; background: var(--spectrum-action); cursor: pointer; font: 600 12px/1.4 var(--spectrum-font); transition: background var(--spectrum-transition), border-color var(--spectrum-transition); }
-.occurrence-detail button:hover:not(:disabled) { background: var(--spectrum-action-hover); }
+.occurrence-detail button:hover:not(:disabled) { background: color-mix(in srgb, var(--spectrum-accent) 12%, var(--spectrum-surface)); color: var(--spectrum-text); border-color: var(--spectrum-border-strong); }
 .occurrence-detail button .material-symbols-outlined { font-size: 19px; }
 .occurrence-detail button:disabled { opacity: .5; cursor: not-allowed; }
 .occurrence-detail button.occurrence-detail__secondary { background: var(--spectrum-surface); color: var(--spectrum-text-secondary); border-color: var(--spectrum-border); }
 .occurrence-detail button.occurrence-detail__secondary:hover:not(:disabled) { background: var(--spectrum-surface-muted); border-color: var(--spectrum-border-strong); }
 .occurrence-detail button.occurrence-detail__text-button { background: transparent; color: var(--spectrum-action); padding: 5px 8px; }
 .occurrence-detail button.occurrence-detail__text-button:hover { background: var(--spectrum-accent-soft); }
-.occurrence-detail button.occurrence-detail__danger { background: var(--spectrum-error); }
+.occurrence-detail button.occurrence-detail__danger { background: color-mix(in srgb, var(--spectrum-error) 8%, var(--spectrum-surface)); color: var(--spectrum-error); border-color: color-mix(in srgb, var(--spectrum-error) 35%, var(--spectrum-surface)); }
+.occurrence-detail button.occurrence-detail__danger:hover:not(:disabled) { background: color-mix(in srgb, var(--spectrum-error) 15%, var(--spectrum-surface)); color: var(--spectrum-error); border-color: var(--spectrum-error); }
+.occurrence-detail button.occurrence-detail__danger:focus-visible { outline-color: color-mix(in srgb, var(--spectrum-error) 35%, transparent); }
 .occurrence-detail :is(button, a, select, input, textarea):focus-visible { outline: 3px solid var(--spectrum-focus); outline-offset: 3px; }
 .occurrence-detail__actions { display: grid; gap: 14px; }
 .occurrence-detail__action-group { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
@@ -143,6 +145,10 @@
 .occurrence-detail__form textarea { min-height: 125px; resize: vertical; }
 .occurrence-detail__form select:disabled { color: var(--spectrum-text-muted); background: var(--spectrum-surface-soft); }
 .occurrence-detail__form select option { background: var(--spectrum-surface); color: var(--spectrum-text); }
+.occurrence-detail__form :is(input, select, textarea):hover:not(:disabled) { background: color-mix(in srgb, var(--spectrum-accent) 6%, var(--spectrum-surface)); border-color: var(--spectrum-border-strong); }
+.occurrence-detail__form select:has(option[value='01']:checked) { border-color: var(--spectrum-error); }
+.occurrence-detail__form select:has(option[value='01']:checked):hover:not(:disabled) { background: color-mix(in srgb, var(--spectrum-error) 8%, var(--spectrum-surface)); }
+.occurrence-detail__form select:has(option[value='01']:checked):focus-visible { outline-color: color-mix(in srgb, var(--spectrum-error) 35%, transparent); }
 .occurrence-detail__form select[multiple] option:checked { background: var(--spectrum-action); color: #ffffff; }
 .occurrence-detail__form input::placeholder, .occurrence-detail__form textarea::placeholder { color: var(--spectrum-text-muted); }
 .occurrence-detail__upload { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1px dashed var(--spectrum-border-strong); border-radius: 12px; background: var(--spectrum-surface-soft); }
@@ -202,7 +208,7 @@
   border: 1px solid var(--spectrum-border-strong); font-size: 11px; font-weight: 600; cursor: pointer;
   transition: background 150ms ease, transform 150ms ease;
   .material-symbols-outlined { font-size: 16px; }
-  &:hover:not(:disabled) { background: var(--spectrum-action); color: #ffffff; border-color: var(--spectrum-action); transform: translateY(-1px); }
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--spectrum-accent) 12%, var(--spectrum-surface)); color: var(--spectrum-text); border-color: var(--spectrum-accent); transform: translateY(-1px); }
 }
 .occurrence-detail__notice { padding: 14px 18px; border: 1px solid var(--spectrum-border); border-radius: 12px; margin: 0; font-size: 13px; line-height: 1.6; }
 .occurrence-detail__notice--success { background: var(--spectrum-accent-soft); color: var(--spectrum-text); }
