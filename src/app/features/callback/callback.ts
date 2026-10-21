@@ -33,20 +33,31 @@ import { AlertPopup } from '../../shared/components/alert-popup/alert-popup';
   `,
   styles: [
     `
+      :host {
+        display: block;
+      }
       .callback-loading {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
-        background-color: #0a0a0a;
-        color: #fff;
+        min-height: 100dvh;
+        padding: 24px;
+        background-color: var(--spectrum-app-bg);
+        color: var(--spectrum-text);
+        text-align: center;
+      }
+      @media (min-width: 1024px) {
+        .callback-loading {
+          min-height: calc(100dvh / 0.9);
+        }
       }
       .spinner {
         width: 32px;
         height: 32px;
-        border: 3px solid rgba(255, 255, 255, 0.2);
-        border-top-color: #fff;
+        border: 3px solid var(--spectrum-border);
+        border-top-color: var(--spectrum-action);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
