@@ -17,6 +17,23 @@ describe('Occurrence feed API', () => {
   });
   afterEach(() => http.verify());
 
+  it.each(['author', 'contributor', 'other'])('hides rejected evidence on reload for %s', viewer => {
+    const id = '66f1c0de0000000000000001';
+    let result: SpectrumPost | undefined;
+    posts.getOccurrence(id, { _id: viewer } as LoggedUser).subscribe(post => result = post);
+    http.expectOne(API_BASE_URL + '/post/' + id).flush({
+      _id: id, createdBy: 'author', text: 'Post', evidences: [
+        { id: 'rejected', type: 'IMAGE', status: 'REJECTED', url: '/rejected.jpg', addedBy: 'contributor' },
+        { id: 'approved', type: 'IMAGE', status: 'APPROVED', url: '/approved.jpg' },
+        { id: 'pending', type: 'IMAGE', status: 'PENDING', url: '/pending.jpg' },
+      ],
+    });
+    http.expectOne(r => r.url === API_BASE_URL + '/like/post-states').flush({});
+    expect(result?.evidences.map(item => item.id)).toEqual(['approved', 'pending']);
+    expect(result?.mediaType).toBe('image');
+    expect(JSON.stringify(result)).not.toContain('/rejected.jpg');
+  });
+
   it.each(['LIKE', 'UNLIKE'] as const)('restores %s and saved state in occurrence details despite obsolete local storage', reaction => {
     const id = '66f1c0de0000000000000001';
     localStorage.setItem('spectrum-post-interactions', JSON.stringify([{ postId: id, userId: 'actor', liked: false, disliked: false, saved: false }]));
