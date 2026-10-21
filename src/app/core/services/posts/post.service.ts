@@ -1511,7 +1511,7 @@ export class PostService {
       category: post.category ?? 'OUTROS',
       importance: post.importance ?? 'MEDIA',
       location: post.location ?? { label: post.authorCity },
-      evidences: post.evidences ?? [],
+      evidences: (post.evidences ?? []).filter((evidence) => evidence.status !== 'REJECTED'),
       forwardingHistory: post.forwardingHistory ?? [],
       confirmedByIds: post.confirmedByIds ?? [],
       history:
@@ -1658,7 +1658,8 @@ export class PostService {
     user: LoggedUser | null,
   ): SpectrumPost {
     const createdAt = occurrence.createdAt || new Date().toISOString();
-    const primaryEvidence = occurrence.evidences?.[0];
+    const evidences = (occurrence.evidences ?? []).filter((evidence) => evidence.status !== 'REJECTED');
+    const primaryEvidence = evidences[0];
     const mediaType: SpectrumPost['mediaType'] =
       primaryEvidence?.type === 'VIDEO'
         ? 'video'
@@ -1704,7 +1705,7 @@ return {
   location: occurrence.location,
   responsibleAgency: occurrence.responsibleAgency,
   linkedAgencyIds: occurrence.linkedAgencyIds,
-  evidences: occurrence.evidences ?? [],
+  evidences,
   forwardingHistory: occurrence.forwardingHistory ?? [],
   confirmedByIds: occurrence.confirmedByIds ?? [],
   history: occurrence.history ?? [],
