@@ -148,9 +148,9 @@
     <!-- MENU LATERAL -->
     <aside class="social-sidebar" [attr.aria-label]="'Navegacao principal' | translate">
 
-      <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'" [class.social-nav--agency]="user?.accountType === 'PUBLIC_AGENCY'">
+      <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'" [class.social-nav--agency]="user?.accountType === 'PUBLIC_AGENCY'" [class.social-nav--inbox]="agencyInbox.enabled()">
         @if (user?.accountType === 'PUBLIC_AGENCY') {
-        <a class="social-nav__item" routerLink="/orgao-publico" routerLinkActive="social-nav__item--active">
+        <a class="social-nav__item" routerLink="/orgao-publico" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="social-nav__item--active">
           <span class="social-nav__notification-icon">
             <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
             @if (assignedOccurrenceCount()) {
@@ -198,6 +198,12 @@
           {{ 'Notificações' | translate }}
         </a>
 
+        @if (agencyInbox.enabled()) {
+          <a class="social-nav__item" routerLink="/orgao-publico/caixa-de-entrada" routerLinkActive="social-nav__item--active">
+            <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+            Ocorrências <span class="social-inbox-count">{{ agencyInbox.total() }}</span>
+          </a>
+        }
         <a
           class="social-nav__item"
           routerLink="/dashboard/cidades"
@@ -236,7 +242,7 @@
 
       </nav>
 
-      <div class="social-community-note">
+      <div class="social-community-note" [class.social-community-note--agency]="agencyInbox.enabled()">
         <span class="material-symbols-outlined" aria-hidden="true">diversity_3</span>
         <strong>{{ 'Uma cidade melhor' | translate }}<br>{{ 'começa com a gente.' | translate }}</strong>
         <p>{{ 'Seu olhar ajuda a transformar os lugares que compartilhamos.' | translate }}</p>

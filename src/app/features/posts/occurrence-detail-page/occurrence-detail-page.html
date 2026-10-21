@@ -92,6 +92,84 @@
       
     </section>
 
+    @if (isOccurrenceAuthor && ((!occurrence.responsibleAgency?.id && !occurrence.linkedAgencyIds?.length) || agencySuggestions.length)) {
+      <section class="occurrence-detail__section occurrence-detail__suggestions" aria-labelledby="agency-suggestions-title">
+        <div class="occurrence-detail__section-head">
+          <h2 id="agency-suggestions-title">Sugestões de órgãos públicos</h2>
+          <span class="occurrence-detail__private-label"><span class="material-symbols-outlined" aria-hidden="true">lock</span> Visível só para você</span>
+        </div>
+        <p class="occurrence-detail__suggestion-intro">{{ occurrence.responsibleAgency?.id || occurrence.linkedAgencyIds?.length ? 'Esta ocorrência já possui um órgão vinculado. As sugestões anteriores ficam disponíveis para consulta.' : 'A comunidade sugere. Você decide qual órgão associar à ocorrência.' }}</p>
+        @if (agencySuggestions.length) {
+          <div class="occurrence-detail__suggestion-toolbar">
+            <label class="occurrence-detail__search">
+              <span>Buscar nas sugestões</span>
+              <div class="occurrence-detail__search-field">
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input type="search" [(ngModel)]="agencySuggestionSearch" name="agencySuggestionSearch" placeholder="Buscar órgão ou participante" />
+              </div>
+            </label>
+            <button
+              type="button"
+              class="occurrence-detail__sort-button"
+              (click)="agencySuggestionOrder = agencySuggestionOrder === 'most' ? 'least' : 'most'"
+              [attr.aria-label]="agencySuggestionOrder === 'most' ? 'Ordenado por mais sugeridos. Alterar para menos sugeridos' : 'Ordenado por menos sugeridos. Alterar para mais sugeridos'"
+              [attr.title]="agencySuggestionOrder === 'most' ? 'Mostrar menos sugeridos primeiro' : 'Mostrar mais sugeridos primeiro'"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">{{ agencySuggestionOrder === 'most' ? 'north' : 'south' }}</span>
+              {{ agencySuggestionOrder === 'most' ? 'Mais sugeridos' : 'Menos sugeridos' }}
+            </button>
+          </div>
+        }
+        @if (filteredAgencySuggestions.length) {
+          <div class="occurrence-detail__suggestion-list">
+            @for (suggestion of filteredAgencySuggestions; track suggestion.event.id) {
+              <article class="occurrence-detail__suggestion">
+                <div>
+                  <div class="occurrence-detail__suggestion-title">
+                    <h3><button type="button" class="occurrence-detail__agency-trigger" (click)="openAgencySupporters(suggestion)">{{ displayAgencyName(suggestion.agency.name) }}</button></h3>
+                    @if (agencySuggestions.length > 1 && suggestion.supportCount > agencySuggestions[1].supportCount && suggestion.event.id === agencySuggestions[0].event.id) {
+                      <span class="occurrence-detail__popular-badge">Mais sugerido</span>
+                    }
+                  </div>
+                  <p class="occurrence-detail__support-count">{{ suggestion.supportCount === 1 ? 'Sugerido por 1 pessoa' : 'Sugerido por ' + suggestion.supportCount + ' pessoas' }}</p>
+                  <button
+                    type="button"
+                    class="occurrence-detail__participants"
+                    [attr.aria-label]="'Ver as ' + suggestion.supporterNames.length + ' pessoas que sugeriram ' + displayAgencyName(suggestion.agency.name)"
+                    (click)="openAgencySupporters(suggestion)"
+                  >
+                    {{ suggestion.supporterNames.slice(0, 2).join(', ') }}
+                    @if (suggestion.supporterNames.length > 2) {
+                      e mais {{ suggestion.supporterNames.length - 2 }} {{ suggestion.supporterNames.length - 3 === 0 ? 'pessoa' : 'pessoas' }}
+                    }
+                  </button>
+                  <time>{{ formatDate(suggestion.event.createdAt || suggestion.event.occurredAt) }}</time>
+                </div>
+                @if (occurrence.responsibleAgency?.id && occurrence.responsibleAgency?.id === suggestion.agency.id) {
+                  <span class="occurrence-detail__selected-badge"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Órgão escolhido</span>
+                } @else if (canAcceptAgencySuggestion(suggestion)) {
+                  <button type="button" [disabled]="isSubmitting()" (click)="acceptAgencySuggestion(suggestion)">
+                    <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                    Escolher este órgão
+                  </button>
+                } @else if (hasSuccessfulAgencyForwarding) {
+                  <span class="occurrence-detail__suggestion-status">Encaminhamento já registrado</span>
+                } @else if (!isRegisteredAgencySuggestion(suggestion)) {
+                  <span class="occurrence-detail__suggestion-status">Órgão sem cadastro para encaminhamento</span>
+                } @else if (isAgencySelectionOnHold) {
+                  <span class="occurrence-detail__suggestion-status">Escolha disponível após o período de edição</span>
+                } @else {
+                  <span class="occurrence-detail__suggestion-status">Escolha indisponível nesta situação</span>
+                }
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="occurrence-detail__empty">{{ agencySuggestions.length ? 'Nenhuma sugestão corresponde à pesquisa.' : 'Ainda não há sugestões. A comunidade pode sugerir um órgão pelo botão abaixo.' }}</p>
+        }
+      </section>
+    }
+
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head">
         <h2>{{ 'Como você pode contribuir' | translate }}</h2>
@@ -115,8 +193,8 @@
                   {{ 'Adicionar evidência' | translate }}
                 </button>
               }
-              @if (canSuggestAgency) {
-                <button type="button" (click)="openPanel('agency')">
+              @if (isCommunityUser) {
+                <button type="button" [disabled]="!canSuggestAgency" [attr.title]="occurrence.responsibleAgency?.id || occurrence.linkedAgencyIds?.length ? 'Esta ocorrência já possui um órgão vinculado.' : null" (click)="openPanel('agency')">
                   <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
                   {{ 'Sugerir órgão responsável' | translate }}
                 </button>
@@ -186,7 +264,11 @@
 
       @if (actionPanel) {
         <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
-          <fieldset class="occurrence-detail__action-fields"  [disabled]="isSubmitting()">
+          <fieldset
+            class="occurrence-detail__action-fields"
+            [class.occurrence-detail__action-fields--agency]="actionPanel === 'agency' && canSuggestAgency"
+            [disabled]="isSubmitting()"
+          >
           @if (actionPanel === 'agencyProgress') {
             <label><span>{{ 'Situação do atendimento' | translate }}</span><select [(ngModel)]="progressStatus" name="progressStatus"><option value="EM_RESOLUCAO">{{ 'Em andamento' | translate }}</option><option value="RESOLVIDA">{{ 'Fechada pelo órgão' | translate }}</option></select></label>
             <label><span>{{ 'Descrição do atendimento' | translate }}</span><textarea [(ngModel)]="progressNote" name="progressNote" minlength="20" maxlength="2000"></textarea></label>
@@ -254,7 +336,54 @@
             <p class="occurrence-detail__form-hint">{{ 'O status será atualizado após a confirmação do envio. Caso o envio falhe, a tentativa ficará registrada para análise.' | translate }}</p>
           }
           @if (actionPanel === 'agency' && !isModerator) {
-            <label><span>{{ 'Órgão sugerido' | translate }}</span><input type="text" [(ngModel)]="agencyName" name="agencyName" /></label>
+            <label class="occurrence-detail__agency-field">
+              <span>Selecionar órgão da cidade</span>
+              <div class="occurrence-detail__agency-search">
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input
+                  type="search"
+                  [ngModel]="agencyDirectorySearch"
+                  (ngModelChange)="onAgencyDirectorySearchChange($event)"
+                  (focus)="agencyDirectoryOpen = true"
+                  (blur)="closeAgencyDirectory()"
+                  name="agencyDirectorySearch"
+                  placeholder="Digite um nome"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="agency-directory-options"
+                  [attr.aria-expanded]="agencyDirectoryOpen && filteredAgencyDirectory.length > 0"
+                />
+                @if (agencyDirectoryOpen && filteredAgencyDirectory.length) {
+                  <div id="agency-directory-options" class="occurrence-detail__agency-options" role="listbox" aria-label="Sugestões cadastradas">
+                    @for (agency of filteredAgencyDirectory; track agency.id) {
+                      <button
+                        type="button"
+                        class="occurrence-detail__agency-option"
+                        role="option"
+                        [attr.aria-selected]="agency.id === agencyId"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="selectAgencyFromDirectory(agency)"
+                      >
+                        <span>{{ agency.name }}</span>
+                        <small>{{ agency.cities?.join(', ') || agency.stateCode || '' }}</small>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+              @if (agencyDirectoryLoading()) {
+                <small class="occurrence-detail__agency-status">Buscando opções...</small>
+              } @else if (agencyDirectoryError) {
+                <small class="occurrence-detail__agency-status" role="alert">Não foi possível carregar as opções cadastradas.</small>
+              } @else if (shouldShowAgencyDirectoryEmptyMessage) {
+                <small class="occurrence-detail__agency-status">Nenhum órgão encontrado pelo nome nesta região.</small>
+              }
+              <small class="occurrence-detail__agency-location">
+                <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+                {{ occurrenceRegionLabel }}
+              </small>
+            </label>
           }
           @if (actionPanel === 'forward') {
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || agenciesLoading || !agencyId || !agencyEmail" (click)="submitForwarding()">{{ (isSubmitting() ? 'Enviando…' : 'Encaminhar por e-mail') | translate }}</button>
@@ -270,16 +399,17 @@
 
           @if (actionPanel === 'agency') {
             @if (!isModerator) {
-              <div class="occurrence-detail__suggestion-actions">
-                <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
+              <div class="occurrence-detail__suggestion-actions occurrence-detail__suggestion-actions--agency">
+                <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !agencyId" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
                 <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
               </div>
             } @else {
-            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
+            <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !agencyId" (click)="submitAgency()">{{ (agencySubmitLabel) | translate }}</button>
             }
           }
 
           @if (actionPanel === 'evidence') {
+            <p>{{ 'As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.' | translate }}</p>
             <div class="occurrence-detail__suggestion-actions">
               <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ 'Adicionar evidência' | translate }}</button>
               <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
@@ -348,11 +478,20 @@
       @if (progress.closedByAgency) { <p>{{ 'Fechamento informado pelo órgão, sujeito à contestação da comunidade.' | translate }}</p> }
     </section> }
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
-      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências do relato' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
+      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências e solicitações' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
       @if (occurrence.evidences.length) {
         <div class="occurrence-detail__evidence-list">
           @for (evidence of occurrence.evidences; track evidence.id) {
             <article class="occurrence-detail__attachment">
+              <div class="occurrence-detail__evidence-review" [attr.data-status]="evidence.status || 'APPROVED'">
+                <span>{{ evidenceStatusLabel(evidence) | translate }}</span>
+                @if (canReviewEvidence(evidence)) {
+                  <div class="occurrence-detail__evidence-decisions">
+                    <button type="button" [disabled]="isSubmitting()" (click)="reviewEvidence(evidence, true)" [attr.aria-label]="('Aceitar evidência: {description}' | translate: { description: evidence.description || ('anexo' | translate) })">{{ 'Aceitar' | translate }}</button>
+                    <button type="button" class="occurrence-detail__reject-evidence" [disabled]="isSubmitting()" (click)="reviewEvidence(evidence, false)" [attr.aria-label]="('Rejeitar evidência: {description}' | translate: { description: evidence.description || ('anexo' | translate) })">{{ 'Rejeitar' | translate }}</button>
+                  </div>
+                }
+              </div>
               @if (evidenceUrl(evidence); as url) {
                 @if (evidence.type === 'IMAGE') {
                   <button
@@ -461,6 +600,32 @@
       [initialIndex]="lightboxIndex"
       (close)="closeLightbox()"
     />
+  }
+  @if (selectedAgencySupporters; as suggestion) {
+    <div class="occurrence-detail__supporters-backdrop" role="presentation" (click)="closeAgencySupporters()">
+      <section
+        class="occurrence-detail__supporters-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="agency-supporters-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="occurrence-detail__supporters-header">
+          <div>
+            <h2 id="agency-supporters-title">Pessoas que sugeriram {{ displayAgencyName(suggestion.agency.name) }}</h2>
+            <p>{{ suggestion.supporterNames.length }} {{ suggestion.supporterNames.length === 1 ? 'pessoa sugeriu este órgão' : 'pessoas sugeriram este órgão' }}</p>
+          </div>
+          <button type="button" class="occurrence-detail__supporters-close" aria-label="Fechar" (click)="closeAgencySupporters()">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          </button>
+        </header>
+        <ul class="occurrence-detail__supporters-list">
+          @for (name of suggestion.supporterNames; track $index) {
+            <li>{{ name }}</li>
+          }
+        </ul>
+      </section>
+    </div>
   }
 </div>
 

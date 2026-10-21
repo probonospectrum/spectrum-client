@@ -105,21 +105,23 @@
         />
 
         <app-input
-          [label]="'Email' | translate"
-          [placeholder]="'Seu email' | translate"
+          [label]="(accountType() === 'PUBLIC_AGENCY' ? 'E-mail institucional' : 'Email') | translate"
+          [placeholder]="(accountType() === 'PUBLIC_AGENCY' ? 'E-mail institucional do órgão' : 'Seu email') | translate"
           autocomplete="email"
           formControlName="email"
           [error]="(fieldError('register', 'email')) | translate"
         />
 
-        <app-input
-          [label]="'Data de nascimento' | translate"
-          [placeholder]="'DD/MM/YYYY' | translate"
-          type="date"
-          autocomplete="bday"
-          formControlName="birthDate"
-          [error]="(fieldError('register', 'birthDate')) | translate"
-        />
+        @if (accountType() === 'CITIZEN') {
+          <app-input
+            [label]="'Data de nascimento' | translate"
+            [placeholder]="'DD/MM/YYYY' | translate"
+            type="date"
+            autocomplete="bday"
+            formControlName="birthDate"
+            [error]="(fieldError('register', 'birthDate')) | translate"
+          />
+        }
 
         @if (pendingGoogleRegistration) {
           <p>
@@ -142,20 +144,20 @@
           <app-input [label]="'CNPJ do órgão público' | translate" formControlName="agencyCnpj" placeholder="00.000.000/0000-00" [error]="fieldError('register', 'agencyCnpj')" />
           <p>{{ 'Aceitamos CNPJ numérico e alfanumérico. O CNPJ identifica a instituição, mas não comprova a autorização do representante.' | translate }}</p>
           <app-input [label]="'Cargo ou função do representante' | translate" formControlName="representativePosition" [error]="fieldError('register', 'representativePosition')" />
-          <app-input [label]="'Referência pública de autorização' | translate" formControlName="authorizationReference" [placeholder]="'Portaria, ato de designação ou autorização e endereço da fonte oficial' | translate" [error]="fieldError('register', 'authorizationReference')" />
+          <app-input [label]="'Ato de autorização (número e fonte oficial)' | translate" formControlName="authorizationReference" [placeholder]="'Portaria, ato de designação ou autorização e endereço da fonte oficial' | translate" [error]="fieldError('register', 'authorizationReference')" />
           <p>{{ 'Não envie CPF, documentos pessoais ou informações sigilosas neste campo.' | translate }}</p>
         }
         <app-input
-          [label]="'Nome proprio' | translate"
-          [placeholder]="'Seu nome' | translate"
+          [label]="(accountType() === 'PUBLIC_AGENCY' ? 'Nome completo do representante' : 'Seu nome') | translate"
+          [placeholder]="(accountType() === 'PUBLIC_AGENCY' ? 'Nome completo do representante' : 'Seu nome') | translate"
           autocomplete="name"
           formControlName="name"
           [error]="(fieldError('register', 'name')) | translate"
         />
 
         <app-select
-          [label]="'Estado' | translate"
-          [placeholder]="'Selecione seu estado' | translate"
+          [label]="(accountType() === 'PUBLIC_AGENCY' ? 'Estado de atuação do órgão' : 'Estado') | translate"
+          [placeholder]="(accountType() === 'PUBLIC_AGENCY' ? 'Selecione o estado de atuação' : 'Selecione seu estado') | translate"
           formControlName="stateId"
           [loading]="isLoadingStates()"
           [options]="stateOptions"
@@ -163,8 +165,8 @@
         />
 
         <app-select
-          [label]="'Municipio' | translate"
-          [placeholder]="'Selecione seu municipio' | translate"
+          [label]="(accountType() === 'PUBLIC_AGENCY' ? 'Município de atuação do órgão' : 'Município') | translate"
+          [placeholder]="(accountType() === 'PUBLIC_AGENCY' ? 'Selecione o município de atuação' : 'Selecione seu município') | translate"
           formControlName="cityUser"
           [loading]="isLoadingCities()"
           [isDisabled]="isCitySelectDisabled"

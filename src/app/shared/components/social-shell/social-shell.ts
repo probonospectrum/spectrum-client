@@ -26,6 +26,8 @@ import { LogoutConfirm } from '../logout-confirm/logout-confirm';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
 import { PublicAgencyService } from '../../../core/services/user/public-agency.service';
 
+import { AgencyInboxService } from '../../../core/services/user/agency-inbox.service';
+
 interface SearchResult {
   id: string;
   name: string;
@@ -51,6 +53,7 @@ interface SearchResult {
   styleUrl: './social-shell.scss',
 })
 export class SocialShell implements OnInit, OnChanges {
+  readonly agencyInbox = inject(AgencyInboxService);
   readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

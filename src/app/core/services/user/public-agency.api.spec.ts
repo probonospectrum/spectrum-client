@@ -39,7 +39,7 @@ describe('Connected institutional account API', () => {
   });
   it('refreshes permissions after approval and removes them after revocation', () => {
     api.status().subscribe();
-    const request = http.expectOne(`${API_BASE_URL}/public-agencies/me`);
+    const request = http.expectOne(`${API_BASE_URL}/post/agency/account`);
     expect(request.request.headers.get('Authorization')).toBe('Bearer session');
     request.flush({
       accountType: 'PUBLIC_AGENCY',
@@ -54,7 +54,7 @@ describe('Connected institutional account API', () => {
     });
     api.status().subscribe();
     http
-      .expectOne(`${API_BASE_URL}/public-agencies/me`)
+      .expectOne(`${API_BASE_URL}/post/agency/account`)
       .flush({
         accountType: 'PUBLIC_AGENCY',
         occurrenceRole: 'USER',
@@ -71,7 +71,7 @@ describe('Connected institutional account API', () => {
       message: 'Sessão',
     });
     http
-      .expectOne(`${API_BASE_URL}/public-agencies/me`)
+      .expectOne(`${API_BASE_URL}/post/agency/account`)
       .flush({ occurrenceRole: 'RESPONSIBLE_AGENCY' });
     expect(users.getCurrentUser()?.occurrenceRole).toBe('USER');
   });

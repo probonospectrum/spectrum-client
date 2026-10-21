@@ -670,3 +670,16 @@
   .create-post-modal__actions button { width: 44px; height: 44px; }
   .create-post-modal { padding: 16px; }
 }
+
+.agency-picker { border: 1px solid var(--spectrum-border); background: var(--spectrum-surface-muted); border-radius: 16px; padding: 16px; display: grid; gap: 14px; }
+.agency-picker__heading { display: flex; align-items: center; gap: 10px; }
+.agency-picker__heading div { flex: 1; min-width: 0; }
+.agency-picker h3 { margin: 0; font-size: 15px; color: var(--spectrum-text); }
+.agency-picker p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; color: var(--spectrum-text-muted); }
+.agency-picker__icon { padding: 10px; border-radius: 12px; color: var(--spectrum-primary-800); background: var(--spectrum-surface); }
+.agency-picker__optional { font-size: 10px; border: 1px solid var(--spectrum-border); padding: 4px 7px; border-radius: 20px; color: var(--spectrum-text-muted); }
+.agency-picker__hint, .agency-picker__region { display: flex; align-items: center; gap: 6px; }
+.agency-picker__selected { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--spectrum-border); border-radius: 12px; padding: 12px; background: var(--spectrum-surface); overflow-wrap: anywhere; }
+.agency-picker__selected > span { color: #16a34a; }
+.agency-picker__selected strong { font-size: 13px; color: var(--spectrum-text); }
+.agency-picker small { color: var(--spectrum-text-muted); line-height: 1.6; }

@@ -7,7 +7,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, defer, finalize, forkJoin, switchMap } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, switchMap, of } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
   OccurrenceAgency,
@@ -15,6 +15,7 @@ import {
   OccurrenceEventType,
   OccurrenceForwardingChannel,
   OccurrenceHistoryEvent,
+  OccurrenceAgencyOption,
   PostService,
   SpectrumPost,
 } from '../../../core/services/posts/post.service';
@@ -38,6 +39,14 @@ type ActionPanel =
   | 'contest'
   | 'reopen'
   | null;
+
+interface AgencySuggestion {
+  event: OccurrenceHistoryEvent;
+  agency: OccurrenceAgency;
+  suggestedBy: string;
+  supporterNames: string[];
+  supportCount: number;
+}
 
 @Component({
   selector: 'app-occurrence-detail-page',
@@ -85,6 +94,15 @@ export class OccurrenceDetailPage implements OnInit {
   evidenceDescription = '';
   agencyName = '';
   agencyId = '';
+  agencyDirectorySearch = '';
+  agencyDirectoryOpen = false;
+  agencyDirectory: OccurrenceAgencyOption[] = [];
+  agencyDirectoryError = '';
+  readonly agencyDirectoryLoading = signal(false);
+  private agencyDirectoryLoaded = false;
+  agencySuggestionSearch = '';
+  agencySuggestionOrder: 'most' | 'least' = 'most';
+  selectedAgencySupporters: AgencySuggestion | null = null;
   agencyEmail = '';
   forwardingChannel: OccurrenceForwardingChannel = 'EMAIL';
   registeredAgencies: { _id: string; name: string; emails: string[] }[] = [];
@@ -236,10 +254,75 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get timeline(): OccurrenceHistoryEvent[] {
-    return [...this.historyEvents].sort(
+    return this.historyEvents.filter(event =>
+      (Boolean(event.actorId && event.actorId === this.occurrence?.createdBy) ||
+        ['RESPONSIBLE_AGENCY', 'AGENCY', 'MODERATOR', 'SYSTEM'].includes(event.actorType)) &&
+      (this.isOccurrenceAuthor || event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO'),
+    ).sort(
       (first, second) =>
         new Date(first.createdAt ?? first.occurredAt).getTime() - new Date(second.createdAt ?? second.occurredAt).getTime(),
     );
+  }
+
+  get isMockOccurrence(): boolean {
+    return Boolean(this.occurrence?.id.startsWith('mock-'));
+  }
+
+  displayAgencyName(name: string): string {
+    return this.isMockOccurrence ? name.replace(/\s*\(exemplo\)/gi, '').trim() : name;
+  }
+
+  openAgencySupporters(suggestion: AgencySuggestion): void {
+    this.selectedAgencySupporters = suggestion;
+  }
+
+  closeAgencySupporters(): void {
+    this.selectedAgencySupporters = null;
+  }
+
+  get isOccurrenceAuthor(): boolean {
+    return Boolean(this.user?._id && this.user._id === this.occurrence?.createdBy);
+  }
+
+  get agencySuggestions(): AgencySuggestion[] {
+    if (!this.isOccurrenceAuthor) return [];
+    const groups = new Map<string, AgencySuggestion & { participants: Map<string, string> }>();
+    // As sugestões comunitárias ficam no painel do criador, fora da linha do tempo.
+    const events = new Map([
+      ...(this.occurrence?.history ?? []), ...this.historyEvents,
+    ].map(event => [event.id, event]));
+    for (const event of events.values()) {
+      if (event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO') continue;
+      const agency = event.metadata?.['agency'] as OccurrenceAgency | undefined;
+      const name = (agency?.name || String(event.metadata?.['agencyName'] ?? '')).trim();
+      if (!name) continue;
+      const key = agency?.id || this.normalizeAgencySearch(name).replace(/\s+/g, ' ');
+      const participantName = event.actorName || event.actorOrigin || 'Usuário da comunidade';
+      const participantKey = event.actorId || 'unknown';
+      let group = groups.get(key);
+      if (!group) {
+        group = { event, agency: { id: agency?.id, name }, suggestedBy: '', supporterNames: [], supportCount: 0, participants: new Map() };
+        groups.set(key, group);
+      }
+      group.participants.set(participantKey, participantName);
+      group.supporterNames = [...group.participants.values()];
+      group.suggestedBy = group.supporterNames.join(', ');
+      group.supportCount = [...group.participants.keys()].filter(id => id !== 'unknown').length;
+    }
+    return [...groups.values()].sort((first, second) =>
+      second.supportCount - first.supportCount || first.agency.name.localeCompare(second.agency.name, 'pt-BR'),
+    );
+  }
+
+  get filteredAgencySuggestions(): AgencySuggestion[] {
+    const query = this.normalizeAgencySearch(this.agencySuggestionSearch);
+    return this.agencySuggestions
+      .filter(({ agency, suggestedBy }) => !query || this.normalizeAgencySearch(`${agency.name} ${suggestedBy}`).includes(query))
+      .sort((first, second) =>
+        (this.agencySuggestionOrder === 'most'
+          ? second.supportCount - first.supportCount
+          : first.supportCount - second.supportCount) || first.agency.name.localeCompare(second.agency.name, 'pt-BR'),
+      );
   }
 
   get confirmationCount(): number {
@@ -273,11 +356,79 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canAddEvidence(): boolean {
-    return (this.isCommunityUser || this.canRecordAgencyProgress) && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return !!this.user && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  canReviewEvidence(evidence: OccurrenceEvidence): boolean {
+    return !!this.user?._id && this.user._id === this.occurrence?.createdBy && evidence.status === 'PENDING';
+  }
+
+  evidenceStatusLabel(evidence: OccurrenceEvidence): string {
+    if (evidence.status === 'PENDING') return 'Aguardando análise do criador';
+    if (evidence.status === 'REJECTED') return 'Rejeitada pelo criador';
+    return 'Aceita';
+  }
+
+  reviewEvidence(evidence: OccurrenceEvidence, approved: boolean): void {
+    if (!this.occurrence || !this.canReviewEvidence(evidence) || this.isSubmitting()) return;
+    this.runAction(
+      () => this.postService.reviewOccurrenceEvidence(this.occurrence!, this.user, evidence.id, approved),
+      approved ? 'Evidência aceita e incluída no relato.' : 'Evidência rejeitada.',
+    );
   }
 
   get canSuggestAgency(): boolean {
-    return this.isCommunityUser && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return this.isCommunityUser && !this.occurrence?.responsibleAgency?.id && !this.occurrence?.linkedAgencyIds?.length && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+  }
+
+  get occurrenceRegionLabel(): string {
+    return [this.occurrenceCity, this.occurrenceStateCode].filter(Boolean).join(' - ') || 'local da ocorrência';
+  }
+
+  get filteredAgencyDirectory(): OccurrenceAgencyOption[] {
+    const query = this.normalizeAgencySearch(this.agencyDirectorySearch);
+    return this.agencyDirectoryForOccurrence.filter((agency) =>
+      !query || this.normalizeAgencySearch(agency.name).includes(query),
+    );
+  }
+
+  get shouldShowAgencyDirectoryEmptyMessage(): boolean {
+    return this.agencyDirectoryLoaded && !this.agencyDirectoryLoading() &&
+      Boolean(this.agencyDirectorySearch.trim()) && !this.filteredAgencyDirectory.length;
+  }
+
+  private get occurrenceCity(): string {
+    const location = this.occurrence?.location;
+    if (location?.cityName || location?.city) return location.cityName || location.city || '';
+    const label = this.occurrence?.authorCity || location?.label || '';
+    return label.split(/\s+[-–,]\s+/)[0]?.trim() ?? '';
+  }
+
+  private get occurrenceStateCode(): string {
+    const state = this.occurrence?.location?.stateCode || this.occurrence?.location?.state || '';
+    if (/^[a-z]{2}$/i.test(state)) return state.toUpperCase();
+    const label = this.occurrence?.authorCity || this.occurrence?.location?.label || '';
+    return label.match(/[-–,]\s*([a-z]{2})\s*$/i)?.[1]?.toUpperCase() ?? '';
+  }
+
+  private get agencyDirectoryForOccurrence(): OccurrenceAgencyOption[] {
+    const city = this.normalizeAgencySearch(this.occurrenceCity);
+    const stateCode = this.normalizeAgencySearch(this.occurrenceStateCode);
+    if (!city && !stateCode) return [];
+
+    if (!city || !stateCode) return [];
+    return this.agencyDirectory.filter(agency =>
+      this.normalizeAgencySearch(agency.stateCode ?? '') === stateCode &&
+      agency.cities?.some(agencyCity => this.normalizeAgencyCity(agencyCity) === city),
+    );
+  }
+
+  private normalizeAgencyCity(city: string): string {
+    return this.normalizeAgencySearch(city.replace(/\s+[-–,]\s*[a-z]{2}\s*$/i, ''));
+  }
+
+  private normalizeAgencySearch(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
   }
 
   get canAssociateAgency(): boolean {
@@ -298,7 +449,6 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canShowCommunityActions(): boolean {
     return (
-      this.isCommunityUser &&
       (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
     );
   }
@@ -410,6 +560,82 @@ export class OccurrenceDetailPage implements OnInit {
     this.analysisNote = '';
     this.errorMessage = '';
     this.successMessage = '';
+    if (panel === 'agency' && !this.isModerator) this.loadAgencyDirectory();
+  }
+
+  acceptAgencySuggestion(suggestion: AgencySuggestion): void {
+    if (!this.occurrence || !this.canAcceptAgencySuggestion(suggestion)) return;
+
+    this.runAction(
+      () => this.postService.acceptAgencySuggestion(this.occurrence!, this.user, suggestion.agency.id!),
+      this.isMockOccurrence
+        ? `Órgão de exemplo escolhido: ${this.displayAgencyName(suggestion.agency.name)}. Nenhum encaminhamento real foi realizado.`
+        : `Órgão responsável escolhido: ${this.displayAgencyName(suggestion.agency.name)}.`,
+    );
+  }
+
+  canAcceptAgencySuggestion(suggestion: AgencySuggestion): boolean {
+    return Boolean(
+      this.isOccurrenceAuthor && !this.occurrence?.responsibleAgency?.id && !this.occurrence?.linkedAgencyIds?.length &&
+        this.isRegisteredAgencySuggestion(suggestion) &&
+        ['ABERTA', 'SEM_ORGAO_IDENTIFICADO', 'AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO'].includes(this.occurrence?.status ?? '') &&
+        !this.hasSuccessfulAgencyForwarding,
+    );
+  }
+
+  isRegisteredAgencySuggestion(suggestion: AgencySuggestion): boolean {
+    return this.isMockOccurrence
+      ? this.postService.mockAgencies.some(agency => agency.id === suggestion.agency.id)
+      : /^[a-f\d]{24}$/i.test(suggestion.agency.id ?? '');
+  }
+
+  get hasSuccessfulAgencyForwarding(): boolean {
+    return Boolean(this.occurrence?.forwardingHistory.some(forwarding => forwarding.success));
+  }
+
+  get isAgencySelectionOnHold(): boolean {
+    const createdAt = Date.parse(this.occurrence?.createdAt ?? '');
+    return Number.isFinite(createdAt) && Date.now() - createdAt < 15 * 60_000;
+  }
+
+  onAgencyDirectorySearchChange(query: string): void {
+    this.agencyDirectorySearch = query;
+    this.agencyName = query;
+    this.agencyId = '';
+    this.agencyDirectoryOpen = true;
+  }
+
+  selectAgencyFromDirectory(agency: OccurrenceAgencyOption): void {
+    this.agencyDirectorySearch = agency.name;
+    this.agencyName = agency.name;
+    this.agencyId = agency.id ?? '';
+    this.agencyDirectoryOpen = false;
+  }
+
+  closeAgencyDirectory(): void {
+    this.agencyDirectoryOpen = false;
+  }
+
+  private loadAgencyDirectory(): void {
+    if (this.agencyDirectoryLoaded || this.agencyDirectoryLoading()) return;
+    this.agencyDirectoryError = '';
+    this.agencyDirectoryLoading.set(true);
+    (this.isMockOccurrence
+      ? this.postService.getResponsibleAgencies(this.occurrence?.id)
+      : this.occurrenceCity && this.occurrenceStateCode
+        ? this.postService.getAgenciesForLocation(this.occurrenceStateCode, this.occurrenceCity)
+        : of([])).pipe(
+      finalize(() => this.agencyDirectoryLoading.set(false)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: agencies => {
+        this.agencyDirectory = agencies;
+        this.agencyDirectoryLoaded = true;
+      },
+      error: (error: unknown) => {
+        this.agencyDirectoryError = this.getErrorMessage(error);
+      },
+    });
   }
 
   onEvidenceSelected(event: Event): void {
@@ -449,7 +675,9 @@ export class OccurrenceDetailPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (occurrence) => this.afterAction(occurrence, 'Evidência adicionada ao histórico.'),
+        next: (occurrence) => this.afterAction(occurrence, this.user?._id === occurrence.createdBy
+          ? 'Evidência adicionada ao relato.'
+          : 'Evidência enviada. Aguarde a análise do criador da ocorrência.'),
         error: (error: unknown) => (this.errorMessage = this.getErrorMessage(error)),
       });
   }
@@ -457,6 +685,11 @@ export class OccurrenceDetailPage implements OnInit {
   submitAgency(): void {
     if (!this.occurrence || (!this.canAssociateAgency && !this.canSuggestAgency) || !this.agencyName.trim()) {
       this.errorMessage = 'Informe o nome do órgão responsável.';
+      return;
+    }
+
+    if (!this.canAssociateAgency && !this.agencyDirectoryForOccurrence.some(agency => agency.id === this.agencyId)) {
+      this.errorMessage = 'Selecione um órgão cadastrado na cidade da ocorrência.';
       return;
     }
 
@@ -616,6 +849,8 @@ export class OccurrenceDetailPage implements OnInit {
       COMMENT_EDITED: 'Comentário editado',
       COMMENT_REMOVED: 'Comentário removido',
       EVIDENCIA_ADICIONADA: 'Nova evidência',
+      EVIDENCIA_ACEITA: 'Evidência aceita',
+      EVIDENCIA_REJEITADA: 'Evidência rejeitada',
       OCORRENCIA_CONFIRMADA: 'Também identificado',
       ORGAO_RESPONSAVEL_IDENTIFICADO: 'Órgão responsável identificado',
       ORGAO_RESPONSAVEL_SUGERIDO: 'Órgão responsável sugerido',
@@ -689,6 +924,9 @@ export class OccurrenceDetailPage implements OnInit {
     if (event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO') {
       return this.i18n.translate('{agency} foi sugerido pela comunidade.', { agency: metadata['agencyName'] ?? this.i18n.translate('Um órgão') });
     }
+
+    if (event.eventType === 'EVIDENCIA_ACEITA') return 'O criador da ocorrência aceitou a evidência.';
+    if (event.eventType === 'EVIDENCIA_REJEITADA') return 'O criador da ocorrência rejeitou a evidência.';
 
     if (event.eventType === 'EVIDENCIA_ADICIONADA') {
       return 'Uma nova evidência foi adicionada à ocorrência.';
@@ -789,7 +1027,8 @@ export class OccurrenceDetailPage implements OnInit {
         ),
         switchMap((updated) => {
           this.occurrence = updated;
-          const evidenceId = updated.evidences[updated.evidences.length - 1]?.id;
+          const evidence = updated.evidences.at(-1);
+          const evidenceId = evidence && (!evidence.status || evidence.status === 'APPROVED') ? evidence.id : undefined;
           return action(evidenceId ? [evidenceId] : []);
         }),
         finalize(() => this.isSubmitting.set(false)),

@@ -16,7 +16,7 @@ export interface CreateUserRequest {
   nickname: string;
   email: string;
   password: string;
-  birthDate: string;
+  birthDate?: string;
   avatarUrl?: string;
   cityUser: string;
 }
@@ -206,7 +206,9 @@ export class UserService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.token() && !!this.currentUser();
+    if (this.isValidSession(this.session())) return true;
+    this.logout();
+    return false;
   }
 
   logout(): void {
@@ -227,10 +229,25 @@ export class UserService {
     }
 
     try {
-      return JSON.parse(rawSession) as LoginResponse;
+      const session = JSON.parse(rawSession) as LoginResponse;
+      if (this.isValidSession(session)) return session;
     } catch {
-      localStorage.removeItem(this.sessionStorageKey);
-      return null;
+      // Sessões corrompidas também exigem um novo login.
+    }
+    localStorage.removeItem(this.sessionStorageKey);
+    return null;
+  }
+
+  private isValidSession(session: LoginResponse | null): boolean {
+    if (!session?.user?._id || typeof session.token !== 'string') return false;
+    try {
+      const parts = session.token.split('.');
+      if (parts.length !== 3 || !parts[0] || !parts[2]) return false;
+      const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const { exp } = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+      return typeof exp === 'number' && Number.isFinite(exp) && exp * 1000 > Date.now();
+    } catch {
+      return false;
     }
   }
 }

@@ -1,11 +1,5 @@
 <article class="notification" [class.notification--unread]="!notification.read" (click)="onOpen()" tabindex="0" role="button" (keydown.enter)="onKeyboard($event)" (keydown.space)="onKeyboard($event)">
-  @if (notification.actorAvatarUrl) {
-    <img class="notification__avatar" [src]="notification.actorAvatarUrl" [alt]="displayName" />
-  } @else {
-    <div class="notification__avatar notification__avatar--fallback" aria-hidden="true">
-      {{ initials }}
-    </div>
-  }
+  <app-user-avatar class="notification__avatar notification__avatar--fallback" [imageUrl]="notification.actorAvatarUrl || ''" [name]="displayName" aria-hidden="true" />
 
   <div class="notification__body">
     <p class="notification__headline">

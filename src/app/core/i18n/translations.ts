@@ -1,6 +1,15 @@
 // Source text is the key so existing labels and API status values stay unchanged.
 export const normalizeText = (value: string): string => value.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const rows = `
+Evidências e solicitações|Evidence and submissions|Evidencias y solicitudes
+Aguardando análise do criador|Awaiting creator review|Pendiente de revisión del creador
+Rejeitada pelo criador|Rejected by the creator|Rechazada por el creador
+Aceita|Accepted|Aceptada
+Aceitar|Accept|Aceptar
+Rejeitar|Reject|Rechazar
+Aceitar evidência: {description}|Accept evidence: {description}|Aceptar evidencia: {description}
+Rejeitar evidência: {description}|Reject evidence: {description}|Rechazar evidencia: {description}
+As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.|Contributions from other people must be accepted by the report creator to be included in the report.|Las contribuciones de otras personas deben ser aceptadas por el creador de la incidencia para incluirse en el relato.
 Conta|Account|Cuenta
 Capa do perfil|Profile cover|Portada del perfil
 Alterar capa|Change cover|Cambiar portada
@@ -189,13 +198,21 @@ Nome de usuário|Username|Nombre de usuario
 Seu nome de usuário|Your username|Tu nombre de usuario
 Email|Email|Correo electrónico
 E-mail|Email|Correo electrónico
+E-mail institucional|Institutional email|Correo institucional
+E-mail institucional do órgão|Agency institutional email|Correo institucional del organismo
 Seu email|Your email|Tu correo electrónico
 Data de nascimento|Date of birth|Fecha de nacimiento
+Nome completo do representante|Representative's full name|Nombre completo del representante
+Ato de autorização (número e fonte oficial)|Authorization act (number and official source)|Acto de autorización (número y fuente oficial)
 Telefone|Phone|Teléfono
 Estado|State|Estado
+Estado de atuação do órgão|Agency state of operation|Estado de actuación del organismo
 Município|Municipality|Municipio
+Município de atuação do órgão|Agency municipality of operation|Municipio de actuación del organismo
 Selecione seu estado|Select your state|Selecciona tu estado
+Selecione o estado de atuação|Select the state of operation|Selecciona el estado de actuación
 Selecione seu município|Select your municipality|Selecciona tu municipio
+Selecione o município de atuação|Select the municipality of operation|Selecciona el municipio de actuación
 Etapas do cadastro|Registration steps|Pasos del registro
 Informe seu nome de usuário ou email e sua senha para entrar.|Enter your username or email and password to sign in.|Introduce tu usuario o correo y tu contraseña para iniciar sesión.
 Conta Google confirmada. Complete seus dados para criar sua conta no Spectrum.|Google account confirmed. Complete your details to create your Spectrum account.|Cuenta de Google confirmada. Completa tus datos para crear tu cuenta en Spectrum.

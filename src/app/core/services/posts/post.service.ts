@@ -47,6 +47,8 @@ export type OccurrenceEventType =
   | 'COMMENT_EDITED'
   | 'COMMENT_REMOVED'
   | 'EVIDENCIA_ADICIONADA'
+  | 'EVIDENCIA_ACEITA'
+  | 'EVIDENCIA_REJEITADA'
   | 'OCORRENCIA_CONFIRMADA'
   | 'ORGAO_RESPONSAVEL_IDENTIFICADO'
   | 'ORGAO_RESPONSAVEL_SUGERIDO'
@@ -63,6 +65,9 @@ export type OccurrenceEventType =
   | 'MODERATION_APPLIED';
 
 export interface OccurrenceEvidence {
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: string;
+  reviewedAt?: string;
   id: string;
   type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'TEXT' | 'LINK' | 'OTHER';
   url?: string;
@@ -95,6 +100,12 @@ export interface OccurrenceAgency {
   email?: string;
   phone?: string;
   website?: string;
+}
+
+export interface OccurrenceAgencyOption extends OccurrenceAgency {
+  stateCode?: string;
+  cities?: string[];
+  categories?: OccurrenceCategory[];
 }
 
 export interface OccurrenceHistoryEvent {
@@ -169,6 +180,7 @@ export interface SpectrumPost {
   category?: OccurrenceCategory;
   location?: OccurrenceLocation;
   responsibleAgency?: OccurrenceAgency | null;
+  linkedAgencyIds?: string[];
   evidences: OccurrenceEvidence[];
   forwardingHistory: OccurrenceForwarding[];
   confirmedByIds: string[];
@@ -227,6 +239,7 @@ export interface CreateOccurrenceEvidencePayload {
 }
 
 export interface CreateOccurrencePayload {
+  agencyId?: string;
   text: string;
   title: string;
   description: string;
@@ -266,6 +279,7 @@ interface OccurrenceApiResponse {
   status: OccurrenceStatus;
   location: OccurrenceLocation;
   responsibleAgency?: OccurrenceAgency | null;
+  linkedAgencyIds?: string[];
   evidences: OccurrenceEvidence[];
   forwardingHistory?: OccurrenceForwarding[];
   confirmedByIds?: string[];
@@ -275,6 +289,10 @@ interface OccurrenceApiResponse {
   createdAt: string;
   updatedAt: string;
   likeCount?: number;
+}
+
+interface OccurrenceAgencyApiResponse extends Omit<OccurrenceAgencyOption, 'id'> {
+  _id: string;
 }
 
 export interface RepostRecord {
@@ -341,6 +359,9 @@ export class PostService {
     return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/response`, {
       forwardingId, responseReceived, responseCode: responseCode || undefined, protocol: protocol.trim() || undefined,
     }).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
+  }
+  getAgenciesForLocation(stateCode: string, cityName: string): Observable<OccurrenceAgencyOption[]> {
+    return this.http.get<OccurrenceAgencyOption[]>(`${this.apiUrl}/agencies/available`, { params: { stateCode, cityName } });
   }
   getRegisteredAgencies(): Observable<{ _id: string; name: string; emails: string[] }[]> {
     return this.http.get<{ _id: string; name: string; emails: string[] }[]>(`${this.apiUrl}/agencies`);
@@ -470,7 +491,22 @@ export class PostService {
 
   getOccurrence(id: string, user: LoggedUser | null): Observable<SpectrumPost> {
     if (!this.isApiId(id)) {
-      return throwError(() => new Error('Ocorrência não encontrada.'));
+      let localOccurrence = this.findPostById(id, user);
+
+      if (!localOccurrence) {
+        return throwError(() => new Error('Ocorrência não encontrada.'));
+      }
+
+      if (id.startsWith('mock-') && user && !localStorage.getItem(`spectrum-agency-test-v2-${id}`)) {
+        localOccurrence = {
+          ...localOccurrence, createdBy: user._id, status: 'ABERTA', responsibleAgency: null,
+          forwardingHistory: [],
+          history: localOccurrence.history.filter(event => !event.actorId?.startsWith('mock-participant-')),
+        };
+        this.cacheOccurrence(localOccurrence);
+        localStorage.setItem(`spectrum-agency-test-v2-${id}`, 'ready');
+      }
+      return of(localOccurrence);
     }
 
     if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(post => this.cacheOccurrence(post)));
@@ -481,9 +517,26 @@ export class PostService {
       );
   }
 
+  readonly mockAgencies: OccurrenceAgencyOption[] = [
+    { id: 'mock-agency-lighting', name: 'Secretaria Municipal de Iluminação Pública', stateCode: 'SP' },
+    { id: 'mock-agency-works', name: 'Secretaria Municipal de Obras', stateCode: 'SP' },
+  ];
+
+  getResponsibleAgencies(occurrenceId?: string): Observable<OccurrenceAgencyOption[]> {
+    if (occurrenceId?.startsWith('mock-')) return of(this.mockAgencies);
+
+    return this.http
+      .get<OccurrenceAgencyApiResponse[]>(`${this.apiUrl}/agencies`)
+      .pipe(
+        map((agencies) =>
+          agencies.map(({ _id, ...agency }) => ({ ...agency, id: _id })),
+        ),
+      );
+  }
+
   getOccurrenceHistory(id: string): Observable<OccurrenceHistoryEvent[]> {
     if (!this.isApiId(id)) {
-      return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
+      return of(this.findPostById(id)?.history ?? []);
     }
 
     return this.http.get<OccurrenceHistoryEvent[]>(`${this.apiUrl}/${id}/history`, {
@@ -527,6 +580,22 @@ export class PostService {
       );
   }
 
+  reviewOccurrenceEvidence(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    evidenceId: string,
+    approved: boolean,
+  ): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para analisar evidências.');
+    return this.http.patch<OccurrenceApiResponse>(
+      `${this.apiUrl}/${post.id}/evidence/${encodeURIComponent(evidenceId)}/review`,
+      { approved },
+    ).pipe(
+      map((occurrence) => this.toSpectrumPost(occurrence, user)),
+      tap((updated) => this.cacheOccurrence(updated)),
+    );
+  }
+
   identifyResponsibleAgency(
     post: SpectrumPost,
     user: LoggedUser | null,
@@ -564,6 +633,37 @@ export class PostService {
       .pipe(
         map((occurrence) => this.toSpectrumPost(occurrence, user)),
         tap((post) => this.cacheOccurrence(post)),
+      );
+  }
+
+  acceptAgencySuggestion(
+    post: SpectrumPost,
+    user: LoggedUser | null,
+    agencyId: string,
+  ): Observable<SpectrumPost> {
+    this.requireUserKey(user, 'Entre na sua conta para escolher o órgão responsável.');
+
+    if (!this.isApiId(post.id)) {
+      const current = this.findPostById(post.id);
+      const agency = this.mockAgencies.find(item => item.id === agencyId);
+      if (!post.id.startsWith('mock-') || !current || current.createdBy !== user?._id || !agency ||
+          !current.history.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO' &&
+            (event.metadata?.['agency'] as OccurrenceAgency | undefined)?.id === agencyId)) {
+        throw new Error('Somente o autor pode escolher um órgão de exemplo sugerido no mock.');
+      }
+      return of(this.updateLocalOccurrence(post.id, user, {
+        eventType: 'ORGAO_RESPONSAVEL_IDENTIFICADO', responsibleAgency: agency,
+        metadata: { agency, agencyName: agency.name, simulation: true },
+      }));
+    }
+
+    return this.http
+      .post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/agency/suggestion/accept`, {
+        agencyId,
+      })
+      .pipe(
+        map((occurrence) => this.toSpectrumPost(occurrence, user)),
+        tap((updated) => this.cacheOccurrence(updated)),
       );
   }
 
@@ -1222,11 +1322,16 @@ export class PostService {
       evidence?: OccurrenceEvidence;
       confirmedById?: string;
       responsibleAgency?: OccurrenceAgency | null;
+  linkedAgencyIds?: string[];
       forwarding?: OccurrenceForwarding;
     },
   ): SpectrumPost {
     const posts = this.getUserPosts();
-    const index = posts.findIndex((item) => item.id === id);
+    let index = posts.findIndex((item) => item.id === id);
+    if (index < 0 && id.startsWith('mock-')) {
+      const mock = this.findPostById(id);
+      if (mock) { posts.push(mock); index = posts.length - 1; }
+    }
 
     if (index < 0) {
       throw new Error('Somente ocorrencias locais podem ser atualizadas neste modo.');
@@ -1598,6 +1703,7 @@ return {
   importance: occurrence.importance,
   location: occurrence.location,
   responsibleAgency: occurrence.responsibleAgency,
+  linkedAgencyIds: occurrence.linkedAgencyIds,
   evidences: occurrence.evidences ?? [],
   forwardingHistory: occurrence.forwardingHistory ?? [],
   confirmedByIds: occurrence.confirmedByIds ?? [],
