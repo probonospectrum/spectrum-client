@@ -954,8 +954,4 @@
   .social-nav.social-nav--agency.social-nav--inbox { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 }
 
-.social-inbox-count { margin-left: auto; border-radius: 6px; padding: 2px 6px; font-size: 10px; background: var(--spectrum-surface-muted); }
 .social-community-note--agency { display: none; }
-@media (max-width: 780px) {
-  .social-inbox-count { display: none; }
-}
