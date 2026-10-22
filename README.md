@@ -4,21 +4,21 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Desenvolvimento e autenticação
 
-Para testar o cliente local com a API remota já configurada:
+Para testar o cliente com o backend local na porta 3000:
 
 ```bash
 npm start
 ```
 
-Abra `http://localhost:4200`. Este modo utiliza `https://spectrum-server-2qne.onrender.com`, incluindo contas e dados dessa API. Sugestões e outras ações são persistidas nesse ambiente. Reinicie o servidor de desenvolvimento após atualizar a configuração. `npm run start:stg` usa o mesmo ambiente.
+Abra `http://localhost:4200`. Este modo utiliza `http://localhost:3000`, incluindo contas e dados do banco configurado no backend local. Reinicie o servidor de desenvolvimento após atualizar a configuração. Para acessar a API publicada, use `npm run start:stg`.
 
-Para usar um backend local, inicie-o na porta 3000 e execute:
+O comando explícito equivalente para desenvolvimento local é:
 
 ```bash
 npm run start:local
 ```
 
-Sem backend em `http://localhost:3000`, login por senha, cadastro e troca do código Google não funcionam nesse modo. `ng serve` usa a API remota por padrão. O backend local é exclusivo de `npm run start:local` ou `ng serve --configuration=local`.
+Sem backend em `http://localhost:3000`, login por senha, cadastro e troca do código Google não funcionam nesse modo. `npm start` e `ng serve` usam a API local por padrão. `npm run start:stg` acessa a API remota.
 
 O login Google exige que `http://localhost:4200/auth/callback` esteja autorizado nos URIs de redirecionamento do cliente OAuth no Google e na configuração `GOOGLE_REDIRECT_URI` ou `GOOGLE_REDIRECT_URIS` do backend usado. A origem `http://localhost:4200` também precisa ser permitida pelo CORS do backend. Essas configurações externas não são alteradas pelo cliente.
 
