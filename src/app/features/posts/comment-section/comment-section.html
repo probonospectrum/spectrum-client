@@ -1,5 +1,4 @@
 <section class="comment-section">
-  @if (replyTarget; as target) { <p class="comment-section__reply-context">{{ 'Respondendo a' | translate }} {{ target.authorName }}: {{ target.content }} <button type="button" [disabled]="saving" (click)="replyTarget = null">{{ 'Cancelar resposta' | translate }}</button></p> }
   <div class="comment-section__input">
     <span class="comment-section__avatar"><app-user-avatar [user]="currentUser" [name]="displayName" /></span>
     <input
@@ -20,7 +19,7 @@
   @if (comments.length) {
     <ul class="comment-section__list">
       @for (comment of visibleComments; track comment.id) {
-        <li class="comment-section__item" [id]="'comment-' + comment.id">
+        <li class="comment-section__item" [id]="'comment-' + comment.id" [class.comment-section__item--reply]="isReply(comment)">
           <div class="comment-section__item-header">
             <span class="comment-section__avatar">
               <app-user-avatar [user]="comment.authorId === currentUser?._id ? currentUser : null"
@@ -58,10 +57,9 @@
           </div>
 
           <p class="comment-section__content">{{ comment.content }}</p>
-          @if (comment.parentCommentId) { <p class="comment-section__reply-context">{{ 'Em resposta a' | translate }} {{ parentAuthor(comment) }}</p> }
 
           <div class="comment-section__actions">
-            @if (canOfficialReply && !comment.officialAgencyId && comment.authorId !== currentUser?._id) { <button type="button" [disabled]="saving" (click)="startReply(comment)">{{ 'Responder como órgão público' | translate }}</button> }
+
             <button
               type="button"
               [class.comment-section__action--liked]="isLiked(comment.id)"
@@ -85,7 +83,44 @@
                 <span class="comment-section__count">{{ dislikeCount(comment.id) }}</span>
               }
             </button>
+            @if (!comment.parentCommentId) {
+            <span class="comment-section__reply-action" [class.comment-section__reply-action--open]="replyHelpId === comment.id" [class.comment-section__reply-action--dismissed]="dismissedReplyHelpId === comment.id" (mouseenter)="dismissedReplyHelpId = null">
+              <button #replyButton type="button" class="comment-section__reply" (focus)="dismissedReplyHelpId = null"
+                [attr.aria-label]="(canOfficialReply ? replyLabel : 'Responder') | translate"
+                [attr.aria-disabled]="!canOfficialReply"
+                [attr.aria-describedby]="!canOfficialReply ? 'reply-help-' + comment.id : null"
+                [attr.title]="canOfficialReply ? (replyLabel | translate) : null"
+                [disabled]="saving" (click)="startReply(comment)">
+                <span class="material-symbols-outlined" aria-hidden="true">chat_bubble_outline</span>
+                <span>{{ 'Responder' | translate }}</span>
+              </button>
+              @if (!canOfficialReply) {
+                                <span role="note" class="comment-section__reply-help" [id]="'reply-help-' + comment.id">
+                  <span>{{ replyRestriction | translate }}</span>
+                  <button type="button" class="comment-section__close-help" [attr.aria-label]="'Fechar aviso' | translate"
+                    (click)="$event.stopPropagation(); closeReplyHelp(comment.id, replyButton)">
+                    <span aria-hidden="true">×</span>
+                  </button>
+                </span>
+              }
+            </span>
+            }
           </div>
+          @if (replyTarget?.id === comment.id) {
+            <form class="comment-section__reply-composer" (ngSubmit)="addReply()">
+              <label [for]="'reply-input-' + comment.id">{{ 'Respondendo a' | translate }} {{ comment.authorName }}</label>
+              <div class="comment-section__input">
+                <span class="comment-section__avatar"><app-user-avatar [user]="currentUser" [name]="displayName" /></span>
+                <input #replyInput [id]="'reply-input-' + comment.id" name="reply" type="text"
+                  [placeholder]="'Escreva uma resposta...' | translate" [(ngModel)]="replyText" [disabled]="saving" />
+                <button type="submit" [attr.aria-label]="'Enviar resposta' | translate"
+                  [disabled]="saving || !replyText.trim() || !canOfficialReply">
+                  <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                </button>
+              </div>
+              <button type="button" class="comment-section__cancel-reply" [disabled]="saving" (click)="cancelReply()">{{ 'Cancelar resposta' | translate }}</button>
+            </form>
+          }
         </li>
       }
     </ul>

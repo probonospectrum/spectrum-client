@@ -92,7 +92,7 @@
               "buildTarget": "spectrum-client:build:local"
             }
           },
-          "defaultConfiguration": "stg"
+          "defaultConfiguration": "local"
         },
         "test": {
           "builder": "@angular/build:unit-test"
