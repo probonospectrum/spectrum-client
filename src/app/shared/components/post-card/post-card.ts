@@ -46,7 +46,7 @@ export class PostCard implements OnChanges, OnDestroy {
   savedPending = false;
 
   private saveReaction(reaction: 'LIKE' | 'UNLIKE' | null): void {
-    if (this.reactionPending || this.savedPending || !this.currentUser) return;
+    if (this.currentUser?.occurrenceRole === 'MODERATOR' || this.reactionPending || this.savedPending || !this.currentUser) return;
     this.reactionPending = true;
     this.reactionError = '';
     this.postService.setPostReaction(this.post, this.currentUser, reaction)
@@ -264,7 +264,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   toggleSaved(): void {
-    if (this.savedPending || this.reactionPending || !this.currentUser) return;
+    if (this.currentUser?.occurrenceRole === 'MODERATOR' || this.savedPending || this.reactionPending || !this.currentUser) return;
     this.savedPending = true;
     this.reactionError = '';
     this.postService.setPostSaved(this.post, this.currentUser, !this.post.saved)

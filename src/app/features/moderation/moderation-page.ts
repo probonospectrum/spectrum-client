@@ -1,85 +1,91 @@
-import { LocalizedDatePipe, TranslatePipe } from '../../core/i18n/translate.pipe';
-import { AgencyReviewPanel } from '../agency/agency-review-panel';
+import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../core/content-policy/content-policy';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { Subject, merge, switchMap, of, map, catchError, tap, finalize } from 'rxjs';
 import { SocialShell } from '../../shared/components/social-shell/social-shell';
-import { PostService, SpectrumPost } from '../../core/services/posts/post.service';
+import { PostService, SpectrumPost, ModerationReport } from '../../core/services/posts/post.service';
 import { UserService } from '../../core/services/user/user.service';
 
 @Component({
-  selector: 'app-moderation-page',
-  imports: [AgencyReviewPanel, LocalizedDatePipe, TranslatePipe, CommonModule, FormsModule, RouterLink, SocialShell],
-  templateUrl: './moderation-page.html',
-  styleUrl: './moderation-page.scss',
+  selector: 'app-moderation-page', imports: [FormsModule, RouterLink, SocialShell],
+  templateUrl: './moderation-page.html', styleUrl: './moderation-page.scss',
 })
 export class ModerationPage {
   private readonly posts = inject(PostService);
   private readonly users = inject(UserService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly refresh = new Subject<void>();
   readonly user = this.users.getCurrentUser();
   readonly loading = signal(false);
   readonly items = signal<SpectrumPost[]>([]);
-  error = '';
+  readonly reports = signal<ModerationReport[]>([]);
+  queue = '';
   search = '';
-  filter = 'all';
-  readonly filters = [
-    { value: 'all', label: 'Todas' }, { value: 'pending', label: 'Pendências' },
-    { value: 'sent', label: 'Aguardando retorno' }, { value: 'review', label: 'Respostas para analisar' },
-    { value: 'resolved', label: 'Resolvidas' },
-  ];
-  constructor() { this.load(); }
-  load(): void {
-    if (this.loading()) return;
-    this.loading.set(true);
-    this.error = '';
-    this.posts.getModerationOccurrences(this.user).pipe(
-      finalize(() => this.loading.set(false)), takeUntilDestroyed(this.destroyRef),
-    ).subscribe({ next: items => this.items.set(items), error: () => {
-      this.error = 'Não foi possível carregar as ocorrências. Verifique sua conexão e sua permissão de moderador.';
-    } });
-  }
-  get pendingCount(): number { return this.items().filter(p => !!p.moderationReason).length; }
-  get reviewCount(): number { return this.items().filter(p => p.status === 'RESPOSTA_EM_APURACAO').length; }
-  get visible(): SpectrumPost[] {
-    const term = this.search.trim().toLocaleLowerCase();
-    return this.items().filter(p => {
-      const matches = this.filter === 'all' ||
-        (this.filter === 'pending' && !!p.moderationReason) ||
-        (this.filter === 'sent' && p.status === 'ENCAMINHADA') ||
-        (this.filter === 'review' && p.status === 'RESPOSTA_EM_APURACAO') ||
-        (this.filter === 'resolved' && p.status === 'RESOLVIDA');
-      return matches && (!term || [p.title, p.id, p.location?.cityName, p.location?.city,
-        p.responsibleAgency?.name].some(v => v?.toLocaleLowerCase().includes(term)));
+  error = '';
+  readonly titles: Record<string, string> = { resolvidas: 'Resolvidas', 'sem-orgao': 'Sem órgão',
+    contestadas: 'Contestadas', denunciados: 'Itens denunciados', respostas: 'Respostas para Análise' };
+  constructor() {
+    merge(this.route.paramMap, this.refresh).pipe(
+      tap(() => {
+        this.queue = this.route.snapshot.paramMap.get('queue') || 'sem-orgao';
+        this.error = ''; this.loading.set(true); this.items.set([]); this.reports.set([]);
+      }),
+      switchMap(() => {
+        if (!this.titles[this.queue]) { void this.router.navigate(['/moderacao/sem-orgao']); return of(null); }
+        const request = this.queue === 'denunciados'
+          ? this.posts.getModerationReports().pipe(map(reports => ({ reports, items: [] as SpectrumPost[] })))
+          : this.posts.getModerationOccurrences(this.user, this.queue).pipe(map(items => ({ items, reports: [] as ModerationReport[] })));
+        return request.pipe(catchError(() => { this.error = 'Não foi possível carregar esta fila. Verifique sua conexão e permissão.'; return of(null); }));
+      }), takeUntilDestroyed(this.destroyRef),
+    ).subscribe(result => {
+      if (result) { this.items.set(result.items); this.reports.set(result.reports); }
+      this.loading.set(false);
     });
   }
+  readonly removalPending = signal(false);
+  removalTarget: ModerationReport | null = null;
+  removalReason = '';
+  removalError = '';
+  beginRemoval(item: ModerationReport): void {
+    if (item.kind !== 'post' || item.removedAt || this.removalPending()) return;
+    this.removalTarget = item; this.removalReason = ''; this.removalError = '';
+  }
+  cancelRemoval(): void { if (!this.removalPending()) this.removalTarget = null; }
+  confirmRemoval(): void {
+    const item = this.removalTarget;
+    if (!item || this.removalPending()) return;
+    if (!this.removalReason.trim()) { this.removalError = 'Informe a justificativa da análise.'; return; }
+    if (requiresContentReview(this.removalReason)) { this.removalError = CONTENT_REVIEW_MESSAGE; return; }
+    this.removalPending.set(true); this.removalError = '';
+    this.posts.removeReportedPost(item.postId || item.id, this.removalReason.trim()).pipe(
+      finalize(() => this.removalPending.set(false)), takeUntilDestroyed(this.destroyRef),
+    ).subscribe({ next: () => { this.removalTarget = null; this.load(); }, error: error => {
+      this.removalError = typeof error.error?.message === 'string' ? error.error.message : 'Não foi possível remover. Tente novamente.';
+    } });
+  }
+  load(): void { this.refresh.next(); }
+  get title(): string { return this.titles[this.queue] || 'Moderação'; }
+  get visible(): SpectrumPost[] {
+    const term = this.search.trim().toLocaleLowerCase();
+    return this.items().filter(p => !term || [p.title, p.content, p.responsibleAgency?.name, p.location?.cityName]
+      .some(value => value?.toLocaleLowerCase().includes(term)));
+  }
+  get visibleReports(): ModerationReport[] {
+    const term = this.search.trim().toLocaleLowerCase();
+    return this.reports().filter(p => !term || [p.title, p.content, ...p.reasons].some(v => v?.toLocaleLowerCase().includes(term)));
+  }
+  review(post: SpectrumPost) { return [...(post.history || [])].reverse().find(e => e.eventType === 'OCORRENCIA_RESOLVIDA'); }
+  resolutionNote(post: SpectrumPost): string { return String(this.review(post)?.metadata?.['note'] || this.review(post)?.description || ''); }
+  resolutionEvidence(post: SpectrumPost) {
+    const ids = this.review(post)?.evidenceIds || [];
+    return post.evidences.filter(e => ids.includes(e.id));
+  }
+  contestations(post: SpectrumPost) { return (post.history || []).filter(e => e.eventType === 'RESOLUCAO_CONTESTADA'); }
+  contestEvidence(post: SpectrumPost, ids?: string[]) { return post.evidences.filter(e => ids?.includes(e.id)); }
   status(post: SpectrumPost): string { return this.posts.getStatusLabel(post.status); }
-  action(post: SpectrumPost): string {
-    if (post.status === 'RESPOSTA_EM_APURACAO') return 'Analisar resposta';
-    if (post.status === 'ENCAMINHADA' || post.status === 'EM_RESOLUCAO') return 'Registrar resposta';
-    if (post.moderationReason) return 'Ver pendência';
-    return 'Ver ocorrência';
-  }
-  guidance(post: SpectrumPost): string {
-    const reasons: Record<string, string> = {
-      ORGAO_NAO_IDENTIFICADO: 'Selecione um órgão cadastrado para encaminhar.',
-      EMPATE_DE_ORGAO_RESPONSAVEL: 'Mais de um órgão corresponde ao relato. Confira a competência.',
-      CONTATO_INVALIDO: 'O órgão não possui um contato válido. É necessário revisar o catálogo.',
-      FALHA_NO_ENCAMINHAMENTO: 'O envio falhou. Confira o histórico antes de tentar novamente.',
-      RESPOSTA_EM_APURACAO: 'Confira a resposta e classifique o resultado.',
-      SEM_RETORNO_APOS_REENVIO: 'O reenvio já ocorreu e ainda não há resposta.',
-      REJEITADA_PARA_REAVALIACAO: 'O órgão rejeitou a ocorrência. Ela precisa de reavaliação.',
-      ENVIO_INTERROMPIDO: 'Envio com resultado incerto. Requer conferência técnica antes de reenviar.',
-      PROCESSAMENTO_INTERROMPIDO: 'Processamento interrompido. Requer conferência técnica.',
-    };
-    return reasons[post.moderationReason || ''] || (post.status === 'RESOLVIDA'
-      ? 'Resolução validada pela moderação.' : post.status === 'ENCAMINHADA'
-      ? 'Aguardando retorno do órgão. Registre a mensagem quando recebê-la.'
-      : 'Abra os detalhes para acompanhar o status e as próximas ações.');
-  }
   logout(): void { this.users.logout(); void this.router.navigate(['/login']); }
 }

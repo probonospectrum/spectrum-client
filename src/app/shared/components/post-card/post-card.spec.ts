@@ -65,6 +65,32 @@ describe('PostCard media and gallery layout', () => {
     fixture.detectChanges();
   });
 
+  it('hides forbidden moderator interactions and preserves comments and reporting', () => {
+    fixture.componentRef.setInput('currentUser', { _id: 'moderator', occurrenceRole: 'MODERATOR' } as LoggedUser);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    for (const label of ['Curtir publicacao', 'Descurtir publicacao', 'Repostar publicacao', 'Salvar publicacao']) {
+      expect(element.querySelector(`button[aria-label="${label}"]`)).toBeNull();
+    }
+    expect(element.querySelector('button[aria-label="Comentar publicacao"]')).toBeTruthy();
+    const reaction = vi.spyOn(TestBed.inject(PostService), 'setPostReaction');
+    const saved = vi.spyOn(TestBed.inject(PostService), 'setPostSaved');
+    component.toggleLike(); component.toggleDislike(); component.toggleSaved();
+    expect(reaction).not.toHaveBeenCalled(); expect(saved).not.toHaveBeenCalled();
+  });
+
+  it('blocks offensive moderator comments before sending them', async () => {
+    vi.spyOn(TestBed.inject(PostService), 'loadComments').mockReturnValue(new Subject<SpectrumComment[]>());
+    const create = vi.spyOn(TestBed.inject(PostService), 'createComment');
+    fixture.componentRef.setInput('currentUser', { _id: 'moderator', occurrenceRole: 'MODERATOR' } as LoggedUser);
+    fixture.detectChanges(); await fixture.whenStable();
+    fixture.nativeElement.querySelector('button[aria-label="Comentar publicacao"]').click();
+    await fixture.whenStable();
+    const section = component.commentSection()!;
+    section.newComment = 'Você é um idiota'; section.addComment();
+    expect(create).not.toHaveBeenCalled(); expect(section.error).toContain('Revise o texto');
+  });
+
   it('should create post card component', () => {
     expect(component).toBeTruthy();
   });

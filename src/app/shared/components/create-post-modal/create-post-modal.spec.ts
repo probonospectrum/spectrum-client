@@ -57,6 +57,19 @@ describe('Optional regional agency selection', () => {
     modal.selectedCategory = 'INFRAESTRUTURA';
     return { fixture, modal };
   }
+  it.each(['title', 'description'])('blocks an offensive %s before publishing and allows a corrected submission', field => {
+    const { fixture, modal } = setup();
+    if (field === 'title') modal.problemTitle = 'Seu idiota'; else modal.newPostContent = 'VOCÊ É UM OTÁRIO';
+    modal.publishPost(); fixture.detectChanges();
+    expect(create).not.toHaveBeenCalled();
+    const warning = fixture.nativeElement.querySelector('.create-post-modal__error');
+    expect(warning.textContent).toContain('Revise o texto');
+    expect(warning.nextElementSibling.classList.contains('create-post-modal__submit')).toBe(true);
+    expect(modal.isPublishing()).toBe(false);
+    modal.problemTitle = 'Buraco na rua'; modal.newPostContent = 'Pavimento danificado';
+    modal.publishPost(); expect(create).toHaveBeenCalledOnce();
+  });
+
   it('queries the occurrence city, renders the optional selector and submits only the selected identifier', () => {
     const { fixture, modal } = setup();
     modal.onCityChanged();

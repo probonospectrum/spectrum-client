@@ -277,7 +277,7 @@
             <p>{{ 'Para fechar, anexe e selecione uma evidência enviada por você. Todas as mudanças ficam no histórico e a comunidade pode contestar.' | translate }}</p>
             <button type="button" class="occurrence-detail__form-inline" (click)="submitAgencyProgress()" [disabled]="isSubmitting()">{{ 'Salvar atendimento' | translate }}</button>
           }
-          @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest') {
+          @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest' || actionPanel === 'resolve') {
             <div class="occurrence-detail__upload">
               <div class="occurrence-detail__upload-info">
                 <span class="occurrence-detail__upload-label">{{ 'Evidência' | translate }}</span>
@@ -297,7 +297,7 @@
                 #evidenceInput
                 class="occurrence-detail__file-input"
                 type="file"
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                [accept]="actionPanel === 'contest' ? 'image/jpeg,image/png,image/webp' : 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime'"
                 [attr.aria-label]="'Selecionar evidência' | translate"
                 (change)="onEvidenceSelected($event)"
               />
@@ -452,7 +452,7 @@
           @if (actionPanel === 'contest') {
             <label>
               <span>{{ 'Por que você está contestando?' | translate }}</span>
-              <textarea [(ngModel)]="contestReason" name="contestReason" [placeholder]="'A prefeitura informou que o buraco foi consertado, mas ele continua aberto.' | translate"></textarea>
+              <textarea [(ngModel)]="contestReason" name="contestReason" maxlength="500" [placeholder]="'A prefeitura informou que o buraco foi consertado, mas ele continua aberto.' | translate"></textarea>
             </label>
             <button type="button" class="occurrence-detail__form-inline occurrence-detail__danger" [disabled]="isSubmitting()" (click)="submitContest()">{{ 'Contestar resolução' | translate }}</button>
           }

@@ -130,16 +130,17 @@
 
       </div>
 
-      <button
-        class="social-create"
-        type="button"
-        [attr.aria-label]="'Criar ocorrência' | translate"
-        (click)="openCreatePost()"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">add</span>
-        <span class="social-create__label">{{ 'Nova ocorrência' | translate }}</span>
-      </button>
-
+      @if (canCreateOccurrence) {
+        <button
+          class="social-create"
+          type="button"
+          [attr.aria-label]="'Criar ocorrência' | translate"
+          (click)="openCreatePost()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          <span class="social-create__label">{{ 'Nova ocorrência' | translate }}</span>
+        </button>
+      }
     </div>
   </header>
 
@@ -156,12 +157,11 @@
         </a>
         }
         @if (user?.occurrenceRole === 'MODERATOR') {
-          <a class="social-nav__item" routerLink="/moderacao" routerLinkActive="social-nav__item--active">
-            <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
-            {{ 'Moderação' | translate }}
-          </a>
-        }
-
+          <a class="social-nav__item" routerLink="/publicacoes" routerLinkActive="social-nav__item--active"><span class="material-symbols-outlined">home</span>Início</a>
+          @for (item of moderationLinks; track item.path) {
+            <a class="social-nav__item" [routerLink]="['/moderacao', item.path]" routerLinkActive="social-nav__item--active"><span class="material-symbols-outlined">{{ item.icon }}</span>{{ item.label }}</a>
+          }
+        } @else {
         <!-- INÍCIO -->
         <a
           class="social-nav__item"
@@ -215,6 +215,7 @@
           {{ 'Cidades' | translate }}
         </a>
 
+        }
         <!-- PERFIL -->
         <a
           class="social-nav__item"
@@ -356,7 +357,9 @@
         <span class="material-symbols-outlined" aria-hidden="true">route</span>
         <h3>{{ 'Do relato à solução' | translate }}</h3>
         <ol><li>{{ 'Registre o que você observou' | translate }}</li><li>{{ 'Acompanhe as atualizações' | translate }}</li><li>{{ 'Ajude a confirmar a solução' | translate }}</li></ol>
-        <button type="button" (click)="openCreatePost()">{{ 'Registrar um problema' | translate }} <span aria-hidden="true">↗</span></button>
+        @if (canCreateOccurrence) {
+          <button type="button" (click)="openCreatePost()">{{ 'Registrar um problema' | translate }} <span aria-hidden="true">↗</span></button>
+        }
       </div>
     </aside>
 

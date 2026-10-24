@@ -13,7 +13,9 @@
       <span class="community-hero__eyebrow"><span aria-hidden="true"></span> {{ 'SUA VOZ. NOSSA CIDADE.' | translate }}</span>
       <h1 id="community-title">{{ 'Pequenas atitudes.' | translate }}<br><em>{{ 'Uma cidade melhor.' | translate }}</em></h1>
       <p>{{ 'Registre um problema, conecte sua comunidade e acompanhe cada passo da solução.' | translate }}</p>
-      <button type="button" (click)="socialShell.openCreatePost()">{{ 'Registrar ocorrência' | translate }} <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+      @if (socialShell.canCreateOccurrence) {
+        <button type="button" (click)="socialShell.openCreatePost()">{{ 'Registrar ocorrência' | translate }} <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+      }
     </div>
     <div class="community-hero__visual" aria-hidden="true">
       <img src="/city-grid.svg" alt="" />
@@ -100,7 +102,7 @@
         <p>{{ (hasFilters ? 'Experimente outra categoria ou situação para explorar os relatos.' : 'Um registro pode ser o primeiro passo para melhorar o seu bairro.') | translate }}</p>
         @if (hasFilters) {
           <button type="button" (click)="clearFilters()">{{ 'Limpar filtros' | translate }}</button>
-        } @else {
+        } @else if (socialShell.canCreateOccurrence) {
           <button type="button" (click)="socialShell.openCreatePost()">{{ 'Criar a primeira ocorrência' | translate }}</button>
         }
       </section>
@@ -119,7 +121,8 @@
   <app-report-modal
     [title]="'O que está sendo reportado?' | translate"
     (close)="reportPost = null"
-    (confirm)="confirmReport()"
+    [externalSubmission]="true" [submitting]="reportSubmitting" [submissionError]="reportError"
+    (submit)="submitReport($event)"
   />
 }
 @if (feedAlert(); as currentFeedAlert) {

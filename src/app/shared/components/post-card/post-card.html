@@ -227,6 +227,7 @@
       <span class="post-card__meta-date">{{ post.publishedAt | localizedDate:post.publishedAtLabel }}</span>
     </div>
     <div class="post-card__actions" [attr.aria-label]="'Interaçoes' | translate">
+      @if (currentUser?.occurrenceRole !== 'MODERATOR') {
       <button
         type="button"
         [class.post-card__action--liked]="post.liked"
@@ -252,10 +253,12 @@
           <span class="post-card__count">{{ post.dislikes }}</span>
         }
       </button>
+      }
       <button type="button" [attr.aria-label]="'Comentar publicacao' | translate" (click)="toggleComments()">
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
         {{ commentsCount }}
       </button>
+      @if (currentUser?.occurrenceRole !== 'MODERATOR') {
       <button
         type="button"
         [class.post-card__action--active]="post.reposted"
@@ -277,6 +280,7 @@
         </span>
         {{ (isSaved ? 'Salvo' : 'Salvar') | translate }}
       </button>
+      }
     </div>
   </footer>
 
