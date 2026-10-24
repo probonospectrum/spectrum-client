@@ -1,3 +1,4 @@
+import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../../core/content-policy/content-policy';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
@@ -246,6 +247,11 @@ export class CreatePostModal implements OnChanges {
   }
 
   publishPost(): void {
+    if (this.isPublishing()) return;
+    if (requiresContentReview(this.problemTitle, this.newPostContent)) {
+      this.errorMessage = CONTENT_REVIEW_MESSAGE;
+      return;
+    }
     const validationMessage = this.validateForm();
     if (validationMessage) {
       this.errorMessage = validationMessage;

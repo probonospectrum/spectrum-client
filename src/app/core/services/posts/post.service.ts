@@ -146,6 +146,12 @@ export interface OccurrenceForwarding {
   failureReason?: string;
 }
 
+export interface ModerationReport {
+  id: string; kind: 'post' | 'comment'; count: number; reasons: string[];
+  removedAt?: string; removalReason?: string;
+  title: string; content?: string; postId?: string;
+}
+
 export interface SpectrumPost {
   agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
   reaction?: 'LIKE' | 'UNLIKE' | null;
@@ -339,8 +345,17 @@ export class PostService {
       map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
   }
   readonly i18n = inject(I18nService);
-  getModerationOccurrences(user: LoggedUser | null): Observable<SpectrumPost[]> {
-    return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`).pipe(
+  reportContent(reason: string, reportedPostId: string, reportedCommentId?: string): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/report`, { reason, reportedPostId, reportedCommentId });
+  }
+  removeReportedPost(id: string, reason: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/moderation/remove`, { reason });
+  }
+  getModerationReports(): Observable<ModerationReport[]> {
+    return this.http.get<ModerationReport[]>(`${this.apiUrl}/moderation/reports`);
+  }
+  getModerationOccurrences(user: LoggedUser | null, queue = 'all'): Observable<SpectrumPost[]> {
+    return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/moderation/occurrences`, { params: { queue } }).pipe(
       map(items => items.map(item => this.toSpectrumPost(item, user))),
     );
   }
@@ -367,9 +382,9 @@ export class PostService {
     return this.http.get<{ _id: string; name: string; emails: string[] }[]>(`${this.apiUrl}/agencies`);
   }
 
-  reviewForwardingResponse(post: SpectrumPost, user: LoggedUser | null, responseCode: string, note: string): Observable<SpectrumPost> {
+  reviewForwardingResponse(post: SpectrumPost, user: LoggedUser | null, responseCode: string, note: string, evidenceIds: string[] = []): Observable<SpectrumPost> {
     this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['RESPOSTA_EM_APURACAO', 'RESOLUCAO_INFORMADA']);
-    return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/response/review`, { responseCode, note }).pipe(
+    return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/forward/response/review`, { responseCode, note, evidenceIds }).pipe(
       map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)),
     );
   }
@@ -818,7 +833,7 @@ export class PostService {
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para contestar.');
     this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER', ['RESOLVIDA']);
-    if (!reason.trim()) throw new Error('Explique por que o problema continua.');
+    if ((!reason.trim() && !evidenceIds.length) || reason.length > 500) throw new Error('Anexe uma imagem ou justifique em até 500 caracteres.');
     const body = {
       reason,
       evidenceIds,

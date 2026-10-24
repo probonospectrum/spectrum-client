@@ -1,3 +1,4 @@
+import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../../core/content-policy/content-policy';
 import { LocalizedDatePipe, TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
@@ -197,6 +198,7 @@ export class CommentSection implements OnInit {
   private submitComment(content: string, parentCommentId?: string): void {
     const user = this.currentUser ?? this.userService.getCurrentUser();
     if (!content || !user || this.saving) return;
+    if (requiresContentReview(content)) { this.error = CONTENT_REVIEW_MESSAGE; return; }
     this.saving = true;
     this.error = '';
     this.postService.createComment(this.postId, content, user, parentCommentId)
@@ -239,7 +241,7 @@ export class CommentSection implements OnInit {
   }
 
   toggleLike(commentId: string): void {
-    if (!this.currentUser || this.pendingReactions.has(commentId)) return;
+    if (!this.currentUser || this.currentUser.occurrenceRole === 'MODERATOR' || this.pendingReactions.has(commentId)) return;
     const comment = this.findComment(commentId);
 
     if (!comment) {
@@ -262,7 +264,7 @@ export class CommentSection implements OnInit {
   }
 
   toggleDislike(commentId: string): void {
-    if (!this.currentUser || this.pendingReactions.has(commentId)) return;
+    if (!this.currentUser || this.currentUser.occurrenceRole === 'MODERATOR' || this.pendingReactions.has(commentId)) return;
     const comment = this.findComment(commentId);
 
     if (!comment) {
@@ -324,7 +326,19 @@ export class CommentSection implements OnInit {
 
   reportComment(comment: SpectrumComment): void {
     this.closeMenu();
+    this.reportError = '';
     this.reportTarget = comment;
+  }
+
+  reportSubmitting = false;
+  reportError = '';
+  submitReport(reason: string): void {
+    if (!this.reportTarget || this.reportSubmitting) return;
+    this.reportSubmitting = true; this.reportError = '';
+    this.postService.reportContent(reason, this.postId, this.reportTarget.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => { this.reportSubmitting = false; this.reportTarget = null; this.actionMessage = 'Denúncia enviada.'; this.changeDetector.markForCheck(); },
+      error: () => { this.reportSubmitting = false; this.reportError = 'Não foi possível enviar a denúncia. Tente novamente.'; this.changeDetector.markForCheck(); },
+    });
   }
 
   requestDelete(comment: SpectrumComment): void {

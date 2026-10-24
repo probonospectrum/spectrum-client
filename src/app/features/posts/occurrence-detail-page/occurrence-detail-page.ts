@@ -1,3 +1,4 @@
+import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../../core/content-policy/content-policy';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
@@ -768,13 +769,18 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolve(): void {
+    if (requiresContentReview(this.resolutionReviewNote)) { this.errorMessage = CONTENT_REVIEW_MESSAGE; return; }
     if (!this.occurrence || !this.canResolve || this.resolutionReviewNote.trim().length < 20) {
       this.errorMessage = 'Descreva a verificação da resolução (mínimo de 20 caracteres).';
       return;
     }
 
-    this.runAction(
-      () => this.postService.reviewForwardingResponse(this.occurrence!, this.user, this.responseCode, this.resolutionReviewNote.trim()),
+    if (this.responseCode === '02' && !this.evidenceFile) {
+      this.errorMessage = 'Anexe uma evidência da verificação antes de salvar como resolvida.';
+      return;
+    }
+    this.runWithOptionalEvidence(
+      evidenceIds => this.postService.reviewForwardingResponse(this.occurrence!, this.user, this.responseCode, this.resolutionReviewNote.trim(), evidenceIds),
       'Resposta analisada e classificação registrada no histórico.',
     );
   }
@@ -792,8 +798,8 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitContest(): void {
-    if (!this.occurrence || !this.canContest || !this.contestReason.trim()) {
-      this.errorMessage = 'Explique por que a resolução está sendo contestada.';
+    if (!this.occurrence || !this.canContest || this.contestReason.trim().length > 500 || (!this.contestReason.trim() && !this.evidenceFile?.type.startsWith('image/'))) {
+      this.errorMessage = 'Anexe uma imagem ou justifique a contestação em até 500 caracteres.';
       return;
     }
 
@@ -1028,7 +1034,7 @@ export class OccurrenceDetailPage implements OnInit {
         switchMap((updated) => {
           this.occurrence = updated;
           const evidence = updated.evidences.at(-1);
-          const evidenceId = evidence && (!evidence.status || evidence.status === 'APPROVED') ? evidence.id : undefined;
+          const evidenceId = evidence && (this.actionPanel === 'contest' ? evidence.status !== 'REJECTED' : !evidence.status || evidence.status === 'APPROVED') ? evidence.id : undefined;
           return action(evidenceId ? [evidenceId] : []);
         }),
         finalize(() => this.isSubmitting.set(false)),

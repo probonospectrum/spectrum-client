@@ -30,3 +30,11 @@ a { background:var(--spectrum-action); color:white; text-decoration:none; }
 .state>.material-symbols-outlined { font-size:36px; color:var(--spectrum-action); }
 :is(button,a,input,select):focus-visible { outline:3px solid var(--spectrum-action); outline-offset:3px; }
 @media(max-width:650px) { .hero { align-items:flex-start; flex-direction:column; } .summary { gap:8px; } .summary>div { padding:14px 10px; } .summary span { font-size:11px; } .controls { grid-template-columns:1fr; } .card { padding:18px; } .card-bottom a { width:100%; } }
+
+.moderation-evidence { display: block; max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 12px; }
+
+.moderation-remove { color: var(--spectrum-error); margin: 12px 0; }
+.moderation-error { color: var(--spectrum-error); }
+.moderation-removal { margin-top: 16px; padding: 16px; border: 1px solid var(--spectrum-border); border-radius: 12px; }
+.moderation-removal label, .moderation-removal textarea { display: block; width: 100%; }
+.moderation-removal textarea { min-height: 100px; margin: 8px 0; padding: 10px; color: var(--spectrum-text); background: var(--spectrum-surface); }

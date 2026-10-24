@@ -58,6 +58,13 @@ export class SocialShell implements OnInit {
   private readonly userService = inject(UserService);
   private readonly locationService = inject(LocationService);
 
+  readonly moderationLinks = [
+    { path: 'resolvidas', label: 'Resolvidas', icon: 'task_alt' },
+    { path: 'sem-orgao', label: 'Sem órgão', icon: 'account_balance' },
+    { path: 'contestadas', label: 'Contestadas', icon: 'gavel' },
+    { path: 'denunciados', label: 'Itens denunciados', icon: 'flag' },
+    { path: 'respostas', label: 'Respostas para Análise', icon: 'rate_review' },
+  ];
   readonly suggestedCities = this.locationService.getLocations().slice(0, 4);
 
   @Input() user: LoggedUser | null = null;
@@ -149,7 +156,13 @@ export class SocialShell implements OnInit {
     return this.displayName.charAt(0).toUpperCase();
   }
 
+  get canCreateOccurrence(): boolean {
+    return this.user?.occurrenceRole !== 'MODERATOR';
+  }
+
   openCreatePost(): void {
+    if (!this.canCreateOccurrence) return;
+
     this.editingPost = null;
     this.showCreatePost = true;
     this.createPost.emit();

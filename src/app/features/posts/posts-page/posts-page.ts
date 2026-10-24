@@ -201,19 +201,22 @@ export class PostsPage implements OnInit {
     post: SpectrumPost,
     reason = this.reportReasons[0],
   ): void {
+    this.reportError = '';
     this.reportPost = post;
     this.selectedReason = reason;
   }
 
-  confirmReport(): void {
-    this.reportPost = null;
-
-    this.feedAlert.set({
-      type: 'success',
-      title: 'Denuncia enviada',
-      message:
-        'Obrigado por ajudar a manter a comunidade mais segura.',
-    });
+  reportSubmitting = false;
+  reportError = '';
+  submitReport(reason: string): void {
+    if (!this.reportPost || this.reportSubmitting) return;
+    this.reportSubmitting = true; this.reportError = '';
+    this.postService.reportContent(reason, this.reportPost.originalPostId || this.reportPost.id).pipe(
+      finalize(() => this.reportSubmitting = false), takeUntilDestroyed(this.destroyRef),
+    ).subscribe({ next: () => {
+      this.reportPost = null;
+      this.feedAlert.set({ type: 'success', title: 'Denúncia enviada', message: 'Obrigado por ajudar a manter a comunidade mais segura.' });
+    }, error: () => this.reportError = 'Não foi possível enviar a denúncia. Tente novamente.' });
   }
 
   deletePost(post: SpectrumPost): void {

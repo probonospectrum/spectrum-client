@@ -60,6 +60,7 @@
 
           <div class="comment-section__actions">
 
+            @if (currentUser?.occurrenceRole !== 'MODERATOR') {
             <button
               type="button"
               [class.comment-section__action--liked]="isLiked(comment.id)"
@@ -83,6 +84,7 @@
                 <span class="comment-section__count">{{ dislikeCount(comment.id) }}</span>
               }
             </button>
+            }
             @if (!comment.parentCommentId) {
             <span class="comment-section__reply-action" [class.comment-section__reply-action--open]="replyHelpId === comment.id" [class.comment-section__reply-action--dismissed]="dismissedReplyHelpId === comment.id" (mouseenter)="dismissedReplyHelpId = null">
               <button #replyButton type="button" class="comment-section__reply" (focus)="dismissedReplyHelpId = null"
@@ -138,7 +140,8 @@
 <ng-template #dialogs>
 @if (reportTarget) {
   <app-report-modal [title]="'Denunciar comentário' | translate"
-    (close)="reportTarget = null" (confirm)="reportTarget = null" />
+    [externalSubmission]="true" [submitting]="reportSubmitting" [submissionError]="reportError"
+    (close)="reportTarget = null" (submit)="submitReport($event)" />
 }
 @if (deleteTarget) {
   <app-settings-dialog [title]="'Excluir comentário'" [description]="'Excluir seu comentário?'"

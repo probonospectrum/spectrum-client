@@ -272,3 +272,4 @@
   justify-content: center; padding: 0; font-size: 24px;
 }
 .comment-section__close-help:focus-visible { outline: 2px solid var(--spectrum-primary-600); outline-offset: 1px; }
+.comment-section > [role="alert"] { color: var(--spectrum-error); }
