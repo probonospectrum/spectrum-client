@@ -237,6 +237,11 @@ Verificando email|Verifying email|Verificando correo
 Estamos confirmando seu cadastro. Isso leva alguns segundos.|We're confirming your registration. This takes a few seconds.|Estamos confirmando tu registro. Esto tarda unos segundos.
 Email verificado|Email verified|Correo verificado
 Seu email foi confirmado com sucesso.|Your email was confirmed successfully.|Tu correo se confirmó correctamente.
+O programa encaminhou um aviso de confirmação para o e-mail responsável pelo órgão:|The program sent a confirmation notice to the email registered for the agency representative:|El programa envió un aviso de confirmación al correo registrado del representante del organismo:
+E-mail já validado.|Email already verified.|Correo ya validado.
+E-mail do responsável validado com sucesso.|The representative's email has been successfully verified.|El correo del representante se ha verificado correctamente.
+Aguardando confirmação do e-mail|Awaiting email confirmation|Pendiente de confirmar el correo
+Aguardando análise da moderação|Awaiting moderation review|Pendiente de revisión de moderación
 Link inválido|Invalid link|Enlace inválido
 Não encontramos o token de verificação neste link. Solicite um novo email de confirmação.|No verification token was found in this link. Request a new confirmation email.|No se encontró el token de verificación en este enlace. Solicita un nuevo correo de confirmación.
 O link pode estar inválido ou expirado. Tente solicitar uma nova verificação.|The link may be invalid or expired. Request another verification.|El enlace puede ser inválido o haber caducado. Solicita una nueva verificación.

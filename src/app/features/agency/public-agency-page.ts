@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -30,11 +30,17 @@ export class PublicAgencyPage {
   constructor() {
     this.refresh();
   }
-  label(value: string) {
+  @HostListener('window:focus')
+  refreshVerificationStatus() {
+    if (this.status()?.isVerified === false) this.refresh();
+  }
+  label(value: string, emailVerified: boolean) {
     return (
       (
         {
-          PENDING: 'Aguardando verificação',
+          PENDING: emailVerified
+            ? 'Aguardando análise da moderação'
+            : 'Aguardando confirmação do e-mail',
           APPROVED: 'Conta institucional aprovada',
           REJECTED: 'Solicitação recusada',
           REVOKED: 'Representação revogada',
@@ -82,7 +88,14 @@ export class PublicAgencyPage {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => (this.message = response.message),
+        next: (response) => {
+          this.message = response.message;
+          if (response.isVerified) {
+            this.status.update((account) =>
+              account ? { ...account, isVerified: true } : account,
+            );
+          }
+        },
         error: (error) =>
           (this.error = error.error?.message || 'Não foi possível reenviar o link.'),
       });
