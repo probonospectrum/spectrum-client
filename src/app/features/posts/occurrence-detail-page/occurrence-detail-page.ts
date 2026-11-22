@@ -187,7 +187,7 @@ export class OccurrenceDetailPage implements OnInit {
   get occurrenceMediaList(): Array<{ url: string; type: string; alt?: string }> {
     if (!this.occurrence?.evidences) return [];
     return this.occurrence.evidences
-      .filter((e) => Boolean(this.evidenceUrl(e)))
+      .filter((e) => (e.type === 'IMAGE' || e.type === 'VIDEO') && Boolean(this.evidenceUrl(e)))
       .map((e) => ({
         url: this.evidenceUrl(e)!,
         type: e.type,
@@ -357,7 +357,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canAddEvidence(): boolean {
-    return !!this.user && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return !!this.user && !this.occurrence?.moderationRemovedAt && (this.isModerator || !['RESOLVIDA'].includes(this.occurrence?.status ?? ''));
   }
 
   canReviewEvidence(evidence: OccurrenceEvidence): boolean {
@@ -441,7 +441,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canForward(): boolean {
-    return this.isModerator && !!this.occurrence && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 && ['AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO', 'ABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence.status);
+    return this.isModerator && !!this.occurrence?.responsibleAgency?.id && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 && ['AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO', 'ABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence.status);
   }
 
   get canRegisterForwardingFailure(): boolean {
@@ -450,7 +450,7 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canShowCommunityActions(): boolean {
     return (
-      (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
+      !this.isModerator && (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
     );
   }
 
@@ -462,11 +462,11 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canShowModeratorActions(): boolean {
-    return this.canForward || this.canRegisterResponse;
+    return this.isModerator && (this.canForward || this.canRegisterResponse || this.canAddEvidence);
   }
 
   get hasAvailableActions(): boolean {
-    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canResolve || this.canContest || this.canReopen;
+    return !this.occurrence?.moderationRemovedAt && (this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canResolve || this.canContest || this.canReopen);
   }
 
   get agencyActionLabel(): string {

@@ -120,15 +120,14 @@ describe('OccurrenceDetailPage actions', () => {
     expect(actions).toEqual([
       'verified Também identifiquei este problema',
       'add_photo_alternate Adicionar evidência',
-      'account_balance Sugerir órgão responsável',
       'task_alt Informar resolução',
     ]);
   });
 
-  it('disables agency suggestions when an agency is linked and enables them when unassigned', () => {
+  it('hides agency suggestions when an agency is linked and enables them when unassigned', () => {
     actionsFor('USER');
     const button = Array.from(fixture.nativeElement.querySelectorAll('button')).find(item => (item as HTMLButtonElement).textContent?.includes('Sugerir órgão responsável')) as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
+    expect(button).toBeUndefined();
     expect(fixture.componentInstance.canSuggestAgency).toBe(false);
     fixture.componentInstance.occurrence = { ...occurrence, responsibleAgency: null };
     fixture.changeDetectorRef.markForCheck(); fixture.detectChanges();
@@ -276,8 +275,13 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows moderator operations at the same URL', () => {
-    expect(actionsFor('MODERATOR')).toEqual([
-      'add_photo_alternate Adicionar evidência',
+    const actions = actionsFor('MODERATOR');
+    const pageText = fixture.nativeElement.textContent;
+    expect(pageText).not.toContain('Acompanhe a evolução');
+    expect(pageText).not.toContain('Evidências e solicitações');
+    expect(pageText).toContain('Discussão');
+    expect(actions).toEqual([
+      'attach_file Anexar evidência enviada pelo órgão',
       'send Encaminhar por e-mail',
     ]);
   });

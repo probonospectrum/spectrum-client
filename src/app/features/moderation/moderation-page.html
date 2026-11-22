@@ -8,32 +8,31 @@
     @if (error) { <div class="state" role="alert"><p>{{ error }}</p><button (click)="load()">Tentar novamente</button></div> }
     @else if (loading()) { <div class="state" role="status">Carregando…</div> }
     @else if (queue === 'denunciados') {
-      <p class="caption">Conteúdos ordenados do maior para o menor número de denúncias.</p>
+      <label>Categoria
+        <select [(ngModel)]="category">
+          <option value="">Todas as categorias</option>
+          @for (option of categories; track option) { <option [value]="option">{{ option }}</option> }
+        </select>
+      </label>
+      @if (voteMessage()) { <p role="status">{{ voteMessage() }}</p> }
       <div class="list">
         @for (item of visibleReports; track item.kind + item.id) {
-          <article class="card">
-            <div class="card-top"><span class="badge">{{ item.kind === 'comment' ? 'Comentário' : 'Ocorrência' }}</span><strong>{{ item.count }} denúncia(s)</strong></div>
-            <h2>{{ item.title }}</h2><p>{{ item.content || 'Conteúdo indisponível.' }}</p>
-            <h3>Motivos das denúncias</h3><ul>@for (reason of item.reasons; track $index) { <li>{{ reason }}</li> }</ul>
-            @if (item.removedAt) {
-              <p role="status">Publicação removida. Conteúdo preservado para registro.</p><p>{{ item.removalReason }}</p>
-            } @else {
-              @if (item.postId) { <a [routerLink]="['/ocorrencias', item.postId]">Analisar conteúdo →</a> }
-              @if (item.kind === 'post') {
-                <button type="button" class="moderation-remove" (click)="beginRemoval(item)" [disabled]="removalPending()">Reprovar e remover publicação</button>
+          <details class="card">
+            <summary>{{ item.title }} · {{ item.kind === 'comment' ? 'Comentário' : 'Ocorrência' }} · {{ item.count }} denúncia(s)</summary>
+            @if (item.postId) { <p><a [routerLink]="['/ocorrencias', item.postId]">Visualizar ocorrência</a></p> }
+            <p>{{ item.content || 'Conteúdo indisponível.' }}</p>
+            <h3>Motivos das denúncias</h3>
+            <ul>@for (reason of item.reasons; track $index) { <li>{{ reason }}</li> }</ul>
+            @if (item.kind === 'post') {
+              @if (item.removedAt) { <p>Ocorrência arquivada.</p> }
+              @else if (item.decision === 'reject') { <p>Denúncia negada. Ocorrência mantida.</p> }
+              @else if (item.voted) { <p>Voto registrado.</p> }
+              @else {
+                <button type="button" class="moderation-remove" (click)="vote(item, 'accept')" [disabled]="votePending()">Aceitar denúncia e arquivar ocorrência</button>
+                <button type="button" (click)="vote(item, 'reject')" [disabled]="votePending()">Negar denúncia e manter ocorrência</button>
               }
             }
-            @if (removalTarget?.id === item.id && item.kind === 'post') {
-              <div class="moderation-removal">
-                <h3>Remover após análise</h3>
-                <p>A publicação e suas republicações deixarão de aparecer. O texto, os anexos e o histórico continuarão salvos no banco.</p>
-                <label>Justificativa da análise<textarea [(ngModel)]="removalReason" maxlength="1000" [disabled]="removalPending()"></textarea></label>
-                @if (removalError) { <p class="moderation-error" role="alert">{{ removalError }}</p> }
-                <button type="button" (click)="cancelRemoval()" [disabled]="removalPending()">Cancelar</button>
-                <button type="button" class="moderation-remove" (click)="confirmRemoval()" [disabled]="removalPending()">{{ removalPending() ? 'Removendo…' : 'Confirmar remoção' }}</button>
-              </div>
-            }
-          </article>
+          </details>
         } @empty { <div class="state">Nenhum conteúdo denunciado encontrado.</div> }
       </div>
     } @else {

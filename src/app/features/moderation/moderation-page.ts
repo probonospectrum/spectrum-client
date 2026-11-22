@@ -1,4 +1,3 @@
-import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../core/content-policy/content-policy';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -26,16 +25,16 @@ export class ModerationPage {
   queue = '';
   search = '';
   error = '';
-  readonly titles: Record<string, string> = { resolvidas: 'Resolvidas', 'sem-orgao': 'Sem órgão',
+  readonly titles: Record<string, string> = { resolvidas: 'Resolvidas',
     contestadas: 'Contestadas', denunciados: 'Itens denunciados', respostas: 'Respostas para Análise' };
   constructor() {
     merge(this.route.paramMap, this.refresh).pipe(
       tap(() => {
-        this.queue = this.route.snapshot.paramMap.get('queue') || 'sem-orgao';
+        this.queue = this.route.snapshot.paramMap.get('queue') || 'denunciados';
         this.error = ''; this.loading.set(true); this.items.set([]); this.reports.set([]);
       }),
       switchMap(() => {
-        if (!this.titles[this.queue]) { void this.router.navigate(['/moderacao/sem-orgao']); return of(null); }
+        if (!this.titles[this.queue]) { void this.router.navigate(['/moderacao/denunciados']); return of(null); }
         const request = this.queue === 'denunciados'
           ? this.posts.getModerationReports().pipe(map(reports => ({ reports, items: [] as SpectrumPost[] })))
           : this.posts.getModerationOccurrences(this.user, this.queue).pipe(map(items => ({ items, reports: [] as ModerationReport[] })));
@@ -46,26 +45,22 @@ export class ModerationPage {
       this.loading.set(false);
     });
   }
-  readonly removalPending = signal(false);
-  removalTarget: ModerationReport | null = null;
-  removalReason = '';
-  removalError = '';
-  beginRemoval(item: ModerationReport): void {
-    if (item.kind !== 'post' || item.removedAt || this.removalPending()) return;
-    this.removalTarget = item; this.removalReason = ''; this.removalError = '';
+  readonly votePending = signal(false);
+  category = '';
+  voteMessage = signal('');
+  get categories(): string[] {
+    return [...new Set(this.reports().flatMap(item => item.categories ?? item.reasons))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
-  cancelRemoval(): void { if (!this.removalPending()) this.removalTarget = null; }
-  confirmRemoval(): void {
-    const item = this.removalTarget;
-    if (!item || this.removalPending()) return;
-    if (!this.removalReason.trim()) { this.removalError = 'Informe a justificativa da análise.'; return; }
-    if (requiresContentReview(this.removalReason)) { this.removalError = CONTENT_REVIEW_MESSAGE; return; }
-    this.removalPending.set(true); this.removalError = '';
-    this.posts.removeReportedPost(item.postId || item.id, this.removalReason.trim()).pipe(
-      finalize(() => this.removalPending.set(false)), takeUntilDestroyed(this.destroyRef),
-    ).subscribe({ next: () => { this.removalTarget = null; this.load(); }, error: error => {
-      this.removalError = typeof error.error?.message === 'string' ? error.error.message : 'Não foi possível remover. Tente novamente.';
-    } });
+  vote(item: ModerationReport, decision: 'accept' | 'reject'): void {
+    if (this.votePending() || item.voted || item.decision || item.kind !== 'post') return;
+    this.voteMessage.set('');
+    this.votePending.set(true);
+    this.posts.voteOnReport(item.id, decision).pipe(
+      finalize(() => this.votePending.set(false)), takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: result => { this.voteMessage.set(result.message); this.load(); },
+      error: error => this.voteMessage.set(typeof error.error?.message === 'string' ? error.error.message : 'Não foi possível registrar o voto.'),
+    });
   }
   load(): void { this.refresh.next(); }
   get title(): string { return this.titles[this.queue] || 'Moderação'; }
@@ -76,7 +71,7 @@ export class ModerationPage {
   }
   get visibleReports(): ModerationReport[] {
     const term = this.search.trim().toLocaleLowerCase();
-    return this.reports().filter(p => !term || [p.title, p.content, ...p.reasons].some(v => v?.toLocaleLowerCase().includes(term)));
+    return this.reports().filter(p => (!this.category || (p.categories ?? p.reasons).includes(this.category)) && (!term || [p.title, p.content, ...p.reasons].some(v => v?.toLocaleLowerCase().includes(term))));
   }
   review(post: SpectrumPost) { return [...(post.history || [])].reverse().find(e => e.eventType === 'OCORRENCIA_RESOLVIDA'); }
   resolutionNote(post: SpectrumPost): string { return String(this.review(post)?.metadata?.['note'] || this.review(post)?.description || ''); }

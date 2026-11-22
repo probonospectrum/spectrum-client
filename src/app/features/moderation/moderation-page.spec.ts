@@ -7,11 +7,11 @@ import { UserService } from '../../core/services/user/user.service';
 
 describe('Moderation queues', () => {
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
-  let api: { getModerationOccurrences: ReturnType<typeof vi.fn>; getModerationReports: ReturnType<typeof vi.fn>; removeReportedPost: ReturnType<typeof vi.fn> };
+  let api: { getModerationOccurrences: ReturnType<typeof vi.fn>; getModerationReports: ReturnType<typeof vi.fn>; voteOnReport: ReturnType<typeof vi.fn> };
   const records = [{ id: '1', title: 'Luz apagada', content: 'Rua A', location: { cityName: 'São Paulo' } }] as SpectrumPost[];
   beforeEach(() => {
-    params = new BehaviorSubject(convertToParamMap({ queue: 'sem-orgao' }));
-    api = { getModerationOccurrences: vi.fn().mockReturnValue(of(records)), getModerationReports: vi.fn().mockReturnValue(of([])), removeReportedPost: vi.fn().mockReturnValue(of({ message: 'Removida' })) };
+    params = new BehaviorSubject(convertToParamMap({ queue: 'contestadas' }));
+    api = { getModerationOccurrences: vi.fn().mockReturnValue(of(records)), getModerationReports: vi.fn().mockReturnValue(of([])), voteOnReport: vi.fn().mockReturnValue(of({ message: 'Voto registrado.' })) };
     TestBed.configureTestingModule({ providers: [provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: params, snapshot: { get paramMap() { return params.value; } } } },
       { provide: PostService, useValue: api },
@@ -21,7 +21,7 @@ describe('Moderation queues', () => {
   const page = () => TestBed.runInInjectionContext(() => new ModerationPage());
   it('loads the selected queue again when navigating between sidebar links', () => {
     const component = page();
-    expect(api.getModerationOccurrences).toHaveBeenLastCalledWith(expect.anything(), 'sem-orgao');
+    expect(api.getModerationOccurrences).toHaveBeenLastCalledWith(expect.anything(), 'contestadas');
     params.next(convertToParamMap({ queue: 'resolvidas' }));
     expect(component.title).toBe('Resolvidas');
     expect(api.getModerationOccurrences).toHaveBeenLastCalledWith(expect.anything(), 'resolvidas');
@@ -33,16 +33,14 @@ describe('Moderation queues', () => {
     const component = page(); component.search = 'são paulo'; expect(component.visible).toHaveLength(1);
     component.search = 'outra'; expect(component.visible).toEqual([]);
   });
-  it('requires a clean review reason before removing a reported publication', () => {
+  it('sends a decision for an occurrence and does not submit an additional vote', () => {
     const component = page();
-    component.beginRemoval({ id: 'reported', postId: 'reported', kind: 'post', title: 'Título', count: 2, reasons: ['Assédio'] });
-    component.confirmRemoval(); expect(api.removeReportedPost).not.toHaveBeenCalled();
-    component.removalReason = 'Seu idiota'; component.confirmRemoval();
-    expect(api.removeReportedPost).not.toHaveBeenCalled();
-    expect(component.removalError).toContain('Revise o texto');
-    component.removalReason = 'Denúncia procedente após análise.'; component.confirmRemoval();
-    expect(api.removeReportedPost).toHaveBeenCalledWith('reported', 'Denúncia procedente após análise.');
-    expect(component.removalTarget).toBeNull();
+    const item = { id: 'reported', kind: 'post' as const, title: 'Título', count: 2, reasons: ['Assédio'] };
+    component.vote(item, 'accept');
+    expect(api.voteOnReport).toHaveBeenCalledWith('reported', 'accept');
+    expect(component.voteMessage()).toBe('Voto registrado.');
+    component.vote({ ...item, voted: true }, 'reject');
+    expect(api.voteOnReport).toHaveBeenCalledTimes(1);
   });
 
   it('shows an error and supports retry', () => {
