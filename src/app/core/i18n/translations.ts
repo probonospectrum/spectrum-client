@@ -1,6 +1,10 @@
 // Source text is the key so existing labels and API status values stay unchanged.
 export const normalizeText = (value: string): string => value.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const rows = `
+Ver contestações|View disputes|Ver impugnaciones
+Ocultar contestações|Hide disputes|Ocultar impugnaciones
+Contestações|Disputes|Impugnaciones
+Nenhuma contestação registrada.|No disputes recorded.|No hay impugnaciones registradas.
 Evidências e solicitações|Evidence and submissions|Evidencias y solicitudes
 Aguardando análise do criador|Awaiting creator review|Pendiente de revisión del creador
 Rejeitada pelo criador|Rejected by the creator|Rechazada por el creador

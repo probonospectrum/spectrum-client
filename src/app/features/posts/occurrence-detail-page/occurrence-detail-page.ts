@@ -2,13 +2,13 @@ import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../../core/con
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { afterNextRender, Component, DestroyRef, Injector, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, defer, finalize, forkJoin, switchMap, of } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, switchMap, map, of, timer, Subscription } from 'rxjs';
 import { CommentSection } from '../comment-section/comment-section';
 import {
   OccurrenceAgency,
@@ -25,7 +25,7 @@ import { LoadingIndicator } from '../../../shared/components/loading-indicator/l
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 import { MediaLightbox } from '../../../shared/components/media-lightbox/media-lightbox';
 
-import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from '../../../core/services/posts/occurrence-flow';
+import { canProposeAgencyResolution, occurrenceStage, OCCURRENCE_STATUS_DETAILS, representsOccurrenceAgency } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
   | 'agencyProgress'
@@ -56,21 +56,22 @@ interface AgencySuggestion {
   styleUrl: './occurrence-detail-page.scss',
 })
 export class OccurrenceDetailPage implements OnInit {
-  progressStatus: 'EM_RESOLUCAO' | 'RESOLVIDA' = 'EM_RESOLUCAO';
+  private contestTimer?: Subscription;
+  readonly openContestThread = signal<string | null>(null);
+  readonly contestDeadlineReached = signal(false);
   progressNote = ''; progressProtocol = ''; progressEvidenceIds: string[] = [];
   get canRecordAgencyProgress(): boolean {
-    return this.isResponsibleAgencyForOccurrence && this.user?.agencyRegistrationStatus === 'APPROVED' &&
+    return this.isResponsibleAgencyForOccurrence && this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' && this.user.agencyRegistrationStatus === 'APPROVED' &&
       !!this.occurrence && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 &&
-      !['RESOLVIDA','CONTESTADA','EM_ANALISE_DE_COMPETENCIA'].includes(this.occurrence.status);
+      !['RESOLVIDA','CONTESTADA','EM_ANALISE_DE_COMPETENCIA','RESOLUCAO_EM_ANALISE'].includes(this.occurrence.status);
   }
   get agencyEvidenceOptions() { return this.occurrence?.evidences.filter(e => e.addedBy === this.user?._id) ?? []; }
   submitAgencyProgress(): void {
     if (!this.occurrence || !this.canRecordAgencyProgress) return;
     if (this.progressNote.trim().length < 20) { this.errorMessage = 'Descreva o atendimento com pelo menos 20 caracteres.'; return; }
-    if (this.progressStatus === 'RESOLVIDA' && !this.progressEvidenceIds.length) { this.errorMessage = 'Anexe e selecione uma evidência do atendimento para fechar.'; return; }
-    this.runAction(() => this.postService.recordAgencyProgress(this.occurrence!, this.user, { status: this.progressStatus,
+    this.runAction(() => this.postService.recordAgencyProgress(this.occurrence!, this.user, { status: 'EM_RESOLUCAO',
       note: this.progressNote.trim(), protocol: this.progressProtocol.trim() || undefined, evidenceIds: this.progressEvidenceIds }),
-      this.progressStatus === 'RESOLVIDA' ? 'Ocorrência fechada pelo órgão com evidências. A comunidade pode contestar.' : 'Atendimento atualizado.');
+      'Atendimento atualizado.');
   }
   readonly i18n = inject(I18nService);
   private readonly route = inject(ActivatedRoute);
@@ -78,6 +79,8 @@ export class OccurrenceDetailPage implements OnInit {
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  private readonly document = inject(DOCUMENT);
 
   readonly user = this.userService.getCurrentUser();
   readonly isLoading = signal(true);
@@ -120,6 +123,8 @@ export class OccurrenceDetailPage implements OnInit {
   analysisReference = '';
   analysisNote = '';
   resolutionStatement = '';
+  resolutionExecutionDate = '';
+  resolutionServiceReference = '';
   resolutionReviewNote = '';
   contestReason = '';
   reopenReason = '';
@@ -148,7 +153,7 @@ export class OccurrenceDetailPage implements OnInit {
   get canEdit(): boolean { return !!this.occurrence && this.postService.canModifyPost(this.occurrence, this.user); }
 
   get canRegisterResponse(): boolean {
-    return (this.isModerator || this.isResponsibleAgencyForOccurrence) && !!this.latestForwarding &&
+    return (this.isModerator || (this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' && this.isResponsibleAgencyForOccurrence)) && !!this.latestForwarding &&
       ['ENCAMINHADA', 'EM_RESOLUCAO', 'RESPOSTA_EM_APURACAO', 'FALHA_NO_ENCAMINHAMENTO'].includes(this.occurrence?.status ?? '');
   }
 
@@ -162,6 +167,8 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get nextStep(): string {
+    if (this.occurrence?.status === 'RESOLUCAO_EM_ANALISE') return 'O Spectrum avaliará a resolução e as contestações recebidas.';
+    if (this.occurrence?.status === 'RESOLVIDA' && this.occurrence.agencyResolution) return 'O Spectrum validou a resolução e encerrou a ocorrência.';
     if (this.occurrence?.status === 'RESOLVIDA' && this.occurrence.agencyProgress?.closedByAgency) return 'O órgão fechou o atendimento com evidências. A comunidade pode contestar se o problema persistir.';
     const messages: Record<string, string> = {
       AGUARDANDO_ENCAMINHAMENTO: 'Após os 15 minutos de edição, o sistema buscará o órgão responsável e enviará a ocorrência.',
@@ -244,6 +251,13 @@ export class OccurrenceDetailPage implements OnInit {
           this.occurrence = this.withHistoryAuthor(occurrence, history);
           this.historyEvents = history;
           this.prefillAgency(occurrence.responsibleAgency ?? undefined);
+          this.updateContestTimer();
+          const action = this.route.snapshot.queryParamMap?.get('acao');
+          if (action === 'adicionar-resolucao' || action === 'avaliar-resolucao') {
+            if (action === 'adicionar-resolucao' && this.canSubmitAgencyResolution) this.actionPanel = 'resolution';
+            if (action === 'avaliar-resolucao' && (this.canReviewAgencyResolution || this.canCloseContestedOccurrence)) this.actionPanel = 'resolve';
+            this.scrollToResolution();
+          }
         },
         error: (error: unknown) => {
           this.notFound = this.isNotFound(error);
@@ -257,7 +271,8 @@ export class OccurrenceDetailPage implements OnInit {
   get timeline(): OccurrenceHistoryEvent[] {
     return this.historyEvents.filter(event =>
       (Boolean(event.actorId && event.actorId === this.occurrence?.createdBy) ||
-        ['RESPONSIBLE_AGENCY', 'AGENCY', 'MODERATOR', 'SYSTEM'].includes(event.actorType)) &&
+        ['RESPONSIBLE_AGENCY', 'AGENCY', 'MODERATOR', 'SYSTEM'].includes(event.actorType) ||
+        (event.eventType === 'RESOLUCAO_CONTESTADA' && !!event.metadata?.['resolutionId'])) &&
       (this.isOccurrenceAuthor || event.eventType !== 'ORGAO_RESPONSAVEL_SUGERIDO'),
     ).sort(
       (first, second) =>
@@ -337,7 +352,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get isCommunityUser(): boolean {
-    return Boolean(this.user && (this.user.occurrenceRole ?? 'USER') === 'USER');
+    return Boolean(this.user && this.user.accountType !== 'PUBLIC_AGENCY' && (this.user.occurrenceRole ?? 'USER') === 'USER');
   }
 
   get isModerator(): boolean {
@@ -345,11 +360,15 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get isResponsibleAgencyForOccurrence(): boolean {
-    return Boolean(
-      this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' &&
-        this.user.occurrenceAgencyId &&
-        this.user.occurrenceAgencyId === this.occurrence?.responsibleAgency?.id,
-    );
+    return representsOccurrenceAgency(this.user, this.occurrence?.responsibleAgency?.id);
+  }
+
+  get canViewProtocol(): boolean {
+    return this.isOccurrenceAuthor || this.isResponsibleAgencyForOccurrence || this.isModerator;
+  }
+
+  get canSubmitAgencyResolution(): boolean {
+    return !!this.occurrence && canProposeAgencyResolution(this.user, this.occurrence);
   }
 
   get canConfirmCommunity(): boolean {
@@ -450,14 +469,14 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canShowCommunityActions(): boolean {
     return (
-      (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
+      (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency)
     );
   }
 
   get canShowAgencyActions(): boolean {
     return (
       this.isResponsibleAgencyForOccurrence &&
-      (this.canRegisterResponse || this.canRecordAgencyProgress || this.canAddEvidence)
+      (this.canRegisterResponse || this.canRecordAgencyProgress)
     );
   }
 
@@ -466,7 +485,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get hasAvailableActions(): boolean {
-    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canResolve || this.canContest || this.canReopen;
+    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions;
   }
 
   get agencyActionLabel(): string {
@@ -496,7 +515,87 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canContest(): boolean {
-    return this.isCommunityUser && this.occurrence?.status === 'RESOLVIDA';
+    if (!this.isCommunityUser) return false;
+    return this.occurrence?.agencyResolution
+      ? this.occurrence.status === 'RESOLUCAO_EM_ANALISE' && !this.contestDeadlineReached()
+      : this.occurrence?.status === 'RESOLVIDA';
+  }
+
+  get canReviewAgencyResolution(): boolean {
+    return this.isModerator && this.occurrence?.status === 'RESOLUCAO_EM_ANALISE' && !!this.occurrence.agencyResolution;
+  }
+
+  get canCloseContestedOccurrence(): boolean {
+    return this.isModerator && this.occurrence?.status === 'CONTESTADA';
+  }
+
+  get canApproveAgencyResolution(): boolean {
+    const resolutionId = this.occurrence?.agencyResolution?.id;
+    return this.canReviewAgencyResolution && (this.contestDeadlineReached() ||
+      this.historyEvents.some(event => event.eventType === 'RESOLUCAO_CONTESTADA' &&
+        event.metadata?.['resolutionId'] === resolutionId));
+  }
+
+  get isResolutionPanel(): boolean {
+    return ['resolution', 'resolve', 'contest', 'reopen'].some(panel => panel === this.actionPanel);
+  }
+
+  get generalEvidences(): OccurrenceEvidence[] {
+    const resolutionEvidenceIds = new Set(this.historyEvents
+      .filter(event => event.metadata?.['resolutionId'])
+      .flatMap(event => event.evidenceIds ?? []));
+    return this.occurrence?.evidences.filter(evidence => !resolutionEvidenceIds.has(evidence.id)) ?? [];
+  }
+
+  get agencyProposals(): OccurrenceHistoryEvent[] {
+    return this.historyEvents.filter(event =>
+      event.eventType === 'RESOLUCAO_INFORMADA' && event.metadata?.['resolutionId']).reverse();
+  }
+
+  contestsForProposal(proposal?: OccurrenceHistoryEvent): OccurrenceHistoryEvent[] {
+    const resolutionId = proposal?.metadata?.['resolutionId'];
+    return this.historyEvents
+      .filter(event => event.eventType === 'RESOLUCAO_CONTESTADA' &&
+        (event.metadata?.['resolutionId'] || undefined) === resolutionId)
+      .sort((first, second) =>
+        new Date(first.createdAt ?? first.occurredAt).getTime() -
+        new Date(second.createdAt ?? second.occurredAt).getTime());
+  }
+
+  toggleContestThread(id: string): void {
+    this.openContestThread.update(current => current === id ? null : id);
+  }
+
+  decisionForProposal(proposal: OccurrenceHistoryEvent): OccurrenceHistoryEvent | undefined {
+    const resolutionId = proposal.metadata?.['resolutionId'];
+    return this.historyEvents.find(event =>
+      ['OCORRENCIA_RESOLVIDA', 'RESPOSTA_CLASSIFICADA'].includes(event.eventType) &&
+      event.metadata?.['resolutionId'] === resolutionId);
+  }
+
+  private scrollToResolution(): void {
+    afterNextRender(() => {
+      this.document.getElementById('resolucao')?.scrollIntoView?.();
+    }, { injector: this.injector });
+  }
+
+  executionDate(event: OccurrenceHistoryEvent): string | null {
+    const value = event.metadata?.['executionDate'];
+    return typeof value === 'string' ? value : null;
+  }
+
+  private updateContestTimer(): void {
+    this.contestTimer?.unsubscribe();
+    const resolution = this.occurrence?.agencyResolution;
+    if (!resolution || this.occurrence?.status !== 'RESOLUCAO_EM_ANALISE') return;
+    const remaining = new Date(resolution.contestUntil).getTime() - Date.now();
+    this.contestDeadlineReached.set(remaining <= 0);
+    if (remaining > 0) {
+      // Browser timers with delays above the signed 32-bit limit fire immediately.
+      this.contestTimer = timer(Math.min(remaining, 24 * 60 * 60_000))
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.updateContestTimer());
+    }
   }
 
   get canReopen(): boolean {
@@ -556,6 +655,8 @@ export class OccurrenceDetailPage implements OnInit {
     this.evidenceDescription = '';
     this.resolutionReviewNote = '';
     this.resolutionStatement = '';
+    this.resolutionExecutionDate = '';
+    this.resolutionServiceReference = '';
     this.contestReason = '';
     this.reopenReason = '';
     this.analysisNote = '';
@@ -751,11 +852,15 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolution(): void {
-    if (!this.occurrence || !this.canInformResolution || !this.resolutionStatement.trim()) {
+    if (!this.occurrence || (!this.canInformResolution && !this.canSubmitAgencyResolution) || !this.resolutionStatement.trim()) {
       this.errorMessage = 'Descreva a resolução informada.';
       return;
     }
 
+    const details = this.canSubmitAgencyResolution ? {
+      executionDate: this.resolutionExecutionDate || undefined,
+      serviceReference: this.resolutionServiceReference.trim() || undefined,
+    } : undefined;
     this.runWithOptionalEvidence(
       (evidenceIds) =>
         this.postService.informOccurrenceResolution(
@@ -763,9 +868,38 @@ export class OccurrenceDetailPage implements OnInit {
           this.user,
           this.resolutionStatement.trim(),
           evidenceIds,
+          details,
         ),
-      'Resolução informada e preservada no histórico.',
+      this.canSubmitAgencyResolution
+        ? 'Resolução publicada e encaminhada para análise do Spectrum.'
+        : 'Resolução informada e preservada no histórico.',
     );
+  }
+
+  submitAgencyResolutionReview(valid: boolean): void {
+    const occurrence = this.occurrence;
+    const note = this.resolutionReviewNote.trim();
+    if (!occurrence || !this.canReviewAgencyResolution || (valid && !this.canApproveAgencyResolution)) return;
+    if (note.length < 20) {
+      this.errorMessage = 'Justifique a decisão em pelo menos 20 caracteres.';
+      return;
+    }
+    if (requiresContentReview(note)) { this.errorMessage = CONTENT_REVIEW_MESSAGE; return; }
+    this.runAction(() => this.postService.reviewAgencyResolution(occurrence, this.user, valid, note),
+      valid ? 'Resolução validada e ocorrência encerrada.' : 'Resolução invalidada. A ocorrência está aberta.');
+  }
+
+  submitContestedClosure(): void {
+    const occurrence = this.occurrence;
+    if (!occurrence || !this.canCloseContestedOccurrence) return;
+    const note = this.resolutionReviewNote.trim();
+    if (note.length < 20) {
+      this.errorMessage = 'Justifique a decisão em pelo menos 20 caracteres.';
+      return;
+    }
+    if (requiresContentReview(note)) { this.errorMessage = CONTENT_REVIEW_MESSAGE; return; }
+    this.runAction(() => this.postService.resolveOccurrence(occurrence, this.user, note),
+      'Resolução validada e ocorrência encerrada.');
   }
 
   submitResolve(): void {
@@ -803,10 +937,11 @@ export class OccurrenceDetailPage implements OnInit {
       return;
     }
 
+    const occurrence = this.occurrence;
     this.runWithOptionalEvidence(
       (evidenceIds) =>
         this.postService.contestOccurrenceResolution(
-          this.occurrence!,
+          occurrence,
           this.user,
           this.contestReason.trim(),
           evidenceIds,
@@ -877,6 +1012,8 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   statusLabel(status = this.occurrence?.status): string {
+    if (status === 'ABERTA') return 'Aberta';
+    if (status === 'RESOLVIDA' && this.occurrence?.agencyResolution) return 'Encerrada';
     return status ? this.postService.getStatusLabel(status) : 'Não informado';
   }
 
@@ -892,12 +1029,17 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   eventDescription(event: OccurrenceHistoryEvent): string {
-    if (event.description && ['ANALISE_DE_COMPETENCIA_INICIADA', 'MODERACAO_NECESSARIA', 'OCORRENCIA_REENVIADA', 'RESPOSTA_CLASSIFICADA'].includes(event.eventType)) return event.description;
     const metadata = event.metadata ?? {};
+
+    if (event.eventType === 'RESPOSTA_CLASSIFICADA' && metadata['valid'] === false) {
+      return `O Spectrum invalidou a resolução. ${metadata['note'] ?? ''}`.trim();
+    }
+
+    if (event.description && ['ANALISE_DE_COMPETENCIA_INICIADA', 'MODERACAO_NECESSARIA', 'OCORRENCIA_REENVIADA', 'RESPOSTA_CLASSIFICADA'].includes(event.eventType)) return event.description;
 
     if (event.eventType === 'OCORRENCIA_ENCAMINHADA') {
       const agencyName = String(metadata['agencyName'] ?? 'órgão responsável');
-      return metadata['protocol']
+      return this.canViewProtocol && metadata['protocol']
         ? this.i18n.translate('Encaminhada para {agency}. Protocolo: {protocol}.', { agency: agencyName, protocol: metadata['protocol'] })
         : this.i18n.translate('Encaminhada para {agency}.', { agency: agencyName });
     }
@@ -912,7 +1054,7 @@ export class OccurrenceDetailPage implements OnInit {
     }
 
     if (event.eventType === 'ANALISE_INICIADA') {
-      return [this.i18n.translate(event.description), metadata['note'], metadata['reference'] ? this.i18n.translate('Referência: {reference}', { reference: metadata['reference'] }) : ''].filter(Boolean).join(' ') || this.i18n.translate('O órgão responsável iniciou a análise.');
+      return [this.i18n.translate(event.description), metadata['note'], this.canViewProtocol && metadata['reference'] ? this.i18n.translate('Referência: {reference}', { reference: metadata['reference'] }) : ''].filter(Boolean).join(' ') || this.i18n.translate('O órgão responsável iniciou a análise.');
     }
 
     if (event.eventType === 'OCORRENCIA_RESOLVIDA') {
@@ -944,6 +1086,10 @@ export class OccurrenceDetailPage implements OnInit {
 
     if (event.eventType === 'OCORRENCIA_REABERTA') {
       return String(metadata['reason'] ?? 'A ocorrência voltou ao acompanhamento.');
+    }
+
+    if (event.eventType === 'PROTOCOL_REGISTERED' && !this.canViewProtocol) {
+      return 'Protocolo recebido';
     }
 
     return event.description ?? 'A ocorrência foi atualizada.';
@@ -1020,21 +1166,28 @@ export class OccurrenceDetailPage implements OnInit {
       return;
     }
 
+    if (this.isSubmitting()) return;
+    const previousEvidenceIds = new Set(this.occurrence.evidences.map(evidence => evidence.id));
     this.isSubmitting.set(true);
     this.postService
       .uploadEvidence(this.evidenceFile)
       .pipe(
-        switchMap((upload) =>
+        switchMap(upload =>
           this.postService.addOccurrenceEvidence(this.occurrence!, this.user, {
             type: upload.type,
             url: upload.url,
             description: this.evidenceDescription || this.evidenceFile?.name,
-          }),
+          }).pipe(map(updated => ({ updated, url: upload.url }))),
         ),
-        switchMap((updated) => {
+        switchMap(({ updated, url }) => {
           this.occurrence = updated;
-          const evidence = updated.evidences.at(-1);
-          const evidenceId = evidence && (this.actionPanel === 'contest' ? evidence.status !== 'REJECTED' : !evidence.status || evidence.status === 'APPROVED') ? evidence.id : undefined;
+          const acceptsPending = this.actionPanel === 'contest' ||
+            (this.actionPanel === 'resolution' && this.isResponsibleAgencyForOccurrence);
+          const evidence = updated.evidences.find(item =>
+            item.url === url && !previousEvidenceIds.has(item.id) && item.addedBy === this.user?._id);
+          const evidenceId = evidence &&
+            (acceptsPending ? evidence.status !== 'REJECTED' : !evidence.status || evidence.status === 'APPROVED')
+            ? evidence.id : undefined;
           return action(evidenceId ? [evidenceId] : []);
         }),
         finalize(() => this.isSubmitting.set(false)),
@@ -1065,9 +1218,15 @@ export class OccurrenceDetailPage implements OnInit {
   private afterAction(occurrence: SpectrumPost, message: string): void {
     this.occurrence = occurrence;
     this.historyEvents = occurrence.history;
+    this.updateContestTimer();
     this.successMessage = message;
     this.errorMessage = '';
     this.actionPanel = null;
+    this.resolutionStatement = '';
+    this.resolutionExecutionDate = '';
+    this.resolutionServiceReference = '';
+    this.resolutionReviewNote = '';
+    this.contestReason = '';
     this.responseMessage = '';
     this.responseProtocol = '';
     this.receivedResponseCode = '';
@@ -1093,8 +1252,14 @@ export class OccurrenceDetailPage implements OnInit {
       history: this.postService.getOccurrenceHistory(this.occurrence.id),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ occurrence, history }) => {
+        if (occurrence.agencyResolution?.id !== this.occurrence?.agencyResolution?.id) {
+          this.actionPanel = null;
+          this.resolutionReviewNote = '';
+          this.contestReason = '';
+        }
         this.occurrence = this.withHistoryAuthor(occurrence, history);
         this.historyEvents = history;
+        this.updateContestTimer();
       },
       error: () => { /* Keep the original action error and last confirmed state. */ },
     });

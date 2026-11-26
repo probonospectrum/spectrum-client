@@ -50,7 +50,7 @@
             ><span class="material-symbols-outlined" aria-hidden="true">search</span
             ><input
               type="search"
-              placeholder="Buscar por título, cidade ou protocolo"
+              placeholder="Buscar por título ou protocolo"
               aria-label="Buscar em todas as ocorrências vinculadas"
               [value]="search()"
               (input)="search.set($any($event.target).value)"
@@ -73,26 +73,38 @@
           <div class="inbox-empty" role="status">Carregando ocorrências…</div>
         }
         @for (post of items(); track post._id) {
-          <a class="inbox-row" [routerLink]="['/ocorrencias', post._id]">
-            <span class="row-icon material-symbols-outlined" aria-hidden="true">{{
-              post.status === 'RESOLVIDA' ? 'task_alt' : 'description'
-            }}</span>
-            <div class="row-content">
-              <span class="row-meta"
-                >{{ post.location?.cityName || 'Ocorrência'
-                }}{{ post.location?.stateCode ? ' · ' + post.location?.stateCode : '' }}
-                <time>{{ post.createdAt | localizedDate }}</time></span
+          <div class="inbox-entry">
+            <a class="inbox-row" [routerLink]="['/ocorrencias', post._id]">
+              <span class="row-icon material-symbols-outlined" aria-hidden="true">{{
+                post.status === 'RESOLVIDA' ? 'task_alt' : 'description'
+              }}</span>
+              <div class="row-content">
+                <span class="row-meta"
+                  >{{ post.location?.cityName || 'Ocorrência'
+                  }}{{ post.location?.stateCode ? ' · ' + post.location?.stateCode : '' }}
+                  <time>{{ post.createdAt | localizedDate }}</time></span
+                >
+                <h2>{{ post.title }}</h2>
+                <span class="protocol">Protocolo {{ post._id }}</span
+                ><span class="status" [class.status--resolved]="post.status === 'RESOLVIDA'"
+                  ><span aria-hidden="true">●</span> {{ label(post.status) }}</span
+                >
+              </div>
+              <span class="material-symbols-outlined row-arrow" aria-hidden="true"
+                >arrow_forward</span
               >
-              <h2>{{ post.title }}</h2>
-              <span class="protocol">Protocolo {{ post._id }}</span
-              ><span class="status" [class.status--resolved]="post.status === 'RESOLVIDA'"
-                ><span aria-hidden="true">●</span> {{ label(post.status) }}</span
+            </a>
+            @if (canAddResolution(post)) {
+              <a
+                class="resolution-link"
+                [routerLink]="['/ocorrencias', post._id]"
+                [queryParams]="{ acao: 'adicionar-resolucao' }"
               >
-            </div>
-            <span class="material-symbols-outlined row-arrow" aria-hidden="true"
-              >arrow_forward</span
-            >
-          </a>
+                <span class="material-symbols-outlined" aria-hidden="true">note_add</span>
+                Adicionar resolução
+              </a>
+            }
+          </div>
         } @empty {
           @if (!loading() && !error()) {
             <div class="inbox-empty">
