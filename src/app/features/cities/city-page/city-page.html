@@ -14,7 +14,7 @@
   @if (!cityLoading() && location()) {
     <section class="city-feed" [attr.aria-label]="'Publicações da cidade' | translate">
       @for (post of posts; track post.id) {
-        <app-post-card [post]="post" [currentUser]="user" (repost)="toggleRepost($event)" />
+        <app-post-card [post]="post" [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'" (repost)="toggleRepost($event)" />
       } @empty {
         <div class="city-empty">
           <h3>{{ 'Nenhuma publicação por aqui' | translate }}</h3>

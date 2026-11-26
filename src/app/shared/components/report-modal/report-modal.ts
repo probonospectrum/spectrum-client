@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { AlertPopup } from '../alert-popup/alert-popup';
 
+export type ReportSubmission = { category: string; reason: string };
+
 @Component({
   selector: 'app-report-modal',
   imports: [TranslatePipe, CommonModule, AlertPopup],
@@ -26,7 +28,10 @@ export class ReportModal {
   @Input() externalSubmission = false;
   @Input() submitting = false;
   @Input() submissionError = '';
-  @Output() submit = new EventEmitter<string>();
+  @Output() submit = new EventEmitter<ReportSubmission>();
+  otherReason = '';
+
+  get choices(): string[] { return this.reasons.includes('Outros') ? this.reasons : [...this.reasons, 'Outros']; }
 
   selectedReason = this.reasons[0];
   submitted = false;
@@ -47,12 +52,12 @@ export class ReportModal {
   }
 
   onConfirm(): void {
-    if (this.submitting) return;
-    if (this.externalSubmission) this.submit.emit(this.selectedReason);
+    if (this.submitting || (this.selectedReason === 'Outros' && !this.otherReason.trim())) return;
+    if (this.externalSubmission) this.submit.emit({ category: this.selectedReason, reason: this.selectedReason === 'Outros' ? this.otherReason.trim() : this.selectedReason });
     else this.submitted = true;
   }
 
   onDone(): void {
-    this.confirm.emit(this.selectedReason);
+    this.confirm.emit(this.selectedReason === 'Outros' ? this.otherReason.trim() : this.selectedReason);
   }
 }

@@ -5,7 +5,7 @@ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EMPTY, catchError, finalize, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { PostService, SpectrumPost } from '../../../core/services/posts/post.service';
 import { LoggedUser, PublicProfileResponse, UserService } from '../../../core/services/user/user.service';
@@ -22,7 +22,7 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [RouterLink, FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
@@ -38,7 +38,20 @@ export class ProfilePage implements OnInit {
   readonly suggestions = this.postService.suggestions;
 
   get reposts(): SpectrumPost[] { return this.authorPosts().filter(post => Boolean(post.originalPostId)); }
-  activeTab: 'posts' | 'reposts' | 'saved' = 'posts';
+  activeTab: 'posts' | 'reposts' | 'saved' | 'archived' = 'posts';
+  readonly archived = signal<SpectrumPost[]>([]);
+  readonly archiveError = signal('');
+  get isModeratorProfile(): boolean { return this.isOwnProfile() && this.user?.occurrenceRole === 'MODERATOR'; }
+  openArchive(): void {
+    if (!this.isOwnProfile()) return;
+    this.activeTab = 'archived';
+    this.archived.set([]);
+    this.archiveError.set('');
+    this.postService.getArchived(this.user).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: items => this.archived.set(items),
+      error: () => this.archiveError.set('Não foi possível carregar as ocorrências arquivadas.'),
+    });
+  }
   profileAlert = signal<ProfileAlert | null>(null);
   private readonly hiddenPostIds = new Set<string>();
   private readonly hiddenAuthorNicknames = new Set<string>();
@@ -267,8 +280,12 @@ export class ProfilePage implements OnInit {
 
   deletePost(post: SpectrumPost): void {
     this.postService.removeServerPost(post).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.onPostUpdated(),
-      error: () => this.profileAlert.set({ type: 'error', title: 'Não foi possível excluir', message: 'Ocorrências preservam seu histórico. Apenas reposts próprios podem ser excluídos.' }),
+      next: () => {
+        this.authorPosts.update(items => items.filter(item => item.id !== post.id));
+        this.profileAlert.set({ type: 'success', title: post.originalPostId ? 'Repost excluído' : 'Ocorrência arquivada',
+          message: post.originalPostId ? 'O repost foi removido.' : 'Veja a ocorrência na aba Arquivadas do seu perfil.' });
+      },
+      error: () => this.profileAlert.set({ type: 'error', title: 'Não foi possível concluir', message: 'Atualize a página e tente novamente.' }),
     });
   }
 
@@ -290,11 +307,29 @@ export class ProfilePage implements OnInit {
     });
   }
 
-  reportPost(post: SpectrumPost, reason = 'Denunciar publicacao'): void {
-    this.profileAlert.set({
-      type: 'success',
-      title: 'Denuncia enviada',
-      message: `${reason}: ${post.content.slice(0, 72)}`,
+  reportTarget: SpectrumPost | null = null;
+  reportPending = false;
+  reportError = '';
+
+  reportPost(post: SpectrumPost, reason?: string): void {
+    this.reportError = '';
+    this.reportTarget = post;
+    if (reason) this.submitPostReport({ category: 'Outros', reason });
+  }
+
+  submitPostReport({ reason, category }: { reason: string; category: string }): void {
+    if (!this.reportTarget || this.reportPending) return;
+    this.reportPending = true;
+    this.reportError = '';
+    const id = this.reportTarget.originalPostId || this.reportTarget.id;
+    this.postService.reportContent(reason, id, undefined, category).pipe(
+      finalize(() => this.reportPending = false), takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        this.reportTarget = null;
+        this.profileAlert.set({ type: 'success', title: 'Denúncia enviada', message: 'Seu relato foi encaminhado à moderação.' });
+      },
+      error: () => this.reportError = 'Não foi possível enviar a denúncia.',
     });
   }
 

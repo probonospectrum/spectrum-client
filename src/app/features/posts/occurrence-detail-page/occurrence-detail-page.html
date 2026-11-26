@@ -43,6 +43,7 @@
       </div>
     </article>
 
+    @if (!isModerator) {
     <section class="occurrence-detail__section occurrence-detail__progress" [attr.aria-label]="'Etapas da ocorrência' | translate">
       <div class="occurrence-detail__section-head"><div><p class="occurrence-detail__eyebrow">{{ 'PASSO A PASSO' | translate }}</p><h2>{{ 'Acompanhe a evolução' | translate }}</h2></div>
         <button class="occurrence-detail__text-button" type="button" (click)="loadOccurrence()"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>{{ 'Atualizar' | translate }}</button>
@@ -56,6 +57,7 @@
       @if (occurrence.forwardingDueAt && !moderationLabel) { <small>{{ 'Próxima verificação a partir de' | translate }} {{ formatDate(occurrence.forwardingDueAt) }}</small> }
       </div></div>
     </section>
+    }
 
     @if (successMessage) {
       <p role="status" class="occurrence-detail__notice occurrence-detail__notice--success">{{ (successMessage) | translate }}</p>
@@ -174,8 +176,8 @@
 
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head">
-        <h2>{{ 'Como você pode contribuir' | translate }}</h2>
-        <span>{{ confirmationCount }} {{ 'confirmações comunitárias' | translate }}</span>
+        <h2>{{ (isModerator ? 'Ações de moderação' : 'Como você pode contribuir') | translate }}</h2>
+        @if (!isModerator) { <span>{{ confirmationCount }} {{ 'confirmações comunitárias' | translate }}</span> }
       </div>
 
       @if (hasAvailableActions) {
@@ -195,8 +197,8 @@
                   {{ 'Adicionar evidência' | translate }}
                 </button>
               }
-              @if (isCommunityUser) {
-                <button type="button" [disabled]="!canSuggestAgency" [attr.title]="occurrence.responsibleAgency?.id || occurrence.linkedAgencyIds?.length ? 'Esta ocorrência já possui um órgão vinculado.' : null" (click)="openPanel('agency')">
+              @if (canSuggestAgency) {
+                <button type="button" (click)="openPanel('agency')">
                   <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
                   {{ 'Sugerir órgão responsável' | translate }}
                 </button>
@@ -214,6 +216,11 @@
           @if (canShowModeratorActions) {
             <div class="occurrence-detail__action-group">
               <span>{{ 'Moderação' | translate }}</span>
+              @if (canAddEvidence) {
+                <button type="button" (click)="openPanel('evidence')">
+                  <span class="material-symbols-outlined" aria-hidden="true">attach_file</span> Anexar evidência enviada pelo órgão
+                </button>
+              }
               @if (canRegisterResponse) { <button type="button" (click)="openPanel('response')"><span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>{{ 'Registrar resposta' | translate }}</button> }
               @if (canForward) {
                 <button type="button" (click)="openPanel('forward')">
@@ -325,7 +332,7 @@
               <button
                 type="button"
                 class="occurrence-detail__upload-button"
-                [attr.aria-label]="'Adicionar evidência' | translate"
+                [attr.aria-label]="(isModerator ? 'Anexar evidência enviada pelo órgão' : 'Adicionar evidência') | translate"
                 (click)="evidenceInput.click()"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
@@ -334,7 +341,7 @@
                 #evidenceInput
                 class="occurrence-detail__file-input"
                 type="file"
-                [accept]="actionPanel === 'contest' ? 'image/jpeg,image/png,image/webp' : 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime'"
+                [accept]="actionPanel === 'contest' ? 'image/jpeg,image/png,image/webp' : 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf'"
                 [attr.aria-label]="'Selecionar evidência' | translate"
                 (change)="onEvidenceSelected($event)"
               />
@@ -446,9 +453,13 @@
           }
 
           @if (actionPanel === 'evidence') {
-            <p>{{ 'As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.' | translate }}</p>
+            @if (isModerator) {
+              <p>Selecione um documento PDF, uma foto ou um vídeo enviado pelo órgão e autorizado para publicação.</p>
+            } @else {
+              <p>{{ 'As contribuições de outras pessoas precisam ser aceitas pelo criador da ocorrência para integrar o relato.' | translate }}</p>
+            }
             <div class="occurrence-detail__suggestion-actions">
-              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ 'Adicionar evidência' | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitEvidence()">{{ (isModerator ? 'Publicar evidência do órgão' : 'Adicionar evidência') | translate }}</button>
               <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
             </div>
           }
@@ -580,6 +591,7 @@
       @if (canViewProtocol && progress.protocol) { <p>{{ 'Protocolo do atendimento' | translate }}: {{ progress.protocol }}</p> }
       @if (progress.closedByAgency) { <p>{{ 'Fechamento informado pelo órgão, sujeito à contestação da comunidade.' | translate }}</p> }
     </section> }
+    @if (!isModerator) {
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
       <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências e solicitações' | translate }}</h2><span>{{ generalEvidences.length }} {{ (generalEvidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
       @if (generalEvidences.length) {
@@ -620,6 +632,8 @@
                       <span class="material-symbols-outlined">play_arrow</span>
                     </div>
                   </button>
+                } @else if (evidence.type === 'DOCUMENT') {
+                  <a [href]="url" target="_blank" rel="noopener noreferrer">{{ evidence.description || 'Abrir documento' }}</a>
                 }
               } @else {
                 <div class="occurrence-detail__no-file">
@@ -632,6 +646,7 @@
         </div>
       } @else { <div class="occurrence-detail__empty-state"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span><div><strong>{{ 'Ainda não há evidências' | translate }}</strong><p>{{ 'Fotos e vídeos ajudam a documentar a situação e dão contexto ao órgão responsável.' | translate }}</p></div></div> }
     </section>
+    }
 
     <ng-template #resolutionDetails let-event>
       @if (executionDate(event); as date) {
@@ -686,10 +701,12 @@
       }
     </section>
 
+    @if (!occurrence.moderationRemovedAt) {
     <section class="occurrence-detail__section">
       <h2>{{ 'Discussão' | translate }}</h2>
       <app-comment-section [postId]="occurrence.id" [currentUser]="user" [responsibleAgencyId]="occurrence.responsibleAgency?.id" />
     </section>
+    }
   } @else if (notFound) {
     <section class="occurrence-detail__state">
       <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
