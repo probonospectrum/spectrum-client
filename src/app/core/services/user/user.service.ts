@@ -10,11 +10,13 @@ export interface LoginRequest {
 }
 
 export interface CreateUserRequest {
+  accountType?: 'CITIZEN' | 'PUBLIC_AGENCY'; agencyCnpj?: string; agencyName?: string;
+  representativePosition?: string; authorizationReference?: string;
   name: string;
   nickname: string;
   email: string;
   password: string;
-  birthDate: string;
+  birthDate?: string;
   avatarUrl?: string;
   cityUser: string;
 }
@@ -24,6 +26,8 @@ export interface MessageResponse {
 }
 
 export interface LoggedUser {
+  accountType?: 'CITIZEN' | 'PUBLIC_AGENCY'; agencyRegistrationStatus?: string;
+  coverUrl?: string;
   _id: string;
   name: string;
   nickname: string;
@@ -50,6 +54,29 @@ export interface UpdateAvatarResponse extends MessageResponse {
   avatarUrl: string;
 }
 
+export interface PublicProfileResponse {
+  coverUrl?: string;
+  _id: string;
+  name: string;
+  nickname: string;
+  avatarUrl?: string;
+  cityUser: string;
+  isVerified?: boolean;
+  createdAt?: string;
+  followingCount: number;
+  followersCount: number;
+  isFollowing: boolean;
+  canViewPosts: boolean;
+}
+
+export interface FollowUserSummary {
+  _id: string;
+  name: string;
+  nickname: string;
+  avatarUrl?: string;
+  isFollowing: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -62,6 +89,44 @@ export class UserService {
   readonly token = computed(() => this.session()?.token ?? null);
 
   constructor(private readonly http: HttpClient) {}
+
+  searchProfiles(term: string): Observable<Pick<PublicProfileResponse, 'name' | 'nickname' | 'avatarUrl'>[]> {
+    return this.http.get<Pick<PublicProfileResponse, 'name' | 'nickname' | 'avatarUrl'>[]>(
+      this.apiUrl + '/search', { params: { q: term } },
+    );
+  }
+
+  getPublicProfile(nickname: string): Observable<PublicProfileResponse> {
+    return this.http.get<PublicProfileResponse>(`${this.apiUrl}/profile/${encodeURIComponent(nickname)}`);
+  }
+
+  followUser(targetId: string, follow: boolean): Observable<{ user: LoggedUser; isFollowing: boolean }> {
+    const userId = this.currentUser()?._id;
+    return this.http.patch<{ user: LoggedUser; isFollowing: boolean }>(`${this.apiUrl}/${userId}/${follow ? 'follow' : 'unfollow'}/${targetId}`, {}).pipe(
+      tap((response) => this.updateSessionUser(response.user)),
+    );
+  }
+
+  getConnections(userId: string, type: 'followers' | 'following'): Observable<FollowUserSummary[]> {
+    return this.http.get<FollowUserSummary[]>(API_BASE_URL + '/follows/' + userId + '/' + type);
+  }
+
+  removeFollower(userId: string): Observable<MessageResponse> {
+    return this.http.delete<MessageResponse>(API_BASE_URL + '/follows/me/followers/' + userId);
+  }
+
+  updateAccount(patch: { name?: string; nickname?: string }): Observable<LoggedUser> {
+    return this.http.patch<LoggedUser>(`${this.apiUrl}/me/account`, patch).pipe(tap((user) => this.updateSessionUser(user)));
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<MessageResponse> {
+    return this.http.patch<MessageResponse>(`${this.apiUrl}/me/password`, { currentPassword, newPassword });
+  }
+
+  updateSessionUser(user: LoggedUser): void {
+    const session = this.session();
+    if (session?.user._id === user._id) this.saveSession({ ...session, user: { ...session.user, ...user } });
+  }
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http
@@ -86,6 +151,30 @@ export class UserService {
           this.saveSession({ ...session, user: { ...session.user, avatarUrl: response.avatarUrl } });
         }
       }),
+    );
+  }
+
+  updateCover(cover?: Blob): Observable<{ coverUrl: string }> {
+    const userId = this.currentUser()?._id;
+    if (!userId) return throwError(() => new Error('Entre na sua conta para alterar a capa.'));
+    const form = new FormData();
+    if (cover) form.append('cover', cover, 'cover.jpg');
+    const url = `${this.apiUrl}/${userId}/cover`;
+    return (cover ? this.http.patch<{ coverUrl: string }>(url, form) : this.http.delete<{ coverUrl: string }>(url)).pipe(
+      timeout(60000),
+      tap(response => {
+        const session = this.session();
+        if (session?.user._id === userId) this.saveSession({ ...session, user: { ...session.user, coverUrl: response.coverUrl } });
+      }),
+    );
+  }
+
+  deleteAccount(): Observable<void> {
+    const userId = this.currentUser()?._id;
+    if (!userId) return throwError(() => new Error('Entre na sua conta para excluir a conta.'));
+    return this.http.delete<void>(`${this.apiUrl}/${userId}`).pipe(
+      timeout(15000),
+      tap(() => { if (this.currentUser()?._id === userId) this.logout(); }),
     );
   }
 
@@ -117,7 +206,9 @@ export class UserService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.token() && !!this.currentUser();
+    if (this.isValidSession(this.session())) return true;
+    this.logout();
+    return false;
   }
 
   logout(): void {
@@ -138,10 +229,25 @@ export class UserService {
     }
 
     try {
-      return JSON.parse(rawSession) as LoginResponse;
+      const session = JSON.parse(rawSession) as LoginResponse;
+      if (this.isValidSession(session)) return session;
     } catch {
-      localStorage.removeItem(this.sessionStorageKey);
-      return null;
+      // Sessões corrompidas também exigem um novo login.
+    }
+    localStorage.removeItem(this.sessionStorageKey);
+    return null;
+  }
+
+  private isValidSession(session: LoginResponse | null): boolean {
+    if (!session?.user?._id || typeof session.token !== 'string') return false;
+    try {
+      const parts = session.token.split('.');
+      if (parts.length !== 3 || !parts[0] || !parts[2]) return false;
+      const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const { exp } = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+      return typeof exp === 'number' && Number.isFinite(exp) && exp * 1000 > Date.now();
+    } catch {
+      return false;
     }
   }
 }

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
@@ -17,7 +18,7 @@ interface PostAlert {
 
 @Component({
   selector: 'app-create-post-page',
-  imports: [UserAvatar, CommonModule, FormsModule, RouterLink, AlertPopup, SocialShell],
+  imports: [TranslatePipe, UserAvatar, CommonModule, FormsModule, RouterLink, AlertPopup, SocialShell],
   templateUrl: './create-post-page.html',
   styleUrl: './create-post-page.scss',
 })

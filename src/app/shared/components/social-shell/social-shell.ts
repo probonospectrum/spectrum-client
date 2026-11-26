@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import {
@@ -14,26 +15,29 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
-import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
+import { Subscription, timer, switchMap, map, catchError, of } from 'rxjs';
 import { LocationService } from '../../../core/services/location/location.service';
-import { PostService, SpectrumPost, SuggestedProfile } from '../../../core/services/posts/post.service';
-import { LoggedUser } from '../../../core/services/user/user.service';
+import { SpectrumPost, SuggestedProfile } from '../../../core/services/posts/post.service';
+import { LoggedUser, UserService } from '../../../core/services/user/user.service';
 import { CreatePostModal } from '../create-post-modal/create-post-modal';
 import { LogoutConfirm } from '../logout-confirm/logout-confirm';
+import { NotificationService } from '../../../core/services/notifications/notification.service';
+
+import { AgencyInboxService } from '../../../core/services/user/agency-inbox.service';
 
 interface SearchResult {
   id: string;
   name: string;
   type: 'Pessoa' | 'Cidade';
   nickname?: string;
+  avatarUrl?: string;
   location?: string;
   slug?: string;
 }
 
 @Component({
   selector: 'app-social-shell',
-  imports: [
+  imports: [TranslatePipe,
     UserAvatar,
     CommonModule,
     FormsModule,
@@ -46,13 +50,21 @@ interface SearchResult {
   styleUrl: './social-shell.scss',
 })
 export class SocialShell implements OnInit {
+  readonly agencyInbox = inject(AgencyInboxService);
+  readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly mockLoadingService = inject(MockLoadingService);
-  private readonly postService = inject(PostService);
+  private readonly userService = inject(UserService);
   private readonly locationService = inject(LocationService);
 
+  readonly moderationLinks = [
+    { path: 'resolvidas', label: 'Resolvidas', icon: 'task_alt' },
+    { path: 'sem-orgao', label: 'Sem órgão', icon: 'account_balance' },
+    { path: 'contestadas', label: 'Contestadas', icon: 'gavel' },
+    { path: 'denunciados', label: 'Itens denunciados', icon: 'flag' },
+    { path: 'respostas', label: 'Respostas para Análise', icon: 'rate_review' },
+  ];
   readonly suggestedCities = this.locationService.getLocations().slice(0, 4);
 
   @Input() user: LoggedUser | null = null;
@@ -110,8 +122,21 @@ export class SocialShell implements OnInit {
     this.isSearching.set(true);
     this.searchResults.set([]);
 
-    this.searchSubscription = this.mockLoadingService
-      .load(() => this.getSearchResults(term))
+    this.searchSubscription = timer(300)
+      .pipe(
+        switchMap(() => this.userService.searchProfiles(term)),
+        map((profiles) => [
+          ...profiles.map<SearchResult>((profile) => ({
+            id: 'profile:' + profile.nickname,
+            name: profile.name,
+            type: 'Pessoa',
+            nickname: profile.nickname,
+            avatarUrl: profile.avatarUrl,
+          })),
+          ...this.getSearchResults(term),
+        ]),
+        catchError(() => of(this.getSearchResults(term))),
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((results) => {
         this.searchResults.set(results);
@@ -131,7 +156,13 @@ export class SocialShell implements OnInit {
     return this.displayName.charAt(0).toUpperCase();
   }
 
+  get canCreateOccurrence(): boolean {
+    return this.user?.occurrenceRole !== 'MODERATOR';
+  }
+
   openCreatePost(): void {
+    if (!this.canCreateOccurrence) return;
+
     this.editingPost = null;
     this.showCreatePost = true;
     this.createPost.emit();
@@ -237,12 +268,6 @@ export class SocialShell implements OnInit {
   }
 
   private getSearchResults(term: string): SearchResult[] {
-    const normalizedTerm = this.locationService.normalize(term);
-    const profileResults = this.getProfileSearchResults().filter((result) =>
-      [result.name, result.nickname || '', result.type]
-        .map((value) => this.locationService.normalize(value))
-        .some((value) => value.includes(normalizedTerm)),
-    );
     const cityResults = this.locationService.searchLocations(term).map<SearchResult>((location) => ({
       id: `city:${location.id}`,
       name: location.name,
@@ -251,7 +276,7 @@ export class SocialShell implements OnInit {
       slug: location.slug,
     }));
 
-    return [...profileResults, ...cityResults];
+    return cityResults;
   }
 
   private cancelSearch(): void {
@@ -259,29 +284,4 @@ export class SocialShell implements OnInit {
     this.searchSubscription = undefined;
   }
 
-  private getProfileSearchResults(): SearchResult[] {
-    const results = new Map<string, SearchResult>();
-
-    for (const profile of this.suggestions) {
-      results.set(profile.nickname, {
-        id: `profile:${profile.nickname}`,
-        name: profile.name,
-        type: 'Pessoa',
-        nickname: profile.nickname,
-      });
-    }
-
-    for (const post of this.postService.getPosts(this.user)) {
-      if (!results.has(post.authorNickname)) {
-        results.set(post.authorNickname, {
-          id: `profile:${post.authorNickname}`,
-          name: post.authorName,
-          type: 'Pessoa',
-          nickname: post.authorNickname,
-        });
-      }
-    }
-
-    return [...results.values()];
-  }
 }

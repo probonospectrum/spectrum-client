@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   AfterViewInit,
   Component,
@@ -11,6 +12,7 @@ import {
 } from '@angular/core';
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-settings-dialog',
   templateUrl: './settings-dialog.html',
   styleUrl: './settings-dialog.scss',

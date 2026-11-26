@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,7 +9,7 @@ import { SpectrumInput } from '../../../shared/components/input/input/input';
 
 @Component({
   selector: 'app-reset-password-page',
-  imports: [
+  imports: [TranslatePipe,
     ReactiveFormsModule,
     AuthShell,
     Button,

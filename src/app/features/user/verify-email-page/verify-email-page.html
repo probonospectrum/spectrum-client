@@ -9,25 +9,25 @@
       @if (status() === 'loading') {
         <span class="verify-email__spinner"></span>
       } @else {
-        {{ status() === 'success' ? 'OK' : '!' }}
+        {{ (status() === 'success' ? 'OK' : '!') | translate }}
       }
     </div>
 
     <div class="verify-email__content">
-      <h2>{{ title() }}</h2>
-      <p>{{ message() }}</p>
+      <h2>{{ (title()) | translate }}</h2>
+      <p>{{ (message()) | translate }}</p>
     </div>
 
-    <app-button type="button" (click)="goToLogin()">Ir para login</app-button>
+    <app-button type="button" (click)="goToLogin()">{{ 'Ir para login' | translate }}</app-button>
   </section>
 </app-auth-shell>
 
 @if (alert(); as currentAlert) {
   <app-alert-popup
     [type]="currentAlert.type"
-    [title]="currentAlert.title"
-    [message]="currentAlert.message"
-    [actionLabel]="currentAlert.actionLabel"
+    [title]="(currentAlert.title) | translate"
+    [message]="(currentAlert.message) | translate"
+    [actionLabel]="(currentAlert.actionLabel) | translate"
     (dismissed)="status() === 'success' ? goToLogin() : dismissAlert()"
   />
 }

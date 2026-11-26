@@ -1,4 +1,5 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -12,40 +13,51 @@ import { AlertPopup } from '../../shared/components/alert-popup/alert-popup';
 @Component({
   selector: 'app-callback',
   standalone: true,
-  imports: [AlertPopup],
+  imports: [TranslatePipe, AlertPopup],
   template: `
     <div class="callback-loading" role="status" aria-live="polite">
       @if (!errorMessage()) {
         <div class="spinner" aria-hidden="true"></div>
-        <p>Concluindo seu login com Google...</p>
+        <p>{{ 'Concluindo seu login com Google...' | translate }}</p>
       }
     </div>
     @if (errorMessage(); as message) {
       <app-alert-popup
         type="error"
-        title="Não foi possível entrar com Google"
-        [message]="message"
-        actionLabel="Voltar ao login"
+        [title]="'Não foi possível entrar com Google' | translate"
+        [message]="message | translate"
+        [actionLabel]="'Voltar ao login' | translate"
         (dismissed)="backToLogin()"
       />
     }
   `,
   styles: [
     `
+      :host {
+        display: block;
+      }
       .callback-loading {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
-        background-color: #0a0a0a;
-        color: #fff;
+        min-height: 100dvh;
+        padding: 24px;
+        background-color: var(--spectrum-app-bg);
+        color: var(--spectrum-text);
+        text-align: center;
+      }
+      @media (min-width: 1024px) {
+        .callback-loading {
+          min-height: calc(100dvh / 0.9);
+        }
       }
       .spinner {
         width: 32px;
         height: 32px;
-        border: 3px solid rgba(255, 255, 255, 0.2);
-        border-top-color: #fff;
+        border: 3px solid var(--spectrum-border);
+        border-top-color: var(--spectrum-action);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }

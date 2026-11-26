@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -13,7 +14,7 @@ import { SocialShell } from '../../../shared/components/social-shell/social-shel
 
 @Component({
   selector: 'app-city-page',
-  imports: [CommonModule, SocialShell, PostCard, LoadingIndicator],
+  imports: [TranslatePipe, CommonModule, SocialShell, PostCard, LoadingIndicator],
   templateUrl: './city-page.html',
   styleUrl: './city-page.scss',
 })
@@ -64,10 +65,17 @@ export class CityPage implements OnInit {
     }
 
     const cityName = this.locationService.normalize(location.city);
+    const state = this.locationService.normalize(location.state);
 
     return this.postService
       .getPosts(this.user)
-      .filter((post) => this.locationService.normalize(post.authorCity).includes(cityName));
+      .filter((post) => {
+        if (post.originalPostId) return false;
+        const place = post.location;
+        const postCity = this.locationService.normalize(place?.cityName || place?.city || '');
+        const postState = this.locationService.normalize(place?.stateCode || place?.state || '');
+        return postCity === cityName && (!postState || postState === state);
+      });
   }
 
   logout(): void {

@@ -1,0 +1,76 @@
+<app-social-shell [user]="user" [showContentHeader]="false" [wideContent]="true" (logout)="logout()">
+  <section class="moderation" aria-labelledby="moderation-title">
+    <header class="hero">
+      <div><span class="eyebrow">ÁREA DA MODERAÇÃO</span><h1 id="moderation-title">{{ title }}</h1></div>
+      <button type="button" (click)="load()" [disabled]="loading()">Atualizar</button>
+    </header>
+    <div class="controls"><label>Buscar conteúdo<input type="search" [(ngModel)]="search" placeholder="Título, descrição ou motivo" /></label></div>
+    @if (error) { <div class="state" role="alert"><p>{{ error }}</p><button (click)="load()">Tentar novamente</button></div> }
+    @else if (loading()) { <div class="state" role="status">Carregando…</div> }
+    @else if (queue === 'denunciados') {
+      <p class="caption">Conteúdos ordenados do maior para o menor número de denúncias.</p>
+      <div class="list">
+        @for (item of visibleReports; track item.kind + item.id) {
+          <article class="card">
+            <div class="card-top"><span class="badge">{{ item.kind === 'comment' ? 'Comentário' : 'Ocorrência' }}</span><strong>{{ item.count }} denúncia(s)</strong></div>
+            <h2>{{ item.title }}</h2><p>{{ item.content || 'Conteúdo indisponível.' }}</p>
+            <h3>Motivos das denúncias</h3><ul>@for (reason of item.reasons; track $index) { <li>{{ reason }}</li> }</ul>
+            @if (item.removedAt) {
+              <p role="status">Publicação removida. Conteúdo preservado para registro.</p><p>{{ item.removalReason }}</p>
+            } @else {
+              @if (item.postId) { <a [routerLink]="['/ocorrencias', item.postId]">Analisar conteúdo →</a> }
+              @if (item.kind === 'post') {
+                <button type="button" class="moderation-remove" (click)="beginRemoval(item)" [disabled]="removalPending()">Reprovar e remover publicação</button>
+              }
+            }
+            @if (removalTarget?.id === item.id && item.kind === 'post') {
+              <div class="moderation-removal">
+                <h3>Remover após análise</h3>
+                <p>A publicação e suas republicações deixarão de aparecer. O texto, os anexos e o histórico continuarão salvos no banco.</p>
+                <label>Justificativa da análise<textarea [(ngModel)]="removalReason" maxlength="1000" [disabled]="removalPending()"></textarea></label>
+                @if (removalError) { <p class="moderation-error" role="alert">{{ removalError }}</p> }
+                <button type="button" (click)="cancelRemoval()" [disabled]="removalPending()">Cancelar</button>
+                <button type="button" class="moderation-remove" (click)="confirmRemoval()" [disabled]="removalPending()">{{ removalPending() ? 'Removendo…' : 'Confirmar remoção' }}</button>
+              </div>
+            }
+          </article>
+        } @empty { <div class="state">Nenhum conteúdo denunciado encontrado.</div> }
+      </div>
+    } @else {
+      <p class="caption">Até 100 ocorrências mais recentemente atualizadas nesta fila.</p>
+      <div class="list">
+        @for (post of visible; track post.id) {
+          <article class="card">
+            <div class="card-top"><span class="badge" [class.resolved]="post.status === 'RESOLVIDA'">{{ status(post) }}</span><span>{{ post.location?.cityName || post.location?.city }}</span></div>
+            <h2>{{ post.title || 'Ocorrência sem título' }}</h2><p>{{ post.content }}</p>
+            @if (queue === 'resolvidas') {
+              <h3>Análise da resolução</h3><p>{{ resolutionNote(post) || 'Análise não registrada.' }}</p>
+              @for (evidence of resolutionEvidence(post); track evidence.id) {
+                <p>{{ evidence.description }}</p>
+                @if (evidence.url) { <a [href]="evidence.url" target="_blank" rel="noopener noreferrer">@if (evidence.type === 'IMAGE') { <img class="moderation-evidence" [src]="evidence.url" [alt]="evidence.description || 'Anexo da resolução'" /> } @else { Ver anexo }</a> }
+              } @empty { <p>Nenhum anexo registrado na análise da resolução.</p> }
+            }
+            @if (queue === 'contestadas') {
+              @for (event of contestations(post); track event.id) {
+                <h3>Justificativa da contestação</h3><p>{{ event.metadata?.['reason'] || 'Contestação com imagem.' }}</p>
+                @for (evidence of contestEvidence(post, event.evidenceIds); track evidence.id) {
+                  @if (evidence.url) { <a [href]="evidence.url" target="_blank" rel="noopener noreferrer">Ver imagem da contestação</a> }
+                }
+              }
+            }
+            @if (post.status === 'RESOLUCAO_EM_ANALISE') {
+              <h3>Resolução do órgão</h3>
+              <p>{{ agencyResolution(post)?.metadata?.['statement'] }}</p>
+            } @else if (queue === 'respostas') {
+              <h3>Resposta do órgão</h3>
+              @for (forwarding of post.forwardingHistory; track forwarding.id) {
+                @if (forwarding.responseReceived) { <p>{{ forwarding.responseReceived }}</p> }
+              }
+            }
+            <div class="card-bottom"><span>{{ post.responsibleAgency?.name || 'Sem órgão vinculado' }}</span><a [routerLink]="['/ocorrencias', post.id]" [queryParams]="post.status === 'RESOLUCAO_EM_ANALISE' || post.status === 'CONTESTADA' ? { acao: 'avaliar-resolucao' } : null">{{ post.status === 'RESOLUCAO_EM_ANALISE' ? 'Avaliar resolução' : post.status === 'CONTESTADA' ? 'Avaliar contestação' : queue === 'respostas' ? 'Analisar resposta' : 'Ver ocorrência' }} →</a></div>
+          </article>
+        } @empty { <div class="state">Nenhuma ocorrência encontrada nesta fila.</div> }
+      </div>
+    }
+  </section>
+</app-social-shell>

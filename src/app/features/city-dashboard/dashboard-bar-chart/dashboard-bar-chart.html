@@ -2,7 +2,7 @@
   <div class="bar-chart">
     @for (item of items; track item.key) {
       <button type="button" class="bar-chart__row" (click)="itemSelected.emit(item.key)">
-        <span class="bar-chart__label">{{ item.label }}</span>
+        <span class="bar-chart__label">{{ (item.label) | translate }}</span>
         <span class="bar-chart__track" aria-hidden="true">
           <span
             class="bar-chart__fill"
@@ -18,5 +18,5 @@
     }
   </div>
 } @else {
-  <p class="bar-chart__empty">{{ emptyLabel }}</p>
+  <p class="bar-chart__empty">{{ (emptyLabel) | translate }}</p>
 }

@@ -1,0 +1,138 @@
+<section class="public-agency">
+  <header>
+    <h2>{{ 'Verificação de contas de órgãos públicos' | translate }}</h2>
+    <button type="button" (click)="refresh()" [disabled]="busy()">
+      {{ 'Atualizar' | translate }}
+    </button>
+  </header>
+  <p>
+    {{
+      'Confira o CNPJ na Receita Federal, a natureza pública e o e-mail e a autorização do representante em fontes oficiais. Os dígitos verificadores não comprovam esses dados.'
+        | translate
+    }}
+  </p>
+  <a
+    href="https://www.gov.br/pt-br/servicos/consultar-cadastro-nacional-de-pessoas-juridicas"
+    target="_blank"
+    rel="noopener noreferrer"
+    >{{ 'Consultar CNPJ na Receita Federal' | translate }}</a
+  >
+  @if (error) {
+    <p role="alert">{{ error | translate }}</p>
+  }
+  @if (message) {
+    <p role="status">{{ message | translate }}</p>
+  }
+  @for (request of requests(); track request._id) {
+    <article>
+      <h3>{{ request.agencyRegistration.name }}</h3>
+      <p>CNPJ: {{ request.agencyRegistration.cnpj }} · {{ request.name }} · {{ request.email }}</p>
+      <p>
+        {{ request.agencyRegistration.position }} ·
+        {{ request.agencyRegistration.authorizationReference }}
+      </p>
+      <p>
+        {{ (request.isVerified ? 'E-mail confirmado' : 'E-mail não confirmado') | translate }} ·
+        {{ statusLabel(request.agencyRegistration.status) | translate }}
+      </p>
+      @if (
+        request.agencyRegistration.status === 'PENDING' ||
+        request.agencyRegistration.status === 'APPROVED'
+      ) {
+        <button type="button" [disabled]="busy()" (click)="select(request)">
+          {{ 'Revisar conta' | translate }}
+        </button>
+      }
+    </article>
+  } @empty {
+    <p>{{ 'Nenhuma solicitação institucional.' | translate }}</p>
+  }
+  @if (selected; as request) {
+    <form (ngSubmit)="submit()">
+      <fieldset [disabled]="busy()">
+        <legend>
+          {{ request.agencyRegistration.name }} · {{ request.agencyRegistration.cnpj }}
+        </legend>
+        <label
+          >{{ 'Decisão' | translate
+          }}<select [(ngModel)]="decision" name="decision">
+            @if (request.agencyRegistration.status === 'APPROVED') {
+              <option value="REVOKED">{{ 'Revogar representação' | translate }}</option>
+            } @else {
+              <option value="APPROVED" [disabled]="!request.isVerified">
+                {{ 'Aprovar representação' | translate }}
+              </option>
+              <option value="REJECTED">{{ 'Recusar solicitação' | translate }}</option>
+            }
+          </select></label
+        >
+        @if (decision === 'APPROVED') {
+          <label
+            >{{ 'Vincular ao órgão do catálogo' | translate
+            }}<select [(ngModel)]="agencyId" name="agencyId">
+              <option value="">{{ 'Criar órgão após verificação' | translate }}</option>
+              @for (agency of agencies; track agency._id) {
+                <option [value]="agency._id">{{ agency.name }}</option>
+              }
+            </select></label
+          >
+          <label
+            >{{ 'Nome oficial conferido' | translate
+            }}<input [(ngModel)]="officialName" name="officialName" required
+          /></label>
+          <label
+            >{{ 'Código de natureza jurídica conferido' | translate
+            }}<input [(ngModel)]="natureCode" name="natureCode" placeholder="103-1" required
+          /></label>
+          <label
+            >{{ 'UF' | translate
+            }}<input [(ngModel)]="stateCode" name="stateCode" maxlength="2" required
+          /></label>
+          <label
+            >{{ 'Cidades atendidas, separadas por vírgula' | translate
+            }}<input [(ngModel)]="cities" name="cities" required
+          /></label>
+          <label
+            >{{ 'Categorias atendidas' | translate
+            }}<select multiple [(ngModel)]="categories" name="categories" required>
+              @for (category of categoryOptions; track category.value) {
+                <option [value]="category.value">{{ category.label | translate }}</option>
+              }
+            </select></label
+          >
+          <label
+            >{{ 'E-mail oficial de atendimento conferido' | translate
+            }}<input type="email" [(ngModel)]="contactEmail" name="contactEmail" required
+          /></label>
+        }
+        <label
+          >{{ 'Fonte oficial da verificação' | translate
+          }}<input
+            type="url"
+            [(ngModel)]="sourceUrl"
+            name="sourceUrl"
+            placeholder="https://"
+            required
+        /></label>
+        <label
+          >{{ 'Justificativa da revisão' | translate
+          }}<textarea
+            [(ngModel)]="note"
+            name="note"
+            minlength="20"
+            maxlength="1000"
+            required
+          ></textarea>
+        </label>
+        <p>
+          {{
+            'Registre também como confirmou que o representante está autorizado a atuar em nome do órgão.'
+              | translate
+          }}
+        </p>
+        <button type="submit">{{ 'Salvar revisão' | translate }}</button
+        ><button type="button" (click)="selected = null">{{ 'Cancelar' | translate }}</button>
+      </fieldset>
+    </form>
+  }
+</section>

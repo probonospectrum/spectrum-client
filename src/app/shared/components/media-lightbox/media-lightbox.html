@@ -1,0 +1,117 @@
+<div
+  class="media-lightbox"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Visualizador de mídia' | translate"
+  (click)="onBackdropClick($event)"
+>
+  <header class="media-lightbox__header" (click)="onContentClick($event)">
+    <div class="media-lightbox__info">
+      @if (hasMultiple) {
+        <span class="media-lightbox__counter">
+          {{ currentIndex + 1 }} / {{ mediaList.length }}
+        </span>
+      }
+    </div>
+    <div class="media-lightbox__actions">
+      <button
+        type="button"
+        class="media-lightbox__close"
+        [attr.aria-label]="'Fechar visualizador' | translate"
+        (click)="close.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="media-lightbox__body" (click)="onBackdropClick($event)">
+    @if (hasMultiple) {
+      <button
+        type="button"
+        class="media-lightbox__nav media-lightbox__nav--prev"
+        [attr.aria-label]="'Mídia anterior' | translate"
+        (click)="prev($event)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      </button>
+    }
+
+    <div class="media-lightbox__content" [class.media-lightbox__content--zoomable]="enableZoom && !isVideo" (click)="onContentClick($event)">
+      @if (currentItem; as item) {
+        @if (isVideo) {
+          <video
+            class="media-lightbox__video"
+            [src]="item.url"
+            controls
+            autoplay
+            playsinline
+          ></video>
+        } @else {
+          <img
+            class="media-lightbox__img"
+            [class.media-lightbox__img--zoomed]="zoom > 1"
+            [style.transform]="'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')'"
+            [draggable]="false"
+            (pointerdown)="startPan($event)"
+            (pointermove)="movePan($event)"
+            (pointerup)="endPan()"
+            (pointercancel)="endPan()"
+            (lostpointercapture)="endPan()"
+            [src]="item.url"
+            [alt]="(item.alt || ('Imagem expandida' | translate))"
+            loading="eager"
+          />
+        }
+      }
+    </div>
+
+    @if (hasMultiple) {
+      <button
+        type="button"
+        class="media-lightbox__nav media-lightbox__nav--next"
+        [attr.aria-label]="'Próxima mídia' | translate"
+        (click)="next($event)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </button>
+    }
+  </main>
+
+  @if (enableZoom && currentItem && !isVideo) {
+    <div class="media-lightbox__zoom-controls" (click)="onContentClick($event)">
+      <button type="button" class="media-lightbox__close" [attr.aria-label]="'Diminuir zoom' | translate" [disabled]="zoom <= 1" (click)="changeZoom(-0.1)">
+        <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+      </button>
+      <span class="media-lightbox__zoom" aria-live="polite">{{ (zoom * 100).toFixed(0) }}%</span>
+      <button type="button" class="media-lightbox__close" [attr.aria-label]="'Aumentar zoom' | translate" [disabled]="zoom >= 3" (click)="changeZoom(0.1)">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      </button>
+    </div>
+  }
+
+  @if (hasMultiple) {
+    <footer class="media-lightbox__footer" (click)="onContentClick($event)">
+      <div class="media-lightbox__thumbnails">
+        @for (item of mediaList; track item.url + $index; let idx = $index) {
+          <button
+            type="button"
+            class="media-lightbox__thumb-btn"
+            [class.is-active]="idx === currentIndex"
+            [attr.aria-label]="(('Ir para mídia ' | translate) + (idx + 1)) | translate"
+            (click)="goTo(idx, $event)"
+          >
+            @if (item.type === 'VIDEO') {
+              <div class="media-lightbox__thumb-video">
+                <span class="material-symbols-outlined">play_arrow</span>
+              </div>
+            } @else {
+              <img [src]="item.url" alt="" loading="lazy" />
+            }
+          </button>
+        }
+      </div>
+    </footer>
+  }
+</div>
+

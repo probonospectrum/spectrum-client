@@ -2,7 +2,7 @@
   <div class="line-chart">
     <svg
       role="img"
-      aria-label="Evolução diária das ocorrências"
+      [attr.aria-label]="'Evolução diária das ocorrências' | translate"
       [attr.viewBox]="'0 0 ' + width + ' ' + height"
       preserveAspectRatio="none"
     >
@@ -15,7 +15,7 @@
           class="line-chart__point"
           tabindex="0"
           role="button"
-          [attr.aria-label]="formatDate(point.date) + ': ' + point.count + ' ocorrências'"
+          [attr.aria-label]="(formatDate(point.date) + ': ' + point.count + ' ocorrências') | translate"
           [attr.cx]="point.x"
           [attr.cy]="point.y"
           r="5"
@@ -30,5 +30,5 @@
     </div>
   </div>
 } @else {
-  <p class="line-chart__empty">Nenhuma ocorrência no período selecionado.</p>
+  <p class="line-chart__empty">{{ 'Nenhuma ocorrência no período selecionado.' | translate }}</p>
 }

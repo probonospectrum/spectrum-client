@@ -43,11 +43,34 @@
             "stg": {
               "define": {
                 "API_URL": "\"https://spectrum-server-2qne.onrender.com\""
+              },
+              "optimization": {
+                "scripts": false,
+                "styles": {
+                  "minify": false,
+                  "inlineCritical": false
+                },
+                "fonts": false
               }
             },
             "development": {
               "define": {
+                "API_URL": "\"https://spectrum-server-2qne.onrender.com\""
+              }
+            },
+            "local": {
+              "define": {
                 "API_URL": "\"http://localhost:3000\""
+              },
+              "optimization": false
+            },
+            "visual-preview": {
+              "browser": "tools/visual-preview.ts",
+              "tsConfig": "tsconfig.visual.json",
+              "optimization": false,
+              "sourceMap": true,
+              "define": {
+                "API_URL": "\"http://127.0.0.1:4202/mock\""
               }
             }
           },
@@ -64,9 +87,12 @@
             },
             "development": {
               "buildTarget": "spectrum-client:build:development"
+            },
+            "local": {
+              "buildTarget": "spectrum-client:build:local"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "local"
         },
         "test": {
           "builder": "@angular/build:unit-test"

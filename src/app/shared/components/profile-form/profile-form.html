@@ -1,6 +1,6 @@
 <div class="profile-form">
   <label>
-    Nome
+    {{ 'Nome' | translate }}
     <input
       type="text"
       [disabled]="!editing"
@@ -10,7 +10,7 @@
   </label>
 
   <label>
-    Usuario
+    {{ 'Usuario' | translate }}
     <input
       type="text"
       [disabled]="!editing"
@@ -20,7 +20,7 @@
   </label>
 
   <label>
-    E-mail
+    {{ 'E-mail' | translate }}
     <input
       type="email"
       [disabled]="!editing"
@@ -30,7 +30,7 @@
   </label>
 
   <label>
-    Telefone
+    {{ 'Telefone' | translate }}
     <input
       type="tel"
       [disabled]="!editing"
@@ -40,7 +40,7 @@
   </label>
 
   <label>
-    Funcao
+    {{ 'Funcao' | translate }}
     <input
       type="text"
       [disabled]="!editing"
@@ -50,7 +50,7 @@
   </label>
 
   <label>
-    Cidade
+    {{ 'Cidade' | translate }}
     <input
       type="text"
       [disabled]="!editing"
@@ -60,7 +60,7 @@
   </label>
 
   <label class="profile-form__wide">
-    Bio
+    {{ 'Bio' | translate }}
     <textarea
       rows="4"
       [disabled]="!editing"

@@ -1,3 +1,5 @@
+import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../../core/content-policy/content-policy';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -15,16 +17,16 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, switchMap, Subject } from 'rxjs';
 import {
   BrazilCity,
   BrazilState,
   LocalityService,
 } from '../../../core/services/locality/locality.service';
-import { MockLoadingService } from '../../../core/services/loading/mock-loading.service';
 import {
   CreateOccurrenceEvidencePayload,
   OccurrenceCategory,
+  OccurrenceAgencyOption,
   OccurrenceImportance,
   PostService,
   SpectrumPost,
@@ -41,14 +43,13 @@ interface SelectedEvidence {
 
 @Component({
   selector: 'app-create-post-modal',
-  imports: [UserAvatar, CommonModule, FormsModule, LoadingIndicator],
+  imports: [TranslatePipe, UserAvatar, CommonModule, FormsModule, LoadingIndicator],
   templateUrl: './create-post-modal.html',
   styleUrl: './create-post-modal.scss',
 })
 export class CreatePostModal implements OnChanges {
   private readonly postService = inject(PostService);
   private readonly localityService = inject(LocalityService);
-  private readonly mockLoadingService = inject(MockLoadingService);
   private readonly destroyRef = inject(DestroyRef);
 
   @Input() user: LoggedUser | null = null;
@@ -74,6 +75,39 @@ export class CreatePostModal implements OnChanges {
   ];
 
   readonly importanceGuidance = IMPORTANCE_GUIDANCE;
+  selectedAgencyId = '';
+  readonly availableAgencies = signal<OccurrenceAgencyOption[]>([]);
+  readonly agenciesLoading = signal(false);
+  readonly agenciesError = signal('');
+  private readonly agencyLocation = new Subject<{ stateCode: string; cityName: string } | null>();
+
+  constructor() {
+    this.agencyLocation.pipe(
+      switchMap(location => {
+        this.agenciesError.set('');
+        if (!location) { this.agenciesLoading.set(false); return of([]); }
+        this.agenciesLoading.set(true);
+        return this.postService.getAgenciesForLocation(location.stateCode, location.cityName).pipe(
+          catchError(() => {
+            this.agenciesError.set('Não foi possível consultar os órgãos desta cidade. Tente novamente ou publique sem vincular um órgão.');
+            return of([]);
+          }), finalize(() => this.agenciesLoading.set(false)),
+        );
+      }), takeUntilDestroyed(this.destroyRef),
+    ).subscribe(agencies => this.availableAgencies.set(agencies));
+  }
+
+  get selectedAgency(): OccurrenceAgencyOption | undefined {
+    return this.availableAgencies().find(agency => agency.id === this.selectedAgencyId);
+  }
+
+  loadAvailableAgencies(): void {
+    this.selectedAgencyId = '';
+    this.availableAgencies.set([]);
+    this.agencyLocation.next(this.selectedState && this.selectedCity ? {
+      stateCode: this.selectedState.sigla, cityName: this.selectedCity.nome,
+    } : null);
+  }
   address = '';
   neighborhood = '';
   problemTitle = '';
@@ -161,6 +195,7 @@ export class CreatePostModal implements OnChanges {
     this.selectedCityId = '';
     this.cities.set([]);
     this.locationErrorMessage = '';
+    this.loadAvailableAgencies();
   }
 
   onStateChanged(): void {
@@ -168,6 +203,7 @@ export class CreatePostModal implements OnChanges {
     this.cities.set([]);
     this.locationErrorMessage = '';
 
+    this.loadAvailableAgencies();
     if (this.selectedStateId) {
       this.loadCities(this.selectedStateId);
     }
@@ -175,6 +211,7 @@ export class CreatePostModal implements OnChanges {
 
   onCityChanged(): void {
     this.locationErrorMessage = '';
+    this.loadAvailableAgencies();
   }
 
   retryLocationLoad(): void {
@@ -210,6 +247,11 @@ export class CreatePostModal implements OnChanges {
   }
 
   publishPost(): void {
+    if (this.isPublishing()) return;
+    if (requiresContentReview(this.problemTitle, this.newPostContent)) {
+      this.errorMessage = CONTENT_REVIEW_MESSAGE;
+      return;
+    }
     const validationMessage = this.validateForm();
     if (validationMessage) {
       this.errorMessage = validationMessage;
@@ -234,6 +276,7 @@ export class CreatePostModal implements OnChanges {
         switchMap((evidences) =>
           this.postService.createOccurrence(
             {
+              agencyId: this.selectedAgencyId || undefined,
               text: content,
               title,
               description: content,
@@ -272,6 +315,7 @@ export class CreatePostModal implements OnChanges {
   }
 
   private validateForm(): string {
+    if (this.selectedAgencyId && !this.selectedAgency) return 'Selecione um órgão da cidade escolhida ou publique sem vincular.';
     if (!this.problemTitle.trim()) return 'Informe um título curto para o problema.';
     if (!this.newPostContent.trim()) return 'Explique o problema com mais detalhes.';
     if (!this.selectedCategory) return 'Selecione a categoria da ocorrência.';
@@ -289,9 +333,9 @@ export class CreatePostModal implements OnChanges {
     }
 
     return forkJoin(
-      this.selectedEvidences.map(({ file, type }) =>
+      this.selectedEvidences.map(({ file }) =>
         this.postService.uploadEvidence(file).pipe(
-          map((upload) => ({ type, url: upload.url, description: file.name })),
+          map((upload) => ({ type: upload.type, url: upload.url, description: file.name })),
         ),
       ),
     );
@@ -323,9 +367,9 @@ export class CreatePostModal implements OnChanges {
     };
 
     this.isPublishing.set(true);
-    this.mockLoadingService
-      .load(() => this.postService.updatePost(this.editingPost!.id, payload, this.user))
+    this.uploadEvidenceFiles()
       .pipe(
+        switchMap(evidences => this.postService.updateOccurrence(this.editingPost!, payload, this.user, evidences)),
         finalize(() => this.isPublishing.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -341,6 +385,7 @@ export class CreatePostModal implements OnChanges {
   }
 
   private applyEditingPost(): void {
+    this.loadAvailableAgencies();
     this.problemTitle = this.editingPost?.title ?? '';
     this.newPostContent = this.editingPost?.content ?? '';
     this.selectedCategory = this.editingPost?.category ?? '';
