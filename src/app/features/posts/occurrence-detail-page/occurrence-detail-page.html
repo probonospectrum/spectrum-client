@@ -72,7 +72,9 @@
           <div><dt>{{ 'Órgão responsável' | translate }}</dt><dd>{{ (responsibleAgencyLabel) | translate }}</dd></div>
           <div><dt>{{ 'Última atualização' | translate }}</dt><dd>{{ formatDate(latestUpdateDate) }}</dd></div>
           <div><dt>{{ 'Encaminhada em' | translate }}</dt><dd>{{ (latestForwardingDate ? formatDate(latestForwardingDate) : 'Ainda não encaminhada') | translate }}</dd></div>
-          <div><dt>{{ 'Protocolo' | translate }}</dt><dd>{{ (currentProtocol || ('Não informado' | translate)) }}</dd></div>
+          @if (canViewProtocol && currentProtocol; as protocol) {
+            <div><dt>{{ 'Protocolo' | translate }}</dt><dd>{{ protocol }}</dd></div>
+          }
         </dl>
       </section>
 
@@ -199,12 +201,6 @@
                   {{ 'Sugerir órgão responsável' | translate }}
                 </button>
               }
-              @if (canInformResolution) {
-                <button type="button" (click)="openPanel('resolution')">
-                  <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
-                  {{ 'Informar resolução' | translate }}
-                </button>
-              }
             </div>
           }
 
@@ -234,35 +230,78 @@
             </div>
           }
 
-          @if (canResolve || canContest || canReopen) {
-            <div class="occurrence-detail__action-group">
-              <span>{{ 'Acompanhamento' | translate }}</span>
-              @if (canResolve) {
-                <button type="button" [disabled]="isSubmitting()" (click)="openPanel('resolve')">
-                  <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-                  {{ 'Classificar resposta' | translate }}
-                </button>
-              }
-              @if (canContest) {
-                <button type="button" class="occurrence-detail__danger" (click)="openPanel('contest')">
-                  <span class="material-symbols-outlined" aria-hidden="true">report</span>
-                  {{ 'Contestar resolução' | translate }}
-                </button>
-              }
-              @if (canReopen) {
-                <button type="button" (click)="openPanel('reopen')">
-                  <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
-                  {{ 'Reabrir ocorrência' | translate }}
-                </button>
-              }
-            </div>
-          }
         </div>
       } @else {
         <p class="occurrence-detail__empty">{{ 'Nenhuma ação disponível para este perfil neste status.' | translate }}</p>
       }
 
-      @if (actionPanel) {
+      @if (actionPanel && !isResolutionPanel) {
+        <ng-container *ngTemplateOutlet="actionForm" />
+      }
+    </section>
+
+
+    <section id="resolucao" class="occurrence-detail__section" aria-labelledby="resolution-title">
+      <div class="occurrence-detail__section-head">
+        <h2 id="resolution-title">{{ 'Resolução' | translate }}</h2>
+      </div>
+      @if (occurrence.status === 'RESOLUCAO_EM_ANALISE' && occurrence.agencyResolution; as resolution) {
+        <div class="occurrence-detail__resolution-window">
+          <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+          <div>
+            <p>{{ (contestDeadlineReached() ? 'Prazo de contestação encerrado em' : 'Prazo para contestar até') | translate }}
+              <strong><time [attr.datetime]="resolution.contestUntil">{{ resolution.contestUntil | date:'dd/MM/yyyy HH:mm' }}</time></strong>
+            </p>
+            <p>{{ 'A moderação analisa a proposta. A comunidade tem 30 dias corridos desde a publicação para contestar.' | translate }}</p>
+          </div>
+        </div>
+      }
+      @for (proposal of agencyProposals; track proposal.id) {
+        <article class="occurrence-detail__resolution-review">
+          <header>
+            <h3>{{ 'Proposta do órgão' | translate }}</h3>
+            <small>{{ eventActorLine(proposal) }} · {{ formatDate(proposal.createdAt || proposal.occurredAt) }}</small>
+          </header>
+          <p>{{ proposal.metadata?.['statement'] }}</p>
+          <ng-container *ngTemplateOutlet="resolutionDetails; context: { $implicit: proposal }" />
+          <ng-container *ngTemplateOutlet="resolutionAttachments; context: { $implicit: proposal }" />
+          <ng-container *ngTemplateOutlet="contestThread; context: { $implicit: contestsForProposal(proposal), id: proposal.id }" />
+          @if (decisionForProposal(proposal); as decision) {
+            <div class="occurrence-detail__resolution-decision">
+              <h3>{{ 'Decisão da moderação' | translate }}</h3>
+              <p>{{ eventDescription(decision) }}</p>
+            </div>
+          }
+        </article>
+      } @empty {
+        <p>{{ 'Nenhuma resolução enviada pelo órgão responsável.' | translate }}</p>
+      }
+      @let previousContests = contestsForProposal();
+      @if (previousContests.length) {
+        <ng-container *ngTemplateOutlet="contestThread; context: { $implicit: previousContests, id: 'sem-versao' }" />
+      }
+      <div class="occurrence-detail__actions occurrence-detail__resolution-actions">
+        <div class="occurrence-detail__action-group">
+          @if (canSubmitAgencyResolution || canInformResolution) {
+            <button type="button" (click)="openPanel('resolution')">{{ (canSubmitAgencyResolution ? 'Adicionar resolução' : 'Informar resolução') | translate }}</button>
+          }
+          @if (canReviewAgencyResolution || canCloseContestedOccurrence || canResolve) {
+            <button type="button" (click)="openPanel('resolve')">{{ (canReviewAgencyResolution ? 'Avaliar resolução' : canCloseContestedOccurrence ? 'Encerrar ocorrência' : 'Classificar resposta') | translate }}</button>
+          }
+          @if (canContest) {
+            <button type="button" class="occurrence-detail__danger" (click)="openPanel('contest')">{{ 'Contestar resolução' | translate }}</button>
+          }
+          @if (canReopen) {
+            <button type="button" (click)="openPanel('reopen')">{{ 'Reabrir ocorrência' | translate }}</button>
+          }
+        </div>
+      </div>
+      @if (isResolutionPanel) {
+        <ng-container *ngTemplateOutlet="actionForm" />
+      }
+    </section>
+
+    <ng-template #actionForm>
         <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
           <fieldset
             class="occurrence-detail__action-fields"
@@ -270,14 +309,12 @@
             [disabled]="isSubmitting()"
           >
           @if (actionPanel === 'agencyProgress') {
-            <label><span>{{ 'Situação do atendimento' | translate }}</span><select [(ngModel)]="progressStatus" name="progressStatus"><option value="EM_RESOLUCAO">{{ 'Em andamento' | translate }}</option><option value="RESOLVIDA">{{ 'Fechada pelo órgão' | translate }}</option></select></label>
             <label><span>{{ 'Descrição do atendimento' | translate }}</span><textarea [(ngModel)]="progressNote" name="progressNote" minlength="20" maxlength="2000"></textarea></label>
             <label><span>{{ 'Protocolo do atendimento' | translate }}</span><input [(ngModel)]="progressProtocol" name="progressProtocol" maxlength="120" /></label>
             <label><span>{{ 'Evidências do atendimento' | translate }}</span><select multiple [(ngModel)]="progressEvidenceIds" name="progressEvidenceIds">@for (evidence of agencyEvidenceOptions; track evidence.id) { <option [value]="evidence.id">{{ evidence.description || evidence.id }}</option> }</select></label>
-            <p>{{ 'Para fechar, anexe e selecione uma evidência enviada por você. Todas as mudanças ficam no histórico e a comunidade pode contestar.' | translate }}</p>
             <button type="button" class="occurrence-detail__form-inline" (click)="submitAgencyProgress()" [disabled]="isSubmitting()">{{ 'Salvar atendimento' | translate }}</button>
           }
-          @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest' || actionPanel === 'resolve') {
+          @if (actionPanel === 'evidence' || actionPanel === 'resolution' || actionPanel === 'contest' || (actionPanel === 'resolve' && canResolve)) {
             <div class="occurrence-detail__upload">
               <div class="occurrence-detail__upload-info">
                 <span class="occurrence-detail__upload-label">{{ 'Evidência' | translate }}</span>
@@ -419,10 +456,20 @@
           @if (actionPanel === 'resolution') {
             <label>
               <span>{{ 'Descrição da resolução' | translate }}</span>
-              <input type="text" [(ngModel)]="resolutionStatement" name="resolutionStatement"  />
+              <textarea [(ngModel)]="resolutionStatement" name="resolutionStatement" maxlength="1000"></textarea>
             </label>
+            @if (canSubmitAgencyResolution) {
+              <label>
+                <span>{{ 'Data da execução (opcional)' | translate }}</span>
+                <input type="date" [(ngModel)]="resolutionExecutionDate" name="resolutionExecutionDate" />
+              </label>
+              <label>
+                <span>{{ 'Protocolo ou ordem de serviço (opcional)' | translate }}</span>
+                <input type="text" [(ngModel)]="resolutionServiceReference" name="resolutionServiceReference" maxlength="120" />
+              </label>
+            }
             <div class="occurrence-detail__suggestion-actions">
-              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ 'Informar resolução' | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ (canSubmitAgencyResolution ? 'Enviar resolução' : 'Informar resolução') | translate }}</button>
               <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
             </div>
           }
@@ -438,7 +485,18 @@
             <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitAnalysis()">{{ 'Registrar início da análise' | translate }}</button>
           }
 
-          @if (actionPanel === 'resolve') {
+          @if (actionPanel === 'resolve' && (canReviewAgencyResolution || canCloseContestedOccurrence)) {
+            <label>
+              <span>{{ 'Justificativa da análise (mínimo de 20 caracteres)' | translate }}</span>
+              <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote" maxlength="1000"></textarea>
+            </label>
+            @if (canReviewAgencyResolution) {
+              <button type="button" class="occurrence-detail__form-inline occurrence-detail__danger" [disabled]="isSubmitting()" (click)="submitAgencyResolutionReview(false)">{{ 'Invalidar resolução' | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !canApproveAgencyResolution" (click)="submitAgencyResolutionReview(true)">{{ 'Validar e encerrar ocorrência' | translate }}</button>
+            } @else {
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitContestedClosure()">{{ 'Encerrar ocorrência' | translate }}</button>
+            }
+          } @else if (actionPanel === 'resolve' && canResolve) {
             <label><span>{{ 'Classificação após análise' | translate }}</span><select [(ngModel)]="responseCode" name="responseCode">
               <option value="02">{{ 'Ocorrência resolvida' | translate }}</option><option value="03">{{ 'Ocorrência em resolução' | translate }}</option><option value="01">{{ 'Ocorrência rejeitada' | translate }}</option>
             </select></label>
@@ -469,19 +527,64 @@
           }
           </fieldset>
         </form>
-      }
-    </section>
+    </ng-template>
+    <ng-template #contestThread let-contests let-id="id">
+      <div class="occurrence-detail__contest-thread">
+        @if (contests.length) {
+          <button type="button" class="occurrence-detail__contest-toggle"
+            [attr.aria-expanded]="openContestThread() === id" (click)="toggleContestThread(id)">
+            <span class="material-symbols-outlined" aria-hidden="true">forum</span>
+            <span class="occurrence-detail__contest-label">
+              {{ (openContestThread() === id ? 'Ocultar contestações' : 'Ver contestações') | translate }} ({{ contests.length }})
+            </span>
+            <span class="material-symbols-outlined" aria-hidden="true">{{ openContestThread() === id ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+          @if (openContestThread() === id) {
+            <ol class="occurrence-detail__contest-messages" [attr.aria-label]="'Contestações' | translate">
+              @for (contest of contests; track contest.id) {
+                <li class="occurrence-detail__contest-message">
+                  <header>
+                    <strong>{{ eventActorLine(contest) }}</strong>
+                    <time [attr.datetime]="contest.createdAt || contest.occurredAt">{{ formatDate(contest.createdAt || contest.occurredAt) }}</time>
+                  </header>
+                  <p>{{ eventDescription(contest) | translate }}</p>
+                  @if (eventEvidences(contest).length) {
+                    <ng-container *ngTemplateOutlet="resolutionAttachments; context: { $implicit: contest }" />
+                  }
+                </li>
+              }
+            </ol>
+          }
+        } @else {
+          <small>{{ 'Nenhuma contestação registrada.' | translate }}</small>
+        }
+      </div>
+    </ng-template>
 
+    <ng-template #resolutionAttachments let-event>
+      <div class="occurrence-detail__timeline-evidences occurrence-detail__resolution-attachments">
+        @for (evidence of eventEvidences(event); track evidence.id) {
+          @if (evidenceUrl(evidence); as url) {
+            <a [href]="url" target="_blank" rel="noopener noreferrer">
+              <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+              <span>{{ evidence.description || ('Ver anexo' | translate) }}</span>
+            </a>
+          }
+        } @empty {
+          <small>{{ 'Nenhum anexo enviado.' | translate }}</small>
+        }
+      </div>
+    </ng-template>
 
     @if (occurrence.agencyProgress; as progress) { <section class="occurrence-detail__section"><h2>{{ 'Atendimento do órgão' | translate }}</h2><p>{{ progress.note }}</p>
-      @if (progress.protocol) { <p>{{ 'Protocolo do atendimento' | translate }}: {{ progress.protocol }}</p> }
+      @if (canViewProtocol && progress.protocol) { <p>{{ 'Protocolo do atendimento' | translate }}: {{ progress.protocol }}</p> }
       @if (progress.closedByAgency) { <p>{{ 'Fechamento informado pelo órgão, sujeito à contestação da comunidade.' | translate }}</p> }
     </section> }
     <section class="occurrence-detail__section" aria-labelledby="evidence-title">
-      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências e solicitações' | translate }}</h2><span>{{ occurrence.evidences.length }} {{ (occurrence.evidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
-      @if (occurrence.evidences.length) {
+      <div class="occurrence-detail__section-head"><h2 id="evidence-title">{{ 'Evidências e solicitações' | translate }}</h2><span>{{ generalEvidences.length }} {{ (generalEvidences.length === 1 ? 'anexo' : 'anexos') | translate }}</span></div>
+      @if (generalEvidences.length) {
         <div class="occurrence-detail__evidence-list">
-          @for (evidence of occurrence.evidences; track evidence.id) {
+          @for (evidence of generalEvidences; track evidence.id) {
             <article class="occurrence-detail__attachment">
               <div class="occurrence-detail__evidence-review" [attr.data-status]="evidence.status || 'APPROVED'">
                 <span>{{ evidenceStatusLabel(evidence) | translate }}</span>
@@ -530,6 +633,14 @@
       } @else { <div class="occurrence-detail__empty-state"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span><div><strong>{{ 'Ainda não há evidências' | translate }}</strong><p>{{ 'Fotos e vídeos ajudam a documentar a situação e dão contexto ao órgão responsável.' | translate }}</p></div></div> }
     </section>
 
+    <ng-template #resolutionDetails let-event>
+      @if (executionDate(event); as date) {
+        <p>{{ 'Data da execução' | translate }} <time [attr.datetime]="date">{{ date | date:'dd/MM/yyyy':'UTC' }}</time></p>
+      }
+      @if (canViewProtocol && event.metadata?.['serviceReference']; as reference) {
+        <p>{{ 'Protocolo ou ordem de serviço' | translate }} {{ reference }}</p>
+      }
+    </ng-template>
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head"><h2>{{ 'Histórico da ocorrência' | translate }}</h2><span>{{ timeline.length }} {{ (timeline.length === 1 ? 'atualização' : 'atualizações') | translate }}</span></div>
       <ol class="occurrence-detail__timeline">
@@ -538,7 +649,9 @@
             <time>{{ formatDate(event.createdAt || event.occurredAt) }}</time>
             <strong>{{ (formatEvent(event.eventType)) | translate }}</strong>
             <small class="occurrence-detail__actor">{{ (eventActorLine(event)) | translate }}</small>
-            <p>{{ (eventDescription(event)) | translate }}</p>
+            @if (!event.metadata?.['resolutionId'] && event.eventType !== 'RESOLUCAO_CONTESTADA') {
+              <p>{{ (eventDescription(event)) | translate }}</p>
+            }
             @if (isModerator && event.metadata?.['responseReceived']) {
               <p>{{ (event.metadata?.['responseReceived']) | translate }}</p>
               <small>{{ 'Código informado pelo órgão:' | translate }} {{ (event.metadata?.['responseCode'] || ('Não informado' | translate)) }}</small>
@@ -546,7 +659,7 @@
             @if (event.previousStatus || event.newStatus) {
               <small>{{ (statusLabel(event.previousStatus)) | translate }} → {{ (statusLabel(event.newStatus)) | translate }}</small>
             }
-            @if (eventEvidences(event); as evidences) {
+            @if (!event.metadata?.['resolutionId'] && event.eventType !== 'RESOLUCAO_CONTESTADA' && eventEvidences(event); as evidences) {
               @if (evidences.length) {
                 <div class="occurrence-detail__timeline-evidences">
                   @for (evidence of evidences; track evidence.id) {

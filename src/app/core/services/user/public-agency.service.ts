@@ -7,6 +7,7 @@ export interface AgencyInboxItem {
   _id: string;
   title: string;
   status: string;
+  responsibleAgency?: { id?: string };
   location?: { cityName?: string; stateCode?: string; label?: string };
   createdAt: string;
   updatedAt: string;
