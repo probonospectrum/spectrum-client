@@ -3,12 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --configuration=local",
+    "start": "ng serve --configuration=local --host 0.0.0.0 --port 4200",
     "start:stg": "ng serve --configuration=stg",
     "build": "node scripts/build.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "start:local": "ng serve --configuration=local"
+    "start:local": "ng serve --configuration=local --host 0.0.0.0 --port 4200"
   },
   "prettier": {
     "printWidth": 100,

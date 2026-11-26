@@ -20,19 +20,19 @@
         <article>
           <h2>{{ registration.name }}</h2>
           <p>CNPJ: {{ registration.cnpj }}</p>
-          <strong>{{ label(registration.status) | translate }}</strong>
+          <strong>{{ label(registration.status, account.isVerified) | translate }}</strong>
           <p>{{ 'Cargo ou função do representante' | translate }}: {{ registration.position }}</p>
           <p>
             {{ 'Referência pública de autorização' | translate }}:
             {{ registration.authorizationReference }}
           </p>
-          <p>
-            {{
-              (account.isVerified ? 'E-mail confirmado' : 'Confirme seu e-mail antes da aprovação.')
-                | translate
-            }}
-          </p>
-          @if (!account.isVerified) {
+          @if (account.isVerified) {
+            <p role="status">{{ 'E-mail do responsável validado com sucesso.' | translate }}</p>
+          } @else {
+            <p>
+              {{ 'O programa encaminhou um aviso de confirmação para o e-mail responsável pelo órgão:' | translate }}
+              <strong>{{ user?.email }}</strong>
+            </p>
             <button type="button" (click)="resend()" [disabled]="busy()">
               {{ 'Reenviar confirmação de e-mail' | translate }}
             </button>

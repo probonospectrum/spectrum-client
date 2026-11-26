@@ -7,6 +7,7 @@ export interface AgencyInboxItem {
   _id: string;
   title: string;
   status: string;
+  responsibleAgency?: { id?: string };
   location?: { cityName?: string; stateCode?: string; label?: string };
   createdAt: string;
   updatedAt: string;
@@ -56,7 +57,10 @@ export class PublicAgencyService {
     );
   }
   resend() {
-    return this.http.post<{ message: string }>(`${this.url}/me/resend-verification`, {});
+    return this.http.post<{ message: string; isVerified: boolean }>(
+      `${this.url}/me/resend-verification`,
+      {},
+    );
   }
   inbox(cursor?: string, filters: { search?: string; status?: string; order?: string } = {}) {
     return this.http.get<AgencyInboxPage>(`${API_BASE_URL}/post/agency/inbox`, {

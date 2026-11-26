@@ -73,13 +73,18 @@ export class ModerationPage {
     const term = this.search.trim().toLocaleLowerCase();
     return this.reports().filter(p => (!this.category || (p.categories ?? p.reasons).includes(this.category)) && (!term || [p.title, p.content, ...p.reasons].some(v => v?.toLocaleLowerCase().includes(term))));
   }
+  agencyResolution(post: SpectrumPost) {
+    return post.history.find(event => event.eventType === 'RESOLUCAO_INFORMADA' &&
+      event.metadata?.['resolutionId'] === post.agencyResolution?.id);
+  }
   review(post: SpectrumPost) { return [...(post.history || [])].reverse().find(e => e.eventType === 'OCORRENCIA_RESOLVIDA'); }
   resolutionNote(post: SpectrumPost): string { return String(this.review(post)?.metadata?.['note'] || this.review(post)?.description || ''); }
   resolutionEvidence(post: SpectrumPost) {
     const ids = this.review(post)?.evidenceIds || [];
     return post.evidences.filter(e => ids.includes(e.id));
   }
-  contestations(post: SpectrumPost) { return (post.history || []).filter(e => e.eventType === 'RESOLUCAO_CONTESTADA'); }
+  contestations(post: SpectrumPost) { return (post.history || []).filter(e => e.eventType === 'RESOLUCAO_CONTESTADA' &&
+      (e.metadata?.['resolutionId'] || undefined) === post.agencyResolution?.id); }
   contestEvidence(post: SpectrumPost, ids?: string[]) { return post.evidences.filter(e => ids?.includes(e.id)); }
   status(post: SpectrumPost): string { return this.posts.getStatusLabel(post.status); }
   logout(): void { this.users.logout(); void this.router.navigate(['/login']); }

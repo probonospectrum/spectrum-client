@@ -75,6 +75,17 @@ describe('Connected institutional account API', () => {
       .flush({ occurrenceRole: 'RESPONSIBLE_AGENCY' });
     expect(users.getCurrentUser()?.occurrenceRole).toBe('USER');
   });
+  it('sends an authenticated confirmation resend and returns the verification state', () => {
+    let response: { message: string; isVerified: boolean } | undefined;
+    api.resend().subscribe((value) => (response = value));
+
+    const request = http.expectOne(`${API_BASE_URL}/public-agencies/me/resend-verification`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer session');
+    request.flush({ message: 'E-mail já confirmado.', isVerified: true });
+
+    expect(response).toEqual({ message: 'E-mail já confirmado.', isVerified: true });
+  });
   it('sends official CNPJ review fields through the moderation API', () => {
     const body = {
       decision: 'APPROVED',

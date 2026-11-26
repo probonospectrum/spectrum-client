@@ -1,6 +1,6 @@
 import { I18nService } from '../../i18n/i18n.service';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, effect, inject, signal } from '@angular/core';
 import { Subject, Subscription, catchError, debounceTime, of, switchMap, timeout } from 'rxjs';
 import { io } from 'socket.io-client';
 import { API_BASE_URL } from '../../constants/api-routes';
@@ -21,11 +21,17 @@ interface NotificationPage {
   unreadCount: number;
 }
 
+export const NOTIFICATION_SOCKET_FACTORY = new InjectionToken<typeof io>('Notification socket factory', {
+  providedIn: 'root',
+  factory: () => io,
+});
+
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
   readonly i18n = inject(I18nService);
   private readonly http = inject(HttpClient);
   private readonly users = inject(UserService);
+  private readonly connectSocket = inject(NOTIFICATION_SOCKET_FACTORY);
   private readonly url = API_BASE_URL + '/notifications';
   private readonly refresh = new Subject<void>();
   private request?: Subscription;
@@ -75,7 +81,7 @@ export class NotificationService {
           this.error.set('');
           this.loading.set(false);
         });
-      const socket = io(API_BASE_URL + '/realtime', { auth: { token }, reconnection: true });
+      const socket = this.connectSocket(API_BASE_URL + '/realtime', { auth: { token }, reconnection: true });
       socket.on('connect', () => {
         this.connected.set(true);
         this.reload();
