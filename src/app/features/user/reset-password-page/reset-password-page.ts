@@ -1,7 +1,11 @@
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { AuthApiService } from '../../../core/services/authApi/auth-api.service';
 
 import { AuthShell } from '../../../shared/components/auth-shell/auth-shell';
 import { Button } from '../../../shared/components/button/button';
@@ -14,6 +18,7 @@ import { SpectrumInput } from '../../../shared/components/input/input/input';
     AuthShell,
     Button,
     SpectrumInput,
+    RouterLink,
   ],
   templateUrl: './reset-password-page.html',
   styleUrl: './reset-password-page.scss',
@@ -21,6 +26,13 @@ import { SpectrumInput } from '../../../shared/components/input/input/input';
 export class ResetPasswordPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly authApi = inject(AuthApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token')?.trim();
+  readonly submitting = signal(false);
+  readonly complete = signal(false);
+  readonly invalidLink = signal(!this.token);
+  readonly error = signal('');
 
   readonly resetPasswordForm = this.formBuilder.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(30)]],
@@ -30,7 +42,13 @@ export class ResetPasswordPage {
   fieldError(controlName: 'password' | 'confirmPassword'): string {
     const control = this.resetPasswordForm.controls[controlName];
 
-    if (!control.touched || control.valid) {
+    if (!control.touched) return '';
+
+    if (controlName === 'confirmPassword' && control.value &&
+        control.value !== this.resetPasswordForm.controls.password.value) {
+      return 'As senhas não conferem.';
+    }
+    if (control.valid) {
       return '';
     }
 
@@ -52,11 +70,31 @@ export class ResetPasswordPage {
   resetPassword(): void {
     this.resetPasswordForm.markAllAsTouched();
 
-    if (this.resetPasswordForm.invalid) {
+    const { password, confirmPassword } = this.resetPasswordForm.getRawValue();
+    if (this.resetPasswordForm.invalid || password !== confirmPassword ||
+        !this.token || this.invalidLink() || this.submitting() || this.complete()) {
       return;
     }
 
-    // A lógica de redefinição será implementada posteriormente.
+    this.error.set('');
+    this.submitting.set(true);
+    this.authApi.resetPassword(this.token, password, confirmPassword).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.submitting.set(false)),
+    ).subscribe({
+      next: () => {
+        this.resetPasswordForm.reset();
+        this.complete.set(true);
+      },
+      error: (error: unknown) => {
+        const message = error instanceof HttpErrorResponse ? error.error?.message : null;
+        if (message === 'Link invalido ou expirado.' || message === 'Token invalido para esta operacao.') {
+          this.invalidLink.set(true);
+          return;
+        }
+        this.error.set('Não foi possível redefinir a senha. Tente novamente.');
+      },
+    });
   }
 
   goToLogin(): void {
