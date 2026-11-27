@@ -1,9 +1,18 @@
+import { Component, Input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { ModerationPage } from './moderation-page';
 import { PostService, SpectrumPost } from '../../core/services/posts/post.service';
 import { UserService } from '../../core/services/user/user.service';
+import { SocialShell } from '../../shared/components/social-shell/social-shell';
+
+@Component({ selector: 'app-social-shell', template: '<ng-content />' })
+class StubSocialShell {
+  @Input() user: unknown;
+  @Input() showContentHeader = false;
+  @Input() wideContent = false;
+}
 
 describe('Moderation queues', () => {
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
@@ -16,7 +25,10 @@ describe('Moderation queues', () => {
       { provide: ActivatedRoute, useValue: { paramMap: params, snapshot: { get paramMap() { return params.value; } } } },
       { provide: PostService, useValue: api },
       { provide: UserService, useValue: { getCurrentUser: () => ({ occurrenceRole: 'MODERATOR' }) } },
-    ] });
+    ] }).overrideComponent(ModerationPage, {
+      remove: { imports: [SocialShell] },
+      add: { imports: [StubSocialShell] },
+    });
   });
   const page = () => TestBed.runInInjectionContext(() => new ModerationPage());
   it('loads the selected queue again when navigating between sidebar links', () => {
@@ -33,6 +45,26 @@ describe('Moderation queues', () => {
     const component = page(); component.search = 'são paulo'; expect(component.visible).toHaveLength(1);
     component.search = 'outra'; expect(component.visible).toEqual([]);
   });
+  it('keeps the category filter available and provides an action to reset an empty search', () => {
+    params.next(convertToParamMap({ queue: 'denunciados' }));
+    api.getModerationReports.mockReturnValue(of([
+      { id: 'report-1', title: 'Luz apagada', kind: 'post', count: 1, reasons: ['Duplicado'] },
+    ]));
+    const fixture = TestBed.createComponent(ModerationPage);
+    const component = fixture.componentInstance;
+    const view: HTMLElement = fixture.nativeElement;
+    component.category = 'Outro';
+    component.search = 'texto ausente';
+    fixture.detectChanges();
+
+    expect(view.querySelector('.toolbar select')).not.toBeNull();
+    expect(view.querySelector('.state h2')?.textContent).toContain('Nenhum resultado');
+    view.querySelector<HTMLButtonElement>('.state button')?.click();
+    fixture.detectChanges();
+    expect(view.querySelector('.state')).toBeNull();
+    expect(view.querySelector('details summary')?.textContent).toContain('Luz apagada');
+  });
+
   it('sends a decision for an occurrence and does not submit an additional vote', () => {
     const component = page();
     const item = { id: 'reported', kind: 'post' as const, title: 'Título', count: 2, reasons: ['Assédio'] };
