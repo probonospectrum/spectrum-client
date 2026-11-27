@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, tap, throwError, switchMap, shareReplay } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
-import { canProposeAgencyResolution, representsOccurrenceAgency, occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
+import { occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser, UserService } from '../user/user.service';
 
 export type OccurrenceStatus =
@@ -16,7 +16,6 @@ export type OccurrenceStatus =
   | 'ABERTA'
   | 'ENCAMINHADA'
   | 'EM_ANALISE'
-  | 'RESOLUCAO_EM_ANALISE'
   | 'RESOLUCAO_INFORMADA'
   | 'RESOLVIDA'
   | 'CONTESTADA'
@@ -158,7 +157,6 @@ export interface ModerationReport {
 
 export interface SpectrumPost {
   moderationRemovedAt?: string;
-  agencyResolution?: { id: string; contestUntil: string } | null;
   agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
   reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
@@ -273,7 +271,6 @@ export interface UploadedEvidenceResponse {
 
 interface OccurrenceApiResponse {
   moderationRemovedAt?: string;
-  agencyResolution?: SpectrumPost['agencyResolution'];
   agencyProgress?: SpectrumPost['agencyProgress'];
   saved?: boolean;
   repostCount?: number;
@@ -789,20 +786,14 @@ export class PostService {
     user: LoggedUser | null,
     statement: string,
     evidenceIds: string[] = [],
-    details?: { executionDate?: string; serviceReference?: string },
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
-    const communityStatuses: OccurrenceStatus[] = ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA'];
-    if (representsOccurrenceAgency(user, post.responsibleAgency?.id)) {
-      this.assertTransition(post, canProposeAgencyResolution(user, post), [post.status]);
-    } else {
-      this.assertTransition(post, user?.accountType !== 'PUBLIC_AGENCY' && (user?.occurrenceRole ?? 'USER') === 'USER', communityStatuses);
-    }
+    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER' || this.isRelatedAgency(post, user), ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA']);
     if (!statement.trim()) throw new Error('Descreva a solução observada.');
+    const actorType = this.actorTypeForUser(user);
     const body = {
       statement,
       evidenceIds,
-      ...details,
     };
 
     if (!this.isApiId(post.id)) {
@@ -824,7 +815,7 @@ export class PostService {
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para resolver.');
-    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['RESOLUCAO_INFORMADA', 'RESPOSTA_EM_APURACAO', 'CONTESTADA']);
+    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['RESOLUCAO_INFORMADA', 'RESPOSTA_EM_APURACAO']);
     if (note.trim().length < 20) throw new Error('Descreva a verificação em pelo menos 20 caracteres.');
     const actorType = this.actorTypeForUser(user);
     const body = {
@@ -844,17 +835,6 @@ export class PostService {
       );
   }
 
-  reviewAgencyResolution(post: SpectrumPost, user: LoggedUser | null, valid: boolean, note: string): Observable<SpectrumPost> {
-    this.assertTransition(post, user?.occurrenceRole === 'MODERATOR', ['RESOLUCAO_EM_ANALISE']);
-    if (!post.agencyResolution) return throwError(() => new Error('Resolução não encontrada.'));
-    return this.http.post<OccurrenceApiResponse>(`${this.apiUrl}/${post.id}/resolution/review`, {
-      resolutionId: post.agencyResolution.id, valid, note,
-    }).pipe(
-      map(occurrence => this.toSpectrumPost(occurrence, user)),
-      tap(updated => this.cacheOccurrence(updated)),
-    );
-  }
-
   contestOccurrenceResolution(
     post: SpectrumPost,
     user: LoggedUser | null,
@@ -862,12 +842,10 @@ export class PostService {
     evidenceIds: string[] = [],
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para contestar.');
-    const resolutionId = post.agencyResolution?.id;
-    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER', resolutionId ? ['RESOLUCAO_EM_ANALISE'] : ['RESOLVIDA']);
+    this.assertTransition(post, (user?.occurrenceRole ?? 'USER') === 'USER', ['RESOLVIDA']);
     if ((!reason.trim() && !evidenceIds.length) || reason.length > 500) throw new Error('Anexe uma imagem ou justifique em até 500 caracteres.');
     const body = {
       reason,
-      resolutionId,
       evidenceIds,
     };
 
@@ -1745,7 +1723,6 @@ return {
   saved: occurrence.saved ?? false,
   tags: [],
   status: occurrence.status,
-  agencyResolution: occurrence.agencyResolution,
   agencyProgress: occurrence.agencyProgress,
   moderationReason: occurrence.moderationReason,
   forwardingDueAt: occurrence.forwardingDueAt,
@@ -1784,7 +1761,7 @@ return {
   }
 
   private isRelatedAgency(post: SpectrumPost, user: LoggedUser | null): boolean {
-    return user?.occurrenceRole === 'RESPONSIBLE_AGENCY' && representsOccurrenceAgency(user, post.responsibleAgency?.id);
+    return user?.occurrenceRole === 'RESPONSIBLE_AGENCY' && Boolean(user.occurrenceAgencyId) && user.occurrenceAgencyId === post.responsibleAgency?.id;
   }
 
   private assertTransition(post: SpectrumPost, permitted: boolean, statuses: OccurrenceStatus[]): void {

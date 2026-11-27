@@ -25,6 +25,7 @@
       <span class="post-card__author-meta">@{{ post.authorNickname }}</span>
     </div>
 
+    @if (!readOnly) {
     <div class="post-card__menu-wrap" (click)="$event.stopPropagation()">
       <button
         class="post-card__more"
@@ -108,6 +109,7 @@
         </div>
       }
     </div>
+    }
   </header>
 
   <section
@@ -226,6 +228,7 @@
       </span>
       <span class="post-card__meta-date">{{ post.publishedAt | localizedDate:post.publishedAtLabel }}</span>
     </div>
+    @if (!readOnly) {
     <div class="post-card__actions" [attr.aria-label]="'Interaçoes' | translate">
       @if (currentUser?.occurrenceRole !== 'MODERATOR') {
       <button
@@ -284,6 +287,7 @@
       </button>
       }
     </div>
+    }
   </footer>
 
   @if (allowDiscussion && commentsOpen) {

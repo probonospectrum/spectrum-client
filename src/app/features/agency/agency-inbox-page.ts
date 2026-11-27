@@ -7,7 +7,7 @@ import { AgencyInboxService } from '../../core/services/user/agency-inbox.servic
 import { AgencyInboxItem, PublicAgencyService } from '../../core/services/user/public-agency.service';
 import { SocialShell } from '../../shared/components/social-shell/social-shell';
 import { LocalizedDatePipe } from '../../core/i18n/translate.pipe';
-import { canProposeAgencyResolution, OCCURRENCE_STATUS_DETAILS } from '../../core/services/posts/occurrence-flow';
+import { OCCURRENCE_STATUS_DETAILS } from '../../core/services/posts/occurrence-flow';
 import { OccurrenceStatus } from '../../core/services/posts/post.service';
 
 @Component({
@@ -93,9 +93,6 @@ export class AgencyInboxPage {
           this.error.set('Não foi possível carregar mais ocorrências. Tente novamente.');
         },
       });
-  }
-  canAddResolution(post: AgencyInboxItem): boolean {
-    return canProposeAgencyResolution(this.users.currentUser(), post);
   }
   label(status: string) {
     return OCCURRENCE_STATUS_DETAILS[status as OccurrenceStatus] || status;

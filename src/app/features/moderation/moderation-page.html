@@ -57,16 +57,13 @@
                 }
               }
             }
-            @if (post.status === 'RESOLUCAO_EM_ANALISE') {
-              <h3>Resolução do órgão</h3>
-              <p>{{ agencyResolution(post)?.metadata?.['statement'] }}</p>
-            } @else if (queue === 'respostas') {
+            @if (queue === 'respostas') {
               <h3>Resposta do órgão</h3>
               @for (forwarding of post.forwardingHistory; track forwarding.id) {
                 @if (forwarding.responseReceived) { <p>{{ forwarding.responseReceived }}</p> }
               }
             }
-            <div class="card-bottom"><span>{{ post.responsibleAgency?.name || 'Sem órgão vinculado' }}</span><a [routerLink]="['/ocorrencias', post.id]" [queryParams]="post.status === 'RESOLUCAO_EM_ANALISE' || post.status === 'CONTESTADA' ? { acao: 'avaliar-resolucao' } : null">{{ post.status === 'RESOLUCAO_EM_ANALISE' ? 'Avaliar resolução' : post.status === 'CONTESTADA' ? 'Avaliar contestação' : queue === 'respostas' ? 'Analisar resposta' : 'Ver ocorrência' }} →</a></div>
+            <div class="card-bottom"><span>{{ post.responsibleAgency?.name || 'Sem órgão vinculado' }}</span><a [routerLink]="['/ocorrencias', post.id]">{{ queue === 'respostas' ? 'Analisar resposta' : 'Ver ocorrência' }} →</a></div>
           </article>
         } @empty { <div class="state">Nenhuma ocorrência encontrada nesta fila.</div> }
       </div>

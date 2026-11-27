@@ -274,7 +274,8 @@
 
 .profile-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   border-top: 0;
   border-radius: 0 0 var(--spectrum-radius-md) var(--spectrum-radius-md);
 }
@@ -316,6 +317,12 @@
 
 .profile-tabs__icon {
   display: block;
+}
+
+.profile-tabs__label {
+  align-self: center;
+  font-size: 11px;
+  line-height: 1.1;
 }
 
 .profile-tabs__count {
@@ -399,21 +406,12 @@
     flex: 1;
   }
 
-  .profile-tabs {
-    overflow-x: auto;
-  }
-
-  .profile-tabs__tab {
-    min-width: 96px;
-  }
 }
 
 .profile-header__name-row > div { min-width: 0; }
 .profile-header__username { overflow-wrap: anywhere; }
 .profile-header__meta, .profile-header__actions { flex-wrap: wrap; }
 @media (max-width: 600px) {
-  .profile-tabs { display: flex; }
-  .profile-tabs__tab { flex: 1 0 96px; }
   .profile-header__config-btn, .profile-header__follow-btn { min-height: 44px; white-space: normal; line-height: 1.3; }
   .profile-header__report-btn { width: 44px; height: 44px; }
   .profile-header__meta { gap: 10px; }
