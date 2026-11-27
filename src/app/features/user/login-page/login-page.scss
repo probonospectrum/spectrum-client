@@ -299,3 +299,9 @@
   .account-type__card { flex-direction: row; align-items: center; padding-right: 34px; }
   .account-type__icon { flex-shrink: 0; }
 }
+
+.community-terms-link {
+  text-align: start;
+  text-decoration: underline;
+  justify-self: start;
+}

@@ -1,0 +1,36 @@
+<dialog #dialog aria-labelledby="community-terms-title" (cancel)="cancel($event)">
+  @if (terms.prompt(); as prompt) {
+    <h2 id="community-terms-title" tabindex="-1" autofocus>Termos de Privacidade, Segurança e Diretrizes da Comunidade</h2>
+    @if (prompt.message) {
+      <p class="notice">{{ prompt.message }}</p>
+    }
+    <div class="articles" tabindex="0" role="region" aria-label="Artigos dos Termos do Spectrum">
+      <h3>Art. 1º — Finalidade do Spectrum</h3>
+      <p>O Spectrum é um espaço de participação cidadã. A plataforma permite registrar ocorrências no município, acompanhar seu andamento, contestar resoluções e contribuir com informações que ajudem a comunidade e os responsáveis pelo atendimento a compreender os problemas relatados.</p>
+      <h3>Art. 2º — Uso dos conteúdos enviados</h3>
+      <p><strong>2.1.</strong> O Spectrum utiliza os relatos, comentários e arquivos enviados para publicar ou apresentar o conteúdo ao público indicado na interface, organizar e acompanhar as ocorrências, analisar contestações, moderar interações e, quando necessário, encaminhar informações aos órgãos ou entidades responsáveis pelo atendimento.</p>
+      <p><strong>2.2.</strong> Você mantém os direitos que possui sobre o conteúdo enviado. Ao publicá-lo ou anexá-lo, você autoriza o Spectrum a armazenar, exibir e encaminhar o material na medida necessária às finalidades descritas nestes Termos, respeitados os direitos de terceiros e as regras de proteção de dados pessoais.</p>
+      <p><strong>2.3.</strong> Antes de enviar um relato ou arquivo, confira quem poderá acessá-lo e inclua apenas as informações necessárias para explicar a situação. Oculte dados pessoais desnecessários, como números de documentos, telefones, endereços residenciais, placas de veículos e imagens que identifiquem terceiros.</p>
+      <h3>Art. 3º — Respeito e segurança na comunidade</h3>
+      <p><strong>3.1.</strong> Relate os fatos com clareza. Ao comentar ou contestar uma resolução, apresente seus motivos com respeito e mantenha o foco na ocorrência. Use as reações de curtir e não curtir para expressar sua opinião sobre o conteúdo.</p>
+      <p><strong>3.2.</strong> São vedados ameaças, assédio, intimidação, discriminação, incentivo à violência, exposição indevida de dados pessoais e divulgação de conteúdo que viole direitos de terceiros. Essas diretrizes se aplicam a todas as contas e a todas as interações.</p>
+      <p><strong>3.3.</strong> O Spectrum poderá restringir a visibilidade ou remover conteúdo que viole estas diretrizes ou a legislação aplicável. Violações podem ser comunicadas pelo canal de atendimento da plataforma.</p>
+      <h3>Art. 4º — Proteção de crianças e adolescentes</h3>
+      <p>A privacidade, a segurança e o melhor interesse de crianças e adolescentes devem orientar o uso da plataforma. Preserve sua identidade ao relatar ocorrências e evite divulgar imagens, nomes, localização, escola ou outros elementos que permitam identificá-los. Conteúdos que violem seus direitos poderão ter o acesso restringido ou ser removidos conforme a legislação aplicável.</p>
+      <h3>Art. 5º — Dados pessoais e seus direitos</h3>
+      <p><strong>5.1.</strong> O Spectrum trata os dados pessoais necessários para operar a conta, disponibilizar os recursos da plataforma, proteger o serviço e cumprir obrigações legais. O tratamento deve respeitar as finalidades informadas e a base legal aplicável a cada atividade. O aceite destes Termos registra sua concordância com as condições de uso dos recursos indicados no Art. 6º. Quando o tratamento depender de consentimento, ele será solicitado separadamente e para uma finalidade específica.</p>
+      <p><strong>5.2.</strong> Você pode solicitar confirmação do tratamento, acesso e correção dos seus dados, informações sobre compartilhamento e, nas hipóteses previstas em lei, bloqueio, eliminação ou revogação do consentimento. A Política de Privacidade do Spectrum deve informar quem é o controlador, como entrar em contato, com quem os dados podem ser compartilhados e por quanto tempo são mantidos.</p>
+      <h3>Art. 6º — Aceite e acesso aos recursos</h3>
+      <p>Você pode criar sua conta, comentar, curtir e usar as reações de curtir e não curtir mesmo se recusar estes Termos. Para criar ocorrências, contestar resoluções ou anexar documentos, fotos ou vídeos, é necessário aceitar os Termos. Você pode fazer isso quando desejar usar esses recursos.</p>
+    </div>
+    @if (error()) {
+      <p role="alert">{{ error() }}</p>
+    }
+    <div class="actions">
+      <button type="button" class="refuse" [disabled]="busy()" (click)="refuse()">Recusar</button>
+      <button type="button" class="accept" [disabled]="busy()" (click)="accept()">
+        {{ busy() ? 'Registrando…' : 'Aceitar termos' }}
+      </button>
+    </div>
+  }
+</dialog>

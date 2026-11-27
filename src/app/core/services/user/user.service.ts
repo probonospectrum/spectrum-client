@@ -10,6 +10,7 @@ export interface LoginRequest {
 }
 
 export interface CreateUserRequest {
+  acceptedTermsVersion?: string;
   accountType?: 'CITIZEN' | 'PUBLIC_AGENCY'; agencyCnpj?: string; agencyName?: string;
   representativePosition?: string; authorizationReference?: string;
   name: string;

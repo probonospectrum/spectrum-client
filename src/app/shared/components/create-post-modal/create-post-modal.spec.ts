@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { CreatePostModal } from './create-post-modal';
 import {
+  NearbyOccurrence,
   OccurrenceAgencyOption,
   PostService,
   SpectrumPost,
@@ -16,8 +17,10 @@ describe('Optional regional agency selection', () => {
     response: Subject<OccurrenceAgencyOption[]>;
   }[];
   let create: ReturnType<typeof vi.fn>;
+  const findNearbyOccurrences = vi.fn();
   beforeEach(() => {
     requests = [];
+    findNearbyOccurrences.mockReset().mockReturnValue(of([]));
     create = vi.fn(() => of({ id: 'saved' } as SpectrumPost));
     TestBed.configureTestingModule({
       imports: [CreatePostModal],
@@ -26,6 +29,9 @@ describe('Optional regional agency selection', () => {
           provide: PostService,
           useValue: {
             createOccurrence: create,
+            findNearbyOccurrences,
+            getOccurrence: () => of({ status: 'ABERTA', content: 'O pavimento segue danificado.' }),
+            getStatusLabel: () => 'Aberta',
             getAgenciesForLocation: (stateCode: string, cityName: string) => {
               const response = new Subject<OccurrenceAgencyOption[]>();
               requests.push({ stateCode, cityName, response });
@@ -104,6 +110,53 @@ describe('Optional regional agency selection', () => {
     expect(modal.availableAgencies()).toEqual([]);
     expect(modal.selectedAgencyId).toBe('');
   });
+  it('lists only the current address matches and allows publishing anyway', async () => {
+    const { fixture, modal } = setup();
+    const prior = new Subject<NearbyOccurrence[]>();
+    const current = new Subject<NearbyOccurrence[]>();
+    findNearbyOccurrences.mockReturnValueOnce(prior).mockReturnValueOnce(current);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const address = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[maxlength="240"]')!;
+    vi.useFakeTimers();
+    try {
+      address.value = 'Rua 1';
+      address.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(350);
+      expect(findNearbyOccurrences).toHaveBeenLastCalledWith({
+        stateCode: 'SP', cityId: '3518800', category: 'INFRAESTRUTURA', address: 'Rua 1',
+      });
+      const neighborhood = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[maxlength="100"]')!;
+      neighborhood.value = ' Lenize ';
+      neighborhood.dispatchEvent(new Event('input'));
+      prior.next([{ id: 'prior', title: 'Resultado desatualizado', address: 'Rua 1' }]);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.nearby-occurrences__notice')).toBeNull();
+
+      vi.advanceTimersByTime(350);
+      expect(findNearbyOccurrences).toHaveBeenLastCalledWith(expect.objectContaining({ neighborhood: 'Lenize' }));
+      current.next([{ id: 'current', title: 'Buraco na via', address: 'Rua 1' }]);
+      fixture.detectChanges();
+      const row = fixture.nativeElement.querySelector('.nearby-occurrences li');
+      expect(row.querySelector('strong').textContent).toBe('Buraco na via');
+      expect(row.querySelector('button span span').textContent).toBe('Rua 1');
+      const button = row.querySelector('button');
+      button.click();
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(row.querySelector('#nearby-summary-current').textContent).toContain('O pavimento segue danificado.');
+      expect(modal.address).toBe('Rua 1');
+      button.click();
+      fixture.detectChanges();
+      expect(row.querySelector('#nearby-summary-current').hidden).toBe(true);
+      modal.publishPost();
+      expect(create).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('allows publication without an agency even when lookup fails', () => {
     const { fixture, modal } = setup();
     modal.onCityChanged();

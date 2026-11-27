@@ -25,6 +25,20 @@ export type OccurrenceStatus =
 
 export type OccurrenceImportance = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
 
+export interface NearbyOccurrenceCriteria {
+  stateCode: string;
+  cityId: string;
+  category: OccurrenceCategory;
+  address: string;
+  neighborhood?: string;
+}
+
+export interface NearbyOccurrence {
+  id: string;
+  title: string;
+  address: string;
+}
+
 export type OccurrenceCategory =
   | 'INFRAESTRUTURA'
   | 'ILUMINACAO_PUBLICA'
@@ -388,6 +402,10 @@ export class PostService {
       forwardingId, responseReceived, responseCode: responseCode || undefined, protocol: protocol.trim() || undefined,
     }).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
   }
+  findNearbyOccurrences(criteria: NearbyOccurrenceCriteria): Observable<NearbyOccurrence[]> {
+    return this.http.post<NearbyOccurrence[]>(this.apiUrl + '/nearby', criteria);
+  }
+
   getAgenciesForLocation(stateCode: string, cityName: string): Observable<OccurrenceAgencyOption[]> {
     return this.http.get<OccurrenceAgencyOption[]>(`${this.apiUrl}/agencies/available`, { params: { stateCode, cityName } });
   }

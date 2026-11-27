@@ -683,3 +683,65 @@
 .agency-picker__selected > span { color: #16a34a; }
 .agency-picker__selected strong { font-size: 13px; color: var(--spectrum-text); }
 .agency-picker small { color: var(--spectrum-text-muted); line-height: 1.6; }
+
+
+.nearby-occurrences:not(:has(.nearby-occurrences__notice)) {
+  display: contents;
+}
+
+.nearby-occurrences__notice {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface-soft);
+
+  h3, p, ul {
+    margin: 0;
+  }
+
+  h3 {
+    font-size: 1rem;
+  }
+
+  p, li {
+    margin-top: 0.4rem;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+
+  ul {
+    padding-inline-start: 1.25rem;
+  }
+
+  li span {
+    display: block;
+  }
+}
+
+.nearby-occurrences__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-sm);
+  background: var(--spectrum-surface);
+  color: inherit;
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover, &:focus-visible {
+    border-color: var(--spectrum-action);
+  }
+}
+
+.nearby-occurrences__summary {
+  padding-inline: 0.65rem;
+}
+
+.nearby-occurrences__description {
+  white-space: pre-wrap;
+}

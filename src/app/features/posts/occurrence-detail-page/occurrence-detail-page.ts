@@ -4,6 +4,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { CommunityTermsService } from '../../../core/services/user/community-terms.service';
 import { afterNextRender, Component, DestroyRef, Injector, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -78,6 +79,7 @@ export class OccurrenceDetailPage implements OnInit {
   private readonly router = inject(Router);
   private readonly postService = inject(PostService);
   private readonly userService = inject(UserService);
+  private readonly communityTerms = inject(CommunityTermsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly document = inject(DOCUMENT);
@@ -665,8 +667,13 @@ export class OccurrenceDetailPage implements OnInit {
     return forwardingEvent?.createdAt ?? forwardingEvent?.occurredAt ?? '';
   }
 
-  openPanel(panel: ActionPanel): void {
+  async openPanel(panel: ActionPanel): Promise<void> {
     if (this.isSubmitting()) return;
+    if (this.actionPanel !== panel && (panel === 'evidence' || panel === 'contest')) {
+      const occurrence = this.occurrence?.id;
+      if (!(await this.communityTerms.requireAcceptance(panel === 'contest' ? 'contest' : 'attach')) ||
+          this.destroyRef.destroyed || this.occurrence?.id !== occurrence) return;
+    }
     this.actionPanel = this.actionPanel === panel ? null : panel;
     this.evidenceFile = null;
     this.evidenceDescription = '';
@@ -759,9 +766,16 @@ export class OccurrenceDetailPage implements OnInit {
     });
   }
 
-  onEvidenceSelected(event: Event): void {
+  async onEvidenceSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    this.evidenceFile = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
+    const panel = this.actionPanel;
+    if (file && !(await this.communityTerms.requireAcceptance('attach'))) {
+      input.value = '';
+      return;
+    }
+    if (this.destroyRef.destroyed || this.actionPanel !== panel || !input.isConnected) return;
+    this.evidenceFile = file;
     this.resolutionEvidenceId = undefined;
   }
 

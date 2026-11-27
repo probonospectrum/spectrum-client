@@ -188,6 +188,10 @@ Sair da sua conta|Sign out of your account|Salir de tu cuenta
 Você pode entrar novamente a qualquer momento. Deseja realmente sair?|You can sign in again at any time. Do you really want to sign out?|Puedes volver a iniciar sesión en cualquier momento. ¿Quieres salir?
 Nova publicação|New post|Nueva publicación
 Nova ocorrência|New issue|Nueva incidencia
+Há ocorrências nas proximidades|There are nearby reports|Hay incidencias en las inmediaciones
+Carregando resumo…|Loading summary…|Cargando resumen…
+Não foi possível abrir o resumo. Feche e abra novamente para tentar.|Could not open the summary. Close and reopen it to try again.|No se pudo abrir el resumen. Ciérralo y vuelve a abrirlo para intentarlo de nuevo.
+Confira se o mesmo problema já foi registrado e ajude a comunidade a acompanhar a resolução.|Check whether the same issue has already been reported and help the community follow its resolution.|Comprueba si el mismo problema ya se ha registrado y ayuda a la comunidad a seguir su resolución.
 Comunidade|Community|Comunidad
 Cidades|Cities|Ciudades
 Cidades sugeridas|Suggested cities|Ciudades sugeridas

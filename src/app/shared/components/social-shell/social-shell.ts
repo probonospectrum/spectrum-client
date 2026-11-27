@@ -19,6 +19,7 @@ import { Subscription, timer, switchMap, map, catchError, of } from 'rxjs';
 import { LocationService } from '../../../core/services/location/location.service';
 import { SpectrumPost, SuggestedProfile } from '../../../core/services/posts/post.service';
 import { LoggedUser, UserService } from '../../../core/services/user/user.service';
+import { CommunityTermsService } from '../../../core/services/user/community-terms.service';
 import { CreatePostModal } from '../create-post-modal/create-post-modal';
 import { LogoutConfirm } from '../logout-confirm/logout-confirm';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
@@ -54,6 +55,7 @@ export class SocialShell implements OnInit {
   readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly communityTerms = inject(CommunityTermsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly userService = inject(UserService);
   private readonly locationService = inject(LocationService);
@@ -159,8 +161,9 @@ export class SocialShell implements OnInit {
     return this.user?.accountType !== 'PUBLIC_AGENCY' && this.user?.occurrenceRole !== 'MODERATOR';
   }
 
-  openCreatePost(): void {
-    if (!this.canCreateOccurrence) return;
+  async openCreatePost(): Promise<void> {
+    if (!this.canCreateOccurrence || this.showCreatePost) return;
+    if (!(await this.communityTerms.requireAcceptance('create')) || this.destroyRef.destroyed || this.showCreatePost) return;
 
     this.editingPost = null;
     this.showCreatePost = true;
