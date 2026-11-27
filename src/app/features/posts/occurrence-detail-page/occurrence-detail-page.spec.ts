@@ -78,6 +78,7 @@ describe('OccurrenceDetailPage actions', () => {
           provide: PostService,
           useValue: {
             getOccurrence: () => of(occurrence),
+            informOccurrenceResolution: vi.fn(() => of(occurrence)),
             canModifyPost: () => false,
             getOccurrenceHistory: () => of([]),
             getResponsibleAgencies: () => of([]),
@@ -96,6 +97,21 @@ describe('OccurrenceDetailPage actions', () => {
         add: { imports: [StubCommentSection, StubSocialShell] },
       })
       .compileComponents();
+  });
+
+  it.each([
+    [{}, '/publicacoes', 'Voltar para publicações'],
+    [{ origem: 'orgao' }, '/perfil', 'Voltar para órgão público'],
+    [{ origem: 'orgao', perfilOrgao: 'secretaria_obras' }, '/perfil/secretaria_obras', 'Voltar para órgão público'],
+  ])('shows the return link for the entry point %j', (query, url, label) => {
+    Object.assign(TestBed.inject(ActivatedRoute).snapshot, { queryParamMap: convertToParamMap(query) });
+    fixture = TestBed.createComponent(OccurrenceDetailPage);
+    fixture.detectChanges();
+
+    const view: HTMLElement = fixture.nativeElement;
+    const link = view.querySelector('.occurrence-detail__back');
+    expect(link?.getAttribute('href')).toBe(url);
+    expect(link?.textContent).toContain(label);
   });
 
   function actionsFor(role: LoggedUser['occurrenceRole'], agencyId?: string): string[] {
@@ -138,7 +154,7 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows only related agency actions at the same URL', () => {
-    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência']);
+    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência', 'Adicionar resolução']);
     fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
     expect(fixture.componentInstance.canRegisterResponse).toBe(true);
     expect(fixture.componentInstance.canResolve).toBe(false);
@@ -259,15 +275,276 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
   });
 
+  it.each([
+    ['USER', undefined, true],
+    ['USER', undefined, false],
+    ['MODERATOR', undefined, true],
+    ['RESPONSIBLE_AGENCY', 'iluminacao-demo', true],
+    ['RESPONSIBLE_AGENCY', 'other-agency', false],
+  ] as const)('applies protocol visibility for %s with agency %s and access %s', (role, agency, allowed) => {
+    actionsFor(role, agency);
+    const page = fixture.componentInstance;
+    page.occurrence = {
+      ...occurrence,
+      createdBy: role === 'USER' && allowed ? 'USER' : 'another-user',
+      forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt, protocol: 'ENC-104' }],
+      agencyProgress: { protocol: 'AT-203', updatedAt: occurrence.createdAt, note: 'Atendimento em curso.', closedByAgency: false },
+    };
+    page.historyEvents = [{
+      id: 'forwarding', occurrenceId, eventType: 'OCORRENCIA_ENCAMINHADA', actorType: 'SYSTEM',
+      occurredAt: occurrence.createdAt, description: '', metadata: { protocol: 'HIST-105', agencyName: 'Iluminação' },
+    }, {
+      id: 'proposal', occurrenceId, eventType: 'RESOLUCAO_INFORMADA', actorType: 'RESPONSIBLE_AGENCY',
+      occurredAt: occurrence.createdAt, description: '', metadata: { resolutionId: 'version-1', serviceReference: 'OS-106' },
+    }];
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    const report = fixture.nativeElement.textContent as string;
+    for (const protocol of ['ENC-104', 'AT-203', 'HIST-105', 'OS-106']) {
+      expect(report.includes(protocol)).toBe(allowed);
+    }
+  });
+
+  it('shows regional catalog suggestions as the community types', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = {
+      ...occurrence,
+      responsibleAgency: null,
+      location: { label: 'Guarulhos - SP', cityName: 'Guarulhos', stateCode: 'SP' },
+    };
+    const service = TestBed.inject(PostService);
+    service.getAgenciesForLocation = vi.fn(() => of([
+      { id: 'city', name: 'Secretaria de Obras', stateCode: 'SP', cities: ['Guarulhos'] },
+      { id: 'state', name: 'Defesa Civil Estadual', stateCode: 'SP' },
+      { id: 'other-city', name: 'Secretaria de Campinas', stateCode: 'SP', cities: ['Campinas'] },
+      { id: 'other-state', name: 'Secretaria de Curitiba', stateCode: 'PR', cities: ['Curitiba'] },
+    ]));
+
+    fixture.componentInstance.openPanel('agency');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    expect(service.getAgenciesForLocation).toHaveBeenCalledWith('SP', 'Guarulhos');
+    expect(fixture.componentInstance.occurrenceRegionLabel).toBe('Guarulhos - SP');
+    expect(fixture.componentInstance.filteredAgencyDirectory.map(agency => agency.id)).toEqual(['city']);
+    expect(fixture.nativeElement.textContent).not.toContain('Nenhum órgão encontrado pelo nome nesta região.');
+
+    fixture.componentInstance.onAgencyDirectorySearchChange('obras');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('[role="option"]')).toHaveLength(1);
+    (fixture.nativeElement.querySelector('[role="option"]') as HTMLButtonElement).click();
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.agencyName).toBe('Secretaria de Obras');
+    expect(fixture.componentInstance.agencyId).toBe('city');
+
+    fixture.componentInstance.onAgencyDirectorySearchChange('inexistente');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges(false);
+    expect(fixture.nativeElement.textContent).toContain('Nenhum órgão encontrado pelo nome nesta região.');
+  });
+
+  it('requires selecting a registered regional agency rather than submitting a typed name', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = { ...occurrence, responsibleAgency: null };
+    fixture.componentInstance.onAgencyDirectorySearchChange('Órgão inventado');
+    fixture.componentInstance.submitAgency();
+    expect(fixture.componentInstance.errorMessage).toBe('Selecione um órgão cadastrado na cidade da ocorrência.');
+  });
+
+  it('lets the author choose a registered agency suggested by another person after loading history', () => {
+    actionsFor('USER');
+    const page = fixture.componentInstance;
+    page.occurrence = { ...occurrence, responsibleAgency: null };
+    const agency = { id: '66f1c0de0000000000000002', name: 'Secretaria de Obras' };
+    page.historyEvents = [{
+      id: 'suggestion', occurrenceId, eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
+      actorType: 'USER', actorId: 'another-user', actorName: 'Outra pessoa',
+      occurredAt: occurrence.createdAt, metadata: { agencyName: agency.name, agency },
+    }];
+    expect(page.agencySuggestions[0].agency.id).toBe(agency.id);
+    expect(page.canAcceptAgencySuggestion(page.agencySuggestions[0])).toBe(true);
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Escolher este órgão');
+    expect(fixture.nativeElement.textContent).not.toContain('Órgão sem cadastro para encaminhamento');
+  });
+
+  it('shows grouped suggestions privately, previews supporters and opens the complete list', () => {
+    actionsFor('USER');
+    const suggestions = [
+      ['Secretaria de Obras', 'ana', 'Ana'],
+      ['Secretaria de Obras', 'bia', 'Bia'],
+      ['Secretaria de Obras', 'caio', 'Caio'],
+      ['Secretaria de Obras', 'ana', 'Ana'],
+      ['Defesa Civil', 'bia', 'Bia'],
+      ['Defesa Civil', 'dora', 'Dora'],
+    ];
+    fixture.componentInstance.historyEvents = suggestions.map(([name, actorId, actorName], index) => ({
+      id: String(index), occurrenceId, eventType: 'ORGAO_RESPONSAVEL_SUGERIDO', actorId, actorName,
+      actorType: 'USER', occurredAt: '2026-09-02T12:00:00.000Z',
+      metadata: { agency: { id: name === 'Secretaria de Obras' ? '66f1c0de0000000000000002' : '66f1c0de0000000000000003', name } },
+    }));
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.agencySuggestions.map(item => item.supportCount)).toEqual([3, 2]);
+    const supportersPreview = fixture.nativeElement.querySelector('.occurrence-detail__participants') as HTMLButtonElement;
+    expect(supportersPreview.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ana, Bia e mais 1 pessoa');
+    const sortButton = fixture.nativeElement.querySelector('.occurrence-detail__sort-button') as HTMLButtonElement;
+    expect(sortButton.querySelector('.material-symbols-outlined')?.textContent).toBe('north');
+    sortButton.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.filteredAgencySuggestions.map(item => item.supportCount)).toEqual([2, 3]);
+    expect(sortButton.querySelector('.material-symbols-outlined')?.textContent).toBe('south');
+
+    fixture.componentInstance.agencySuggestionSearch = 'dora';
+    expect(fixture.componentInstance.filteredAgencySuggestions.map(item => item.agency.name)).toEqual(['Defesa Civil']);
+    fixture.componentInstance.agencySuggestionSearch = '';
+    const suggestionCards = (fixture.nativeElement as HTMLElement).querySelectorAll('.occurrence-detail__suggestion');
+    const worksSuggestion = Array.from(suggestionCards)
+      .find(item => item.textContent?.includes('Secretaria de Obras')) as HTMLElement;
+    (worksSuggestion.querySelector('.occurrence-detail__participants') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('Ana');
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('Caio');
+    (fixture.nativeElement.querySelector('.occurrence-detail__supporters-close') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeNull();
+
+    fixture.componentInstance.occurrence = { ...occurrence, createdBy: 'another-user' };
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-labelledby="agency-suggestions-title"]')).toBeNull();
+    expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
+  });
+
   it('offers status updates only for an approved related institution and requires evidence for closure', () => {
     actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
     user!.agencyRegistrationStatus = 'APPROVED';
-    expect(fixture.componentInstance.canRecordAgencyProgress).toBe(true);
-    fixture.componentInstance.progressStatus = 'RESOLVIDA'; fixture.componentInstance.progressNote = 'Reparo executado pela equipe de manutenção.';
-    fixture.componentInstance.submitAgencyProgress();
-    expect(fixture.componentInstance.errorMessage).toContain('evidência');
-    fixture.componentInstance.occurrence = { ...occurrence, status: 'ABERTA', createdAt: new Date().toISOString() };
-    expect(fixture.componentInstance.canRecordAgencyProgress).toBe(false);
+    const page = fixture.componentInstance;
+    expect(page.canRecordAgencyProgress).toBe(true);
+    expect(page.canSubmitAgencyResolution).toBe(true);
+    page.openPanel('agencyProgress');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Fechada pelo órgão');
+    page.occurrence = { ...occurrence, createdAt: new Date().toISOString() };
+    expect(page.canRecordAgencyProgress).toBe(false);
+    expect(page.canSubmitAgencyResolution).toBe(false);
+  });
+
+  it('requires the work, verified outcome, execution date and proof for a directly linked agency', () => {
+    actionsFor('USER');
+    user!.accountType = 'PUBLIC_AGENCY';
+    const page = fixture.componentInstance;
+    page.occurrence = {
+      ...occurrence,
+      status: 'EM_ANALISE_DE_COMPETENCIA',
+      responsibleAgency: { id: user!._id, name: 'Órgão vinculado' },
+    };
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(page.canSubmitAgencyResolution).toBe(true);
+    const section = fixture.nativeElement.querySelector('#resolucao') as HTMLElement;
+    expect(section.textContent).toContain('Adicionar resolução');
+    page.openPanel('resolution');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(section.querySelector('textarea[name="resolutionStatement"]')).not.toBeNull();
+    expect(section.querySelector('textarea[name="resolutionOutcome"]')).not.toBeNull();
+    const send = TestBed.inject(PostService).informOccurrenceResolution;
+    page.submitResolution();
+    expect(page.errorMessage).toContain('resultado verificado');
+    page.resolutionStatement = 'A equipe substituiu a lâmpada no poste indicado.';
+    page.resolutionOutcome = 'O poste voltou a iluminar a rua após o teste.';
+    page.submitResolution();
+    expect(page.errorMessage).toContain('data de execução');
+    page.resolutionExecutionDate = page.latestResolutionExecutionDate;
+    page.submitResolution();
+    expect(page.errorMessage).toContain('Anexe uma evidência');
+    expect(send).not.toHaveBeenCalled();
+    page.resolutionServiceReference = ' OS-104 ';
+    page.submitResolution();
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ id: occurrenceId }), user,
+      'A equipe substituiu a lâmpada no poste indicado.', [], {
+        executionDate: page.latestResolutionExecutionDate,
+        outcome: 'O poste voltou a iluminar a rua após o teste.',
+        serviceReference: 'OS-104',
+      });
+  });
+
+  it('shows an open contestation window to the community and removes the action at the deadline', () => {
+    actionsFor('USER');
+    const page = fixture.componentInstance;
+    page.occurrence = {
+      ...occurrence,
+      status: 'RESOLUCAO_EM_ANALISE',
+      agencyResolution: { id: 'version-1', contestUntil: new Date(Date.now() + 60_000).toISOString() },
+    };
+    expect(page.canContest).toBe(true);
+    page.contestDeadlineReached.set(true);
+    expect(page.canContest).toBe(false);
+  });
+
+  it('allows the moderator to close early only when the active proposal was contested', () => {
+    actionsFor('MODERATOR');
+    const page = fixture.componentInstance;
+    page.occurrence = {
+      ...occurrence,
+      evidences: [{ id: 'photo', type: 'IMAGE', description: 'Foto do reparo', url: 'https://example.test/photo.jpg', addedAt: occurrence.createdAt }],
+      status: 'RESOLUCAO_EM_ANALISE',
+      agencyResolution: { id: 'version-1', contestUntil: new Date(Date.now() + 60_000).toISOString() },
+    };
+    const event = { occurrenceId, occurredAt: occurrence.createdAt, createdAt: occurrence.createdAt, description: '' };
+    page.historyEvents = [
+      { ...event, id: 'proposal', eventType: 'RESOLUCAO_INFORMADA', actorType: 'RESPONSIBLE_AGENCY',
+        evidenceIds: ['photo'], metadata: { resolutionId: 'version-1', statement: 'Troca da lâmpada',
+          outcome: 'O poste voltou a funcionar após teste noturno.', executionDate: '2026-09-20', serviceReference: 'OS-104' } },
+      { ...event, id: 'current-contest', eventType: 'RESOLUCAO_CONTESTADA', actorType: 'USER',
+        metadata: { resolutionId: 'version-1', reason: 'O poste continua apagado.' } },
+      { ...event, id: 'old-contest', eventType: 'RESOLUCAO_CONTESTADA', actorType: 'USER',
+        metadata: { resolutionId: 'previous-version', reason: 'Contestação anterior.' } },
+    ];
+    page.openPanel('resolve');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const review = fixture.nativeElement.querySelector('.occurrence-detail__resolution-review') as HTMLElement;
+    expect(review.textContent).toContain('Troca da lâmpada');
+    expect(review.textContent).toContain('O poste voltou a funcionar após teste noturno.');
+    expect(review.textContent).toContain('20/09/2026');
+    expect(review.textContent).toContain('OS-104');
+    expect(review.querySelector('a')?.textContent).toContain('Foto do reparo');
+    const thread = review.querySelector<HTMLButtonElement>('.occurrence-detail__contest-toggle')!;
+    expect(thread.getAttribute('aria-expanded')).toBe('false');
+    expect(review.textContent).not.toContain('O poste continua apagado.');
+    thread.click();
+    fixture.detectChanges();
+    expect(thread.getAttribute('aria-expanded')).toBe('true');
+    expect(review.textContent).toContain('O poste continua apagado.');
+    expect(review.textContent).not.toContain('Contestação anterior.');
+    thread.click();
+    fixture.detectChanges();
+    expect(review.textContent).not.toContain('O poste continua apagado.');
+    const buttons: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('form button'));
+    const closeButton = buttons.find(button => button.textContent?.includes('Validar e encerrar ocorrência'));
+    const rejectButton = buttons.find(button => button.textContent?.includes('Invalidar resolução'));
+    expect(rejectButton?.disabled).toBe(false);
+    expect(closeButton?.disabled).toBe(false);
+    page.historyEvents = page.historyEvents.filter(event => event.id !== 'current-contest');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(closeButton?.disabled).toBe(true);
+    expect(closeButton?.getAttribute('aria-describedby')).toBe('resolution-approval-deadline');
+    const view: HTMLElement = fixture.nativeElement;
+    expect(view.querySelector('#resolution-approval-deadline')?.textContent)
+      .toMatch(/Validação aguarda o prazo de contestação.*\d{2}\/\d{2}\/\d{4}/s);
+    page.contestDeadlineReached.set(true);
+    fixture.detectChanges();
+    expect(closeButton?.disabled).toBe(false);
+    expect(view.querySelector('#resolution-approval-deadline')).toBeNull();
   });
 
   it('does not show agency controls to an unrelated agency', () => {

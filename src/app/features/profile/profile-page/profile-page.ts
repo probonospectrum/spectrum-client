@@ -13,6 +13,7 @@ import { AlertPopup, AlertPopupType } from '../../../shared/components/alert-pop
 import { PostCard } from '../../../shared/components/post-card/post-card';
 import { ReportModal } from '../../../shared/components/report-modal/report-modal';
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
+import { ProfileAgencyOccurrences } from './profile-agency-occurrences';
 
 interface ProfileAlert {
   type: AlertPopupType;
@@ -22,7 +23,7 @@ interface ProfileAlert {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal],
+  imports: [FollowList, TranslatePipe, UserAvatar, CommonModule, SocialShell, PostCard, AlertPopup, ReportModal, ProfileAgencyOccurrences],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })
@@ -89,8 +90,8 @@ export class ProfilePage implements OnInit {
   private loadProfile(nickname: string) {
     return this.userService.getPublicProfile(nickname).pipe(
       switchMap((profile) => forkJoin({
-        posts: profile.canViewPosts ? this.postService.getAuthorPosts(profile, this.user) : of([]),
-        saved: profile._id === this.user?._id ? this.postService.loadSavedPosts(this.user) : of([]),
+        posts: profile.canViewPosts && profile.accountType !== 'PUBLIC_AGENCY' ? this.postService.getAuthorPosts(profile, this.user) : of([]),
+        saved: profile._id === this.user?._id && profile.accountType !== 'PUBLIC_AGENCY' ? this.postService.loadSavedPosts(this.user) : of([]),
       }).pipe(
         map(({ posts }) => ({ profile, posts })),
       )),

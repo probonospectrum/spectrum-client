@@ -38,6 +38,22 @@ describe('SocialShell profile search', () => {
     expect(link.querySelector('.social-nav__notification-badge').textContent.trim()).toBe('99+');
   });
 
+  it('links institutions to their profile and blocks opening the occurrence form', () => {
+    const fixture = TestBed.createComponent(SocialShell);
+    fixture.componentRef.setInput('user', { accountType: 'PUBLIC_AGENCY', name: 'Secretaria' });
+    fixture.detectChanges();
+
+    const view: HTMLElement = fixture.nativeElement;
+    const nav = view.querySelector('nav');
+    expect(nav?.querySelector('a[href="/perfil"]')?.textContent).toContain('Órgão público');
+    expect(nav?.querySelector('a[href="/orgao-publico"]')).toBeNull();
+    expect(view.querySelector('.social-create')).toBeNull();
+    expect(view.querySelector('.social-guide button')).toBeNull();
+
+    fixture.componentInstance.openCreatePost();
+    expect(fixture.componentInstance.showCreatePost).toBe(false);
+  });
+
   it('finds a server profile without cached posts, suggestions or visiting the profile', () => {
     const shell = TestBed.runInInjectionContext(() => new SocialShell());
     shell.searchTerm.set(' mariazinha ');

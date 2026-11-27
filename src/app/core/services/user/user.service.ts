@@ -55,6 +55,7 @@ export interface UpdateAvatarResponse extends MessageResponse {
 }
 
 export interface PublicProfileResponse {
+  accountType?: LoggedUser['accountType'];
   coverUrl?: string;
   _id: string;
   name: string;

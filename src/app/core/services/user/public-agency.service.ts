@@ -7,11 +7,30 @@ export interface AgencyInboxItem {
   _id: string;
   title: string;
   status: string;
+  responsibleAgency?: { id?: string };
   location?: { cityName?: string; stateCode?: string; label?: string };
   createdAt: string;
   updatedAt: string;
 }
-export interface AgencyInboxPage { data: AgencyInboxItem[]; total: number; nextCursor: string | null; }
+export interface AgencyOccurrenceSummary {
+  total: number;
+  resolved: number;
+  last30Days: number;
+  resolvedLast30Days: number;
+}
+export interface AgencyInboxPage {
+  data: AgencyInboxItem[];
+  total: number;
+  nextCursor: string | null;
+  summary?: AgencyOccurrenceSummary;
+}
+interface AgencyInboxFilters {
+  search?: string;
+  status?: string;
+  order?: string;
+  limit?: number;
+  summary?: number;
+}
 export interface AgencyRequest {
   _id: string;
   name: string;
@@ -56,12 +75,18 @@ export class PublicAgencyService {
     );
   }
   resend() {
-    return this.http.post<{ message: string }>(`${this.url}/me/resend-verification`, {});
+    return this.http.post<{ message: string; isVerified: boolean }>(`${this.url}/me/resend-verification`, {});
   }
-  inbox(cursor?: string, filters: { search?: string; status?: string; order?: string } = {}) {
+  inbox(cursor?: string, filters: AgencyInboxFilters = {}) {
     return this.http.get<AgencyInboxPage>(`${API_BASE_URL}/post/agency/inbox`, {
       params: { ...filters, ...(cursor ? { cursor } : {}) },
     });
+  }
+  profileOccurrences(profileId: string, cursor: string | undefined, filters: AgencyInboxFilters) {
+    return this.http.get<AgencyInboxPage>(
+      `${API_BASE_URL}/post/agency/profile/${encodeURIComponent(profileId)}/occurrences`,
+      { params: { ...filters, ...(cursor ? { cursor } : {}) } },
+    );
   }
   assigned() { return this.inbox().pipe(map(page => page.data)); }
   requests() {

@@ -149,13 +149,7 @@
     <!-- MENU LATERAL -->
     <aside class="social-sidebar" [attr.aria-label]="'Navegacao principal' | translate">
 
-      <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'" [class.social-nav--agency]="user?.accountType === 'PUBLIC_AGENCY'" [class.social-nav--inbox]="agencyInbox.enabled()">
-        @if (user?.accountType === 'PUBLIC_AGENCY') {
-        <a class="social-nav__item" routerLink="/orgao-publico" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="social-nav__item--active">
-          <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-          {{ 'Órgão público' | translate }}
-        </a>
-        }
+      <nav class="social-nav" [class.social-nav--moderator]="user?.occurrenceRole === 'MODERATOR'" [class.social-nav--inbox]="agencyInbox.enabled()">
         @if (user?.occurrenceRole === 'MODERATOR') {
           <a class="social-nav__item" routerLink="/publicacoes" routerLinkActive="social-nav__item--active"><span class="material-symbols-outlined">home</span>Início</a>
           @for (item of moderationLinks; track item.path) {
@@ -223,10 +217,10 @@
           routerLinkActive="social-nav__item--active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          <span class="material-symbols-outlined">
-            account_circle
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ user?.accountType === 'PUBLIC_AGENCY' ? 'account_balance' : 'account_circle' }}
           </span>
-          {{ 'Perfil' | translate }}
+          {{ (user?.accountType === 'PUBLIC_AGENCY' ? 'Órgão público' : 'Perfil') | translate }}
         </a>
 
         <!-- CONFIGURAÇÕES -->

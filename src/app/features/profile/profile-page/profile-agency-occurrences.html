@@ -1,0 +1,117 @@
+<section class="assignments" aria-labelledby="profile-assignment-heading">
+  <header class="assignments__heading">
+    <h2 id="profile-assignment-heading">{{ 'Ocorrências atribuídas' | translate }}</h2>
+  </header>
+
+  <div class="assignments__filters" role="group" [attr.aria-label]="'Situação das ocorrências' | translate">
+    <button type="button" [attr.aria-pressed]="filter() === 'open'" (click)="filter.set('open')">
+      {{ 'Em andamento' | translate }}
+    </button>
+    <button type="button" [attr.aria-pressed]="filter() === 'resolved'" (click)="filter.set('resolved')">
+      {{ 'Concluídas' | translate }}
+    </button>
+  </div>
+
+  <div class="assignments__toolbar">
+    <label>
+      {{ 'Buscar ocorrências' | translate }}
+      <span class="assignments__search">
+        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+        <input #occurrenceSearch type="search" maxlength="160"
+          [placeholder]="'Título ou protocolo' | translate"
+          [value]="search()" (input)="search.set(occurrenceSearch.value)" />
+      </span>
+    </label>
+    <label>
+      {{ 'Ordenar por' | translate }}
+      <select #occurrenceOrder [value]="order()"
+        (change)="order.set(occurrenceOrder.value === 'oldest' ? 'oldest' : 'newest')">
+        <option value="newest">{{ 'Mais recentes' | translate }}</option>
+        <option value="oldest">{{ 'Menos recentes' | translate }}</option>
+      </select>
+    </label>
+  </div>
+
+  @if (items().length) {
+    <ul class="assignments__list">
+      @for (item of items(); track item._id) {
+        <li>
+          <a
+            [routerLink]="['/ocorrencias', item._id]"
+            [queryParams]="{ origem: 'orgao', perfilOrgao: profileNickname() }"
+          >
+            <span class="assignments__entry-icon material-symbols-outlined" aria-hidden="true">
+              {{ item.status === 'RESOLVIDA' ? 'task_alt' : 'description' }}
+            </span>
+            <span class="assignments__entry">
+              <strong>{{ item.title }}</strong>
+              <span class="assignments__status" [class.assignments__status--resolved]="item.status === 'RESOLVIDA'">
+                {{ statusLabel(item.status) | translate }}
+              </span>
+            </span>
+            <time [attr.datetime]="item.createdAt">{{ item.createdAt | localizedDate }}</time>
+            <span class="assignments__arrow material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (loading()) {
+    <p class="assignments__message" role="status">{{ 'Carregando ocorrências…' | translate }}</p>
+  } @else if (error()) {
+    <p class="assignments__message" role="alert">{{ 'Não foi possível carregar as ocorrências. Tente novamente.' | translate }}</p>
+    <button class="assignments__more" type="button" (click)="loadPage()">{{ 'Tentar novamente' | translate }}</button>
+  } @else if (!items().length) {
+    <p class="assignments__message" role="status">
+      {{ (search() ? 'Nenhuma ocorrência encontrada.' : filter() === 'open' ? 'Nenhuma ocorrência em andamento.' : 'Nenhuma ocorrência concluída.') | translate }}
+    </p>
+  } @else if (cursor()) {
+    <button class="assignments__more" type="button" (click)="loadPage()">
+      {{ 'Ver mais' | translate }}
+      <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+    </button>
+  }
+</section>
+
+@if (summary(); as counts) {
+  <section class="assignments" aria-labelledby="profile-assignment-summary">
+    <header class="assignments__heading">
+      <h2 id="profile-assignment-summary">{{ 'Resumo das ocorrências' | translate }}</h2>
+    </header>
+    <table class="assignments__metrics" aria-labelledby="profile-assignment-summary">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Indicador' | translate }}</th>
+          <th scope="col">{{ 'Histórico geral' | translate }}</th>
+          <th scope="col">{{ 'Últimos 30 dias' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">{{ 'Atribuídas' | translate }}</th>
+          <td>{{ counts.total }}</td>
+          <td>{{ counts.last30Days }}</td>
+        </tr>
+        <tr>
+          <th scope="row">{{ 'Resolvidas' | translate }}</th>
+          <td>{{ counts.resolved }}</td>
+          <td>{{ counts.resolvedLast30Days }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="assignments__overview">
+      <div>
+        <span>{{ 'Em andamento' | translate }}</span>
+        <strong>{{ counts.total - counts.resolved }}</strong>
+      </div>
+      <div>
+        <span id="profile-resolution-rate">{{ 'Taxa de resolução geral' | translate }}</span>
+        <strong>{{ counts.total ? resolutionRate() + '%' : '—' }}</strong>
+        @if (counts.total) {
+          <progress [value]="resolutionRate()" max="100" aria-labelledby="profile-resolution-rate"></progress>
+        }
+      </div>
+    </div>
+  </section>
+}

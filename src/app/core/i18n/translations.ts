@@ -141,6 +141,37 @@ Outros|Other|Otros
 Aberta|Open|Abierta
 Abertas|Open|Abiertas
 Em andamento|In progress|En curso
+Ocorrências atribuídas|Assigned issues|Incidencias asignadas
+Ver contestações|View disputes|Ver impugnaciones
+Ocultar contestações|Hide disputes|Ocultar impugnaciones
+Contestações|Disputes|Impugnaciones
+Nenhuma contestação registrada.|No disputes recorded.|No hay impugnaciones registradas.
+O programa encaminhou um aviso de confirmação para o e-mail responsável pelo órgão:|The program sent a confirmation notice to the email registered for the agency representative:|El programa envió un aviso de confirmación al correo registrado del representante del organismo:
+E-mail já validado.|Email already verified.|Correo ya validado.
+E-mail do responsável validado com sucesso.|The representative's email has been successfully verified.|El correo del representante se ha verificado correctamente.
+Aguardando confirmação do e-mail|Awaiting email confirmation|Pendiente de confirmar el correo
+Aguardando análise da moderação|Awaiting moderation review|Pendiente de revisión de moderación
+Resumo das ocorrências|Issue summary|Resumen de incidencias
+Indicador|Metric|Indicador
+Histórico geral|All time|Historial completo
+Atribuídas|Assigned|Asignadas
+Taxa de resolução geral|Overall resolution rate|Tasa de resolución general
+Área de atuação|Service area|Área de actuación
+Buscar ocorrências|Search issues|Buscar incidencias
+Título ou protocolo|Title or reference number|Título o número de referencia
+Ordenar por|Sort by|Ordenar por
+Mais recentes|Newest first|Más recientes
+Menos recentes|Oldest first|Menos recientes
+Nenhuma ocorrência encontrada.|No issues found.|No se encontraron incidencias.
+Ver mais|See more|Ver más
+Resumo das ocorrências atribuídas|Assigned issues summary|Resumen de incidencias asignadas
+Este perfil é privado.|This profile is private.|Este perfil es privado.
+Situação das ocorrências|Issue status|Estado de las incidencias
+Concluídas|Completed|Completadas
+Carregando ocorrências…|Loading issues…|Cargando incidencias…
+Nenhuma ocorrência em andamento.|No issues in progress.|No hay incidencias en curso.
+Nenhuma ocorrência concluída.|No completed issues.|No hay incidencias completadas.
+Carregar mais ocorrências|Load more issues|Cargar más incidencias
 Fechada|Closed|Cerrada
 Resolvida|Resolved|Resuelta
 Resolvidas|Resolved|Resueltas
@@ -589,6 +620,7 @@ Não foi possível carregar a ocorrência|Could not load the issue|No se pudo ca
 Essa ocorrência não existe ou não está mais disponível.|This issue does not exist or is no longer available.|Esta incidencia no existe o ya no está disponible.
 Carregando ocorrência|Loading issue|Cargando incidencia
 Voltar para publicações|Back to posts|Volver a las publicaciones
+Voltar para órgão público|Back to the public agency|Volver al organismo público
 Etapas da ocorrência|Issue stages|Etapas de la incidencia
 Situação atual|Current status|Estado actual
 Registrada em|Reported on|Registrada el
@@ -765,6 +797,29 @@ Um usuário|A user|Un usuario
 Um órgão|An agency|Un organismo
 Sistema|System|Sistema
 Não informado|Not provided|No indicado
+Serviço executado|Work performed|Trabajo realizado
+Resultado verificado|Verified outcome|Resultado verificado
+Comprovação|Supporting evidence|Comprobación
+Enviar resolução para análise|Submit resolution for review|Enviar resolución para revisión
+Informe o serviço executado, quando foi concluído e como o resultado foi verificado no local da ocorrência.|Describe the work performed, when it was completed, and how the outcome was verified at the reported location.|Describa el trabajo realizado, cuándo terminó y cómo se verificó el resultado en el lugar de la incidencia.
+O que foi feito e em qual trecho ou ponto do local?|What was done and at which exact spot?|¿Qué se hizo y en qué tramo o punto del lugar?
+Como a equipe confirmou que o problema foi resolvido? Informe o teste, a vistoria ou o resultado observado.|How did the team confirm the issue was fixed? Describe the test, inspection, or observed outcome.|¿Cómo confirmó el equipo que se solucionó el problema? Describa la prueba, inspección o resultado observado.
+Data da execução|Completion date|Fecha de ejecución
+Adicione pelo menos uma comprovação: foto, vídeo, protocolo ou ordem de serviço.|Provide at least one supporting item: a photo, video, reference number, or work order.|Aporte al menos una prueba: foto, vídeo, número de referencia u orden de servicio.
+Protocolo ou ordem de serviço|Reference number or work order|Número de referencia u orden de servicio
+Ex.: OS-104/2026|E.g. WO-104/2026|P. ej., OS-104/2026
+Trocar foto ou vídeo|Replace photo or video|Cambiar foto o vídeo
+Anexar foto ou vídeo|Attach photo or video|Adjuntar foto o vídeo
+Remover anexo|Remove attachment|Quitar archivo adjunto
+Enviar para análise|Submit for review|Enviar para revisión
+Avaliar resolução|Review resolution|Evaluar resolución
+Validação aguarda o prazo de contestação|Approval is waiting for the dispute period|La validación está a la espera del plazo de impugnación
+O encerramento ficará disponível ao fim do prazo, em {date}, ou antes se houver uma contestação da proposta atual.|You can close this issue when the dispute period ends on {date}, or sooner if the current proposal is disputed.|Podrás cerrar la incidencia cuando finalice el plazo, el {date}, o antes si se impugna la propuesta actual.
+Confira se o serviço corresponde ao local e ao problema relatado. Verifique a data, o resultado, a comprovação e eventuais contestações.|Check that the work matches the reported location and issue. Review the date, outcome, supporting evidence, and any disputes.|Compruebe que el trabajo corresponde al lugar y al problema informado. Revise la fecha, el resultado, las pruebas y las impugnaciones.
+Descreva o serviço executado e o resultado verificado com pelo menos 20 caracteres em cada campo.|Describe the work and verified outcome using at least 20 characters per field.|Describa el trabajo y el resultado verificado con al menos 20 caracteres por campo.
+Informe uma data de execução válida que não esteja no futuro.|Enter a valid completion date that is not in the future.|Introduzca una fecha de ejecución válida que no sea futura.
+Anexe uma evidência ou informe o protocolo ou a ordem de serviço.|Attach evidence or enter the reference number or work order.|Adjunte una prueba o indique el número de referencia o la orden de servicio.
+Não foi possível vincular a evidência à resolução.|Could not attach the evidence to the resolution.|No se pudo vincular la prueba a la resolución.
 Discussão|Discussion|Discusión
 01 · Ocorrência rejeitada|01 · Issue rejected|01 · Incidencia rechazada
 02 · Ocorrência resolvida|02 · Issue resolved|02 · Incidencia resuelta

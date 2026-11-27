@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -8,7 +9,7 @@ import { PostService, SpectrumPost, ModerationReport } from '../../core/services
 import { UserService } from '../../core/services/user/user.service';
 
 @Component({
-  selector: 'app-moderation-page', imports: [FormsModule, RouterLink, SocialShell],
+  selector: 'app-moderation-page', imports: [FormsModule, NgTemplateOutlet, RouterLink, SocialShell],
   templateUrl: './moderation-page.html', styleUrl: './moderation-page.scss',
 })
 export class ModerationPage {
@@ -25,8 +26,24 @@ export class ModerationPage {
   queue = '';
   search = '';
   error = '';
-  readonly titles: Record<string, string> = { resolvidas: 'Resolvidas',
-    contestadas: 'Contestadas', denunciados: 'Itens denunciados', respostas: 'Respostas para Análise' };
+  private readonly queues: Record<string, { title: string; icon: string; description: string; empty: string }> = {
+    resolvidas: {
+      title: 'Resolvidas', icon: 'task_alt', description: 'Consulte ocorrências encerradas e o registro da análise.',
+      empty: 'Nenhuma ocorrência resolvida',
+    },
+    contestadas: {
+      title: 'Contestadas', icon: 'gavel', description: 'Confira as justificativas e evidências enviadas pela comunidade.',
+      empty: 'Nenhuma ocorrência contestada',
+    },
+    denunciados: {
+      title: 'Itens denunciados', icon: 'flag', description: 'Revise denúncias de ocorrências e comentários.',
+      empty: 'Nenhum item denunciado',
+    },
+    respostas: {
+      title: 'Respostas para Análise', icon: 'rate_review', description: 'Confira as respostas dos órgãos e avalie as propostas de resolução.',
+      empty: 'Nenhuma resposta para análise',
+    },
+  };
   constructor() {
     merge(this.route.paramMap, this.refresh).pipe(
       tap(() => {
@@ -34,7 +51,7 @@ export class ModerationPage {
         this.error = ''; this.loading.set(true); this.items.set([]); this.reports.set([]);
       }),
       switchMap(() => {
-        if (!this.titles[this.queue]) { void this.router.navigate(['/moderacao/denunciados']); return of(null); }
+        if (!Object.hasOwn(this.queues, this.queue)) { void this.router.navigate(['/moderacao/denunciados']); return of(null); }
         const request = this.queue === 'denunciados'
           ? this.posts.getModerationReports().pipe(map(reports => ({ reports, items: [] as SpectrumPost[] })))
           : this.posts.getModerationOccurrences(this.user, this.queue).pipe(map(items => ({ items, reports: [] as ModerationReport[] })));
@@ -63,7 +80,15 @@ export class ModerationPage {
     });
   }
   load(): void { this.refresh.next(); }
-  get title(): string { return this.titles[this.queue] || 'Moderação'; }
+  get queueInfo() { return this.queues[this.queue] ?? this.queues['denunciados']; }
+  get title(): string { return this.queueInfo.title; }
+  get hasFilters(): boolean {
+    return !!this.search.trim() || (this.queue === 'denunciados' && !!this.category);
+  }
+  clearFilters(): void {
+    this.search = '';
+    this.category = '';
+  }
   get visible(): SpectrumPost[] {
     const term = this.search.trim().toLocaleLowerCase();
     return this.items().filter(p => !term || [p.title, p.content, p.responsibleAgency?.name, p.location?.cityName]
@@ -73,13 +98,18 @@ export class ModerationPage {
     const term = this.search.trim().toLocaleLowerCase();
     return this.reports().filter(p => (!this.category || (p.categories ?? p.reasons).includes(this.category)) && (!term || [p.title, p.content, ...p.reasons].some(v => v?.toLocaleLowerCase().includes(term))));
   }
+  agencyResolution(post: SpectrumPost) {
+    return post.history.find(event => event.eventType === 'RESOLUCAO_INFORMADA' &&
+      event.metadata?.['resolutionId'] === post.agencyResolution?.id);
+  }
   review(post: SpectrumPost) { return [...(post.history || [])].reverse().find(e => e.eventType === 'OCORRENCIA_RESOLVIDA'); }
   resolutionNote(post: SpectrumPost): string { return String(this.review(post)?.metadata?.['note'] || this.review(post)?.description || ''); }
   resolutionEvidence(post: SpectrumPost) {
     const ids = this.review(post)?.evidenceIds || [];
     return post.evidences.filter(e => ids.includes(e.id));
   }
-  contestations(post: SpectrumPost) { return (post.history || []).filter(e => e.eventType === 'RESOLUCAO_CONTESTADA'); }
+  contestations(post: SpectrumPost) { return (post.history || []).filter(e => e.eventType === 'RESOLUCAO_CONTESTADA' &&
+      (e.metadata?.['resolutionId'] || undefined) === post.agencyResolution?.id); }
   contestEvidence(post: SpectrumPost, ids?: string[]) { return post.evidences.filter(e => ids?.includes(e.id)); }
   status(post: SpectrumPost): string { return this.posts.getStatusLabel(post.status); }
   logout(): void { this.users.logout(); void this.router.navigate(['/login']); }

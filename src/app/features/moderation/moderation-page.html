@@ -1,72 +1,180 @@
 <app-social-shell [user]="user" [showContentHeader]="false" [wideContent]="true" (logout)="logout()">
   <section class="moderation" aria-labelledby="moderation-title">
-    <header class="hero">
-      <div><span class="eyebrow">ÁREA DA MODERAÇÃO</span><h1 id="moderation-title">{{ title }}</h1></div>
-      <button type="button" (click)="load()" [disabled]="loading()">Atualizar</button>
+    <header class="queue-header">
+      <span class="queue-icon material-symbols-outlined" aria-hidden="true">{{ queueInfo.icon }}</span>
+      <div>
+        <h1 id="moderation-title">{{ title }}</h1>
+        <p>{{ queueInfo.description }}</p>
+      </div>
+      <button class="button" type="button" (click)="load()" [disabled]="loading()">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Atualizar
+      </button>
     </header>
-    <div class="controls"><label>Buscar conteúdo<input type="search" [(ngModel)]="search" placeholder="Título, descrição ou motivo" /></label></div>
-    @if (error) { <div class="state" role="alert"><p>{{ error }}</p><button (click)="load()">Tentar novamente</button></div> }
-    @else if (loading()) { <div class="state" role="status">Carregando…</div> }
-    @else if (queue === 'denunciados') {
-      <label>Categoria
-        <select [(ngModel)]="category">
-          <option value="">Todas as categorias</option>
-          @for (option of categories; track option) { <option [value]="option">{{ option }}</option> }
-        </select>
+
+    <div class="toolbar">
+      <label>
+        Buscar conteúdo
+        <span class="search-field">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <input type="search" [(ngModel)]="search"
+            [placeholder]="queue === 'denunciados' ? 'Título, descrição ou motivo' : 'Título, descrição, cidade ou órgão'" />
+        </span>
       </label>
-      @if (voteMessage()) { <p role="status">{{ voteMessage() }}</p> }
+      @if (queue === 'denunciados') {
+        <label>
+          Categoria
+          <select [(ngModel)]="category">
+            <option value="">Todas as categorias</option>
+            @for (option of categories; track option) { <option [value]="option">{{ option }}</option> }
+          </select>
+        </label>
+      }
+    </div>
+
+    @if (queue === 'denunciados' && voteMessage()) {
+      <p class="feedback" role="status">{{ voteMessage() }}</p>
+    }
+
+    @if (error) {
+      <div class="state" role="alert">
+        <span class="state-icon material-symbols-outlined" aria-hidden="true">error_outline</span>
+        <h2>Falha ao carregar a fila</h2>
+        <p>{{ error }}</p>
+        <button class="button" type="button" (click)="load()">Tentar novamente</button>
+      </div>
+    } @else if (loading()) {
+      <div class="state" role="status">Carregando fila…</div>
+    } @else if (queue === 'denunciados') {
+      @let reports = visibleReports;
       <div class="list">
-        @for (item of visibleReports; track item.kind + item.id) {
-          <details class="card">
-            <summary>{{ item.title }} · {{ item.kind === 'comment' ? 'Comentário' : 'Ocorrência' }} · {{ item.count }} denúncia(s)</summary>
-            @if (item.postId) { <p><a [routerLink]="['/ocorrencias', item.postId]">Visualizar ocorrência</a></p> }
-            <p>{{ item.content || 'Conteúdo indisponível.' }}</p>
-            <h3>Motivos das denúncias</h3>
-            <ul>@for (reason of item.reasons; track $index) { <li>{{ reason }}</li> }</ul>
-            @if (item.kind === 'post') {
-              @if (item.removedAt) { <p>Ocorrência arquivada.</p> }
-              @else if (item.decision === 'reject') { <p>Denúncia negada. Ocorrência mantida.</p> }
-              @else if (item.voted) { <p>Voto registrado.</p> }
-              @else {
-                <button type="button" class="moderation-remove" (click)="vote(item, 'accept')" [disabled]="votePending()">Aceitar denúncia e arquivar ocorrência</button>
-                <button type="button" (click)="vote(item, 'reject')" [disabled]="votePending()">Negar denúncia e manter ocorrência</button>
+        @for (item of reports; track item.kind + item.id) {
+          <details class="card report-card">
+            <summary>
+              <span class="report-icon material-symbols-outlined" aria-hidden="true">{{ item.kind === 'comment' ? 'chat_bubble' : 'flag' }}</span>
+              <span class="report-heading">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.kind === 'comment' ? 'Comentário' : 'Ocorrência' }}</span>
+              </span>
+              <span class="badge badge--attention">{{ item.count }} {{ item.count === 1 ? 'denúncia' : 'denúncias' }}</span>
+              <span class="report-chevron material-symbols-outlined" aria-hidden="true">expand_more</span>
+            </summary>
+            <div class="report-body">
+              <p>{{ item.content || 'Conteúdo indisponível.' }}</p>
+              <div class="case-note">
+                <h3>Motivos das denúncias</h3>
+                <ul>@for (reason of item.reasons; track $index) { <li>{{ reason }}</li> }</ul>
+              </div>
+              @if (item.kind === 'post') {
+                @if (item.removedAt) { <p class="feedback">Ocorrência arquivada.</p> }
+                @else if (item.decision === 'reject') { <p class="feedback">Denúncia negada. Ocorrência mantida.</p> }
+                @else if (item.voted) { <p class="feedback">Voto registrado.</p> }
+                @else {
+                  <div class="report-actions">
+                    <button class="button button--danger" type="button" (click)="vote(item, 'accept')" [disabled]="votePending()">Aceitar denúncia e arquivar ocorrência</button>
+                    <button class="button" type="button" (click)="vote(item, 'reject')" [disabled]="votePending()">Negar denúncia e manter ocorrência</button>
+                  </div>
+                }
               }
-            }
+              @if (item.postId) {
+                <a class="button" [routerLink]="['/ocorrencias', item.postId]">
+                  Visualizar ocorrência <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </a>
+              }
+            </div>
           </details>
-        } @empty { <div class="state">Nenhum conteúdo denunciado encontrado.</div> }
+        } @empty {
+          <ng-container [ngTemplateOutlet]="emptyState" />
+        }
       </div>
     } @else {
       <p class="caption">Até 100 ocorrências mais recentemente atualizadas nesta fila.</p>
+      @let posts = visible;
       <div class="list">
-        @for (post of visible; track post.id) {
-          <article class="card">
-            <div class="card-top"><span class="badge" [class.resolved]="post.status === 'RESOLVIDA'">{{ status(post) }}</span><span>{{ post.location?.cityName || post.location?.city }}</span></div>
-            <h2>{{ post.title || 'Ocorrência sem título' }}</h2><p>{{ post.content }}</p>
+        @for (post of posts; track post.id) {
+          <article class="card occurrence-card">
+            <header class="card-header">
+              <span class="badge" [class.badge--resolved]="post.status === 'RESOLVIDA'"
+                [class.badge--attention]="post.status === 'CONTESTADA'">{{ status(post) }}</span>
+              @if (post.location?.cityName || post.location?.city; as city) {
+                <span class="metadata">
+                  <span class="material-symbols-outlined" aria-hidden="true">location_on</span>{{ city }}
+                </span>
+              }
+            </header>
+            <div class="case-description">
+              <h2>{{ post.title || 'Ocorrência sem título' }}</h2>
+              @if (post.content) { <p>{{ post.content }}</p> }
+            </div>
             @if (queue === 'resolvidas') {
-              <h3>Análise da resolução</h3><p>{{ resolutionNote(post) || 'Análise não registrada.' }}</p>
-              @for (evidence of resolutionEvidence(post); track evidence.id) {
-                <p>{{ evidence.description }}</p>
-                @if (evidence.url) { <a [href]="evidence.url" target="_blank" rel="noopener noreferrer">@if (evidence.type === 'IMAGE') { <img class="moderation-evidence" [src]="evidence.url" [alt]="evidence.description || 'Anexo da resolução'" /> } @else { Ver anexo }</a> }
-              } @empty { <p>Nenhum anexo registrado na análise da resolução.</p> }
+              <div class="case-note">
+                <h3>Análise da resolução</h3>
+                <p>{{ resolutionNote(post) || 'Análise não registrada.' }}</p>
+                @for (evidence of resolutionEvidence(post); track evidence.id) {
+                  @if (evidence.description) { <p>{{ evidence.description }}</p> }
+                  @if (evidence.url) {
+                    <a class="attachment" [href]="evidence.url" target="_blank" rel="noopener noreferrer">
+                      @if (evidence.type === 'IMAGE') {
+                        <img [src]="evidence.url" [alt]="evidence.description || 'Anexo da resolução'" loading="lazy" />
+                      } @else {
+                        <span class="material-symbols-outlined" aria-hidden="true">attach_file</span> Ver anexo
+                      }
+                    </a>
+                  }
+                } @empty { <p class="caption">Nenhum anexo registrado na análise da resolução.</p> }
+              </div>
             }
             @if (queue === 'contestadas') {
               @for (event of contestations(post); track event.id) {
-                <h3>Justificativa da contestação</h3><p>{{ event.metadata?.['reason'] || 'Contestação com imagem.' }}</p>
-                @for (evidence of contestEvidence(post, event.evidenceIds); track evidence.id) {
-                  @if (evidence.url) { <a [href]="evidence.url" target="_blank" rel="noopener noreferrer">Ver imagem da contestação</a> }
+                <div class="case-note">
+                  <h3>Justificativa da contestação</h3>
+                  <p>{{ event.metadata?.['reason'] || 'Contestação com imagem.' }}</p>
+                  @for (evidence of contestEvidence(post, event.evidenceIds); track evidence.id) {
+                    @if (evidence.url) { <a class="attachment" [href]="evidence.url" target="_blank" rel="noopener noreferrer">Ver imagem da contestação</a> }
+                  }
+                </div>
+              }
+            }
+            @if (post.status === 'RESOLUCAO_EM_ANALISE') {
+              @let proposal = agencyResolution(post);
+              <div class="case-note">
+                <h3>Resolução do órgão</h3>
+                <p>{{ proposal?.metadata?.['statement'] || 'Descrição não registrada.' }}</p>
+                @if (proposal?.metadata?.['outcome']; as outcome) {
+                  <p><strong>Resultado verificado</strong> {{ outcome }}</p>
                 }
-              }
+              </div>
+            } @else if (queue === 'respostas') {
+              <div class="case-note">
+                <h3>Resposta do órgão</h3>
+                @for (forwarding of post.forwardingHistory; track forwarding.id) {
+                  @if (forwarding.responseReceived) { <p>{{ forwarding.responseReceived }}</p> }
+                }
+              </div>
             }
-            @if (queue === 'respostas') {
-              <h3>Resposta do órgão</h3>
-              @for (forwarding of post.forwardingHistory; track forwarding.id) {
-                @if (forwarding.responseReceived) { <p>{{ forwarding.responseReceived }}</p> }
-              }
-            }
-            <div class="card-bottom"><span>{{ post.responsibleAgency?.name || 'Sem órgão vinculado' }}</span><a [routerLink]="['/ocorrencias', post.id]">{{ queue === 'respostas' ? 'Analisar resposta' : 'Ver ocorrência' }} →</a></div>
+            <footer class="card-footer">
+              <span class="metadata"><span class="material-symbols-outlined" aria-hidden="true">account_balance</span>{{ post.responsibleAgency?.name || 'Sem órgão vinculado' }}</span>
+              <a class="button button--primary" [routerLink]="['/ocorrencias', post.id]"
+                [queryParams]="post.status === 'RESOLUCAO_EM_ANALISE' || post.status === 'CONTESTADA' ? { acao: 'avaliar-resolucao' } : null">
+                {{ post.status === 'RESOLUCAO_EM_ANALISE' ? 'Avaliar resolução' : post.status === 'CONTESTADA' ? 'Avaliar contestação' : queue === 'respostas' ? 'Analisar resposta' : 'Ver ocorrência' }}
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+              </a>
+            </footer>
           </article>
-        } @empty { <div class="state">Nenhuma ocorrência encontrada nesta fila.</div> }
+        } @empty {
+          <ng-container [ngTemplateOutlet]="emptyState" />
+        }
       </div>
     }
   </section>
+
+  <ng-template #emptyState>
+    <div class="state">
+      <span class="state-icon material-symbols-outlined" aria-hidden="true">{{ hasFilters ? 'search_off' : 'inbox' }}</span>
+      <h2>{{ hasFilters ? 'Nenhum resultado para esses filtros' : queueInfo.empty }}</h2>
+      @if (hasFilters) {
+        <button class="button" type="button" (click)="clearFilters()">Limpar filtros</button>
+      }
+    </div>
+  </ng-template>
 </app-social-shell>

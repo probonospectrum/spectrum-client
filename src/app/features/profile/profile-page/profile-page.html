@@ -77,6 +77,18 @@
           </div>
         </div>
 
+        @if (publicProfile()?.accountType === 'PUBLIC_AGENCY' || (isOwnProfile() && socialShell.agencyInbox.enabled())) {
+          @if (publicProfile()?.cityUser; as city) {
+            <p class="profile-header__service-area">
+              <span class="profile-header__service-icon material-symbols-outlined" aria-hidden="true">location_on</span>
+              <span class="profile-header__service-copy">
+                <span>{{ 'Área de atuação' | translate }}</span>
+                <strong>{{ city }}</strong>
+              </span>
+            </p>
+          }
+        }
+
         <div class="profile-header__meta">
           <span class="profile-header__joined">
             <svg
@@ -108,150 +120,163 @@
     </div>
   </section>
 
-  <nav class="profile-tabs" [attr.aria-label]="'Abas do perfil' | translate">
-    @if (!isModeratorProfile) {
-    <button
-      class="profile-tabs__tab"
-      [class.profile-tabs__tab--active]="activeTab === 'posts'"
-      type="button"
-      (click)="activeTab = 'posts'"
-      [attr.aria-label]="'Publicações' | translate"
-    >
-      <svg
-        class="profile-tabs__icon"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-      </svg>
-    </button>
-    <button
-      class="profile-tabs__tab"
-      [class.profile-tabs__tab--active]="activeTab === 'reposts'"
-      type="button"
-      (click)="activeTab = 'reposts'"
-      [attr.aria-label]="'Reposts' | translate"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
-      <span class="profile-tabs__count">{{ reposts.length }}</span>
-    </button>
-    @if (isOwnProfile()) {
-      <button
-        class="profile-tabs__tab"
-        [class.profile-tabs__tab--active]="activeTab === 'saved'"
-        type="button"
-        (click)="activeTab = 'saved'"
-        [attr.aria-label]="'Posts salvos' | translate"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
-        <span class="profile-tabs__count">{{ savedPosts.length }}</span>
-      </button>
-    }
-    }
-    @if (isOwnProfile()) {
-      <button
-        type="button"
-        class="profile-tabs__tab"
-        [class.profile-tabs__tab--active]="activeTab === 'archived'"
-        [attr.aria-pressed]="activeTab === 'archived'"
-        (click)="openArchive()"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">archive</span>
-        <span class="profile-tabs__label">{{ 'Itens arquivados' | translate }}</span>
-      </button>
-    }
-  </nav>
-
-  <div class="profile-feed">
-    @if (activeTab === 'archived' && isOwnProfile()) {
-      @if (archiveError()) { <p role="alert">{{ archiveError() }}</p> }
-      @else {
-        @for (post of archived(); track post.id) {
-          <app-post-card [post]="post" [currentUser]="user" [readOnly]="true" />
-        } @empty { <div class="profile-feed__empty"><p>{{ 'Nenhuma ocorrência arquivada.' | translate }}</p></div> }
-      }
-    } @else if (!isModeratorProfile && activeTab === 'posts') {
-      @for (post of userPosts; track post.id) {
-        <app-post-card
-          [post]="post"
-          [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
-          [repostPending]="repostPendingIds().has(post.id)"
-          (repost)="toggleRepost($event)"
-          (edit)="socialShell.openEditPost($event)"
-          (remove)="deletePost($event)"
-          (report)="reportPost($event)"
-          (hideAuthor)="hideAuthor($event)"
-          (notInterested)="hidePost($event)"
-          (aiSpam)="reportPost($event, 'Parece spam de IA')"
-          (copyLink)="copyPostLink($event)"
-        />
-      }
-
-      @if (userPosts.length === 0) {
-        <div class="profile-feed__empty">
-          <p>{{ 'Nenhuma publicação ainda.' | translate }}</p>
-        </div>
-      }
-    } @else if (activeTab === 'reposts') {
-      @for (post of visibleReposts; track post.id) {
-        <app-post-card
-          [post]="post"
-          [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
-          [repostPending]="repostPendingIds().has(post.id)"
-          (repost)="toggleRepost($event)"
-          (edit)="socialShell.openEditPost($event)"
-          (remove)="deletePost($event)"
-          (report)="reportPost($event)"
-          (hideAuthor)="hideAuthor($event)"
-          (notInterested)="hidePost($event)"
-          (aiSpam)="reportPost($event, 'Parece spam de IA')"
-          (copyLink)="copyPostLink($event)"
-        />
-      }
-
-      @if (visibleReposts.length === 0) {
-        <div class="profile-feed__empty">
-          <p>{{ 'Nenhum repost ainda.' | translate }}</p>
-        </div>
-      }
-    } @else if (isOwnProfile()) {
-      @for (post of visibleSavedPosts; track post.id) {
-        <app-post-card
-          [post]="post"
-          [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
-          [repostPending]="repostPendingIds().has(post.id)"
-          (repost)="toggleRepost($event)"
-          (edit)="socialShell.openEditPost($event)"
-          (remove)="deletePost($event)"
-          (report)="reportPost($event)"
-          (hideAuthor)="hideAuthor($event)"
-          (notInterested)="hidePost($event)"
-          (aiSpam)="reportPost($event, 'Parece spam de IA')"
-          (copyLink)="copyPostLink($event)"
-        />
-      }
-
-      @if (visibleSavedPosts.length === 0) {
-        <div class="profile-feed__empty">
-          <p>{{ 'Nenhum post salvo ainda.' | translate }}</p>
-        </div>
-      }
+  @let profile = publicProfile();
+  @if (isOwnProfile() && socialShell.agencyInbox.enabled()) {
+    <app-profile-agency-occurrences />
+  } @else if (profile && profile.accountType === 'PUBLIC_AGENCY') {
+    @if (profile.canViewPosts) {
+      <app-profile-agency-occurrences [profileId]="profile._id" [profileNickname]="profile.nickname" />
     } @else {
       <div class="profile-feed__empty">
-        <p>{{ 'Posts salvos são privados.' | translate }}</p>
+        <p>{{ 'Este perfil é privado.' | translate }}</p>
       </div>
     }
-  </div>
+  } @else {
+    <nav class="profile-tabs" [attr.aria-label]="'Abas do perfil' | translate">
+      @if (!isModeratorProfile) {
+      <button
+        class="profile-tabs__tab"
+        [class.profile-tabs__tab--active]="activeTab === 'posts'"
+        type="button"
+        (click)="activeTab = 'posts'"
+        [attr.aria-label]="'Publicações' | translate"
+      >
+        <svg
+          class="profile-tabs__icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+      </button>
+      <button
+        class="profile-tabs__tab"
+        [class.profile-tabs__tab--active]="activeTab === 'reposts'"
+        type="button"
+        (click)="activeTab = 'reposts'"
+        [attr.aria-label]="'Reposts' | translate"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
+        <span class="profile-tabs__count">{{ reposts.length }}</span>
+      </button>
+      @if (isOwnProfile()) {
+        <button
+          class="profile-tabs__tab"
+          [class.profile-tabs__tab--active]="activeTab === 'saved'"
+          type="button"
+          (click)="activeTab = 'saved'"
+          [attr.aria-label]="'Posts salvos' | translate"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+          <span class="profile-tabs__count">{{ savedPosts.length }}</span>
+        </button>
+      }
+      }
+      @if (isOwnProfile()) {
+        <button
+          type="button"
+          class="profile-tabs__tab"
+          [class.profile-tabs__tab--active]="activeTab === 'archived'"
+          [attr.aria-pressed]="activeTab === 'archived'"
+          (click)="openArchive()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">archive</span>
+          <span class="profile-tabs__label">{{ 'Itens arquivados' | translate }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="profile-feed">
+      @if (activeTab === 'archived' && isOwnProfile()) {
+        @if (archiveError()) { <p role="alert">{{ archiveError() }}</p> }
+        @else {
+          @for (post of archived(); track post.id) {
+            <app-post-card [post]="post" [currentUser]="user" [readOnly]="true" />
+          } @empty { <div class="profile-feed__empty"><p>{{ 'Nenhuma ocorrência arquivada.' | translate }}</p></div> }
+        }
+      } @else if (!isModeratorProfile && activeTab === 'posts') {
+        @for (post of userPosts; track post.id) {
+          <app-post-card
+            [post]="post"
+            [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
+            [repostPending]="repostPendingIds().has(post.id)"
+            (repost)="toggleRepost($event)"
+            (edit)="socialShell.openEditPost($event)"
+            (remove)="deletePost($event)"
+            (report)="reportPost($event)"
+            (hideAuthor)="hideAuthor($event)"
+            (notInterested)="hidePost($event)"
+            (aiSpam)="reportPost($event, 'Parece spam de IA')"
+            (copyLink)="copyPostLink($event)"
+          />
+        }
+
+        @if (userPosts.length === 0) {
+          <div class="profile-feed__empty">
+            <p>{{ 'Nenhuma publicação ainda.' | translate }}</p>
+          </div>
+        }
+      } @else if (activeTab === 'reposts') {
+        @for (post of visibleReposts; track post.id) {
+          <app-post-card
+            [post]="post"
+            [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
+            [repostPending]="repostPendingIds().has(post.id)"
+            (repost)="toggleRepost($event)"
+            (edit)="socialShell.openEditPost($event)"
+            (remove)="deletePost($event)"
+            (report)="reportPost($event)"
+            (hideAuthor)="hideAuthor($event)"
+            (notInterested)="hidePost($event)"
+            (aiSpam)="reportPost($event, 'Parece spam de IA')"
+            (copyLink)="copyPostLink($event)"
+          />
+        }
+
+        @if (visibleReposts.length === 0) {
+          <div class="profile-feed__empty">
+            <p>{{ 'Nenhum repost ainda.' | translate }}</p>
+          </div>
+        }
+      } @else if (isOwnProfile()) {
+        @for (post of visibleSavedPosts; track post.id) {
+          <app-post-card
+            [post]="post"
+            [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
+            [repostPending]="repostPendingIds().has(post.id)"
+            (repost)="toggleRepost($event)"
+            (edit)="socialShell.openEditPost($event)"
+            (remove)="deletePost($event)"
+            (report)="reportPost($event)"
+            (hideAuthor)="hideAuthor($event)"
+            (notInterested)="hidePost($event)"
+            (aiSpam)="reportPost($event, 'Parece spam de IA')"
+            (copyLink)="copyPostLink($event)"
+          />
+        }
+
+        @if (visibleSavedPosts.length === 0) {
+          <div class="profile-feed__empty">
+            <p>{{ 'Nenhum post salvo ainda.' | translate }}</p>
+          </div>
+        }
+      } @else {
+        <div class="profile-feed__empty">
+          <p>{{ 'Posts salvos são privados.' | translate }}</p>
+        </div>
+      }
+    </div>
+  }
   }
 
   @if (profileAlert(); as currentProfileAlert) {
