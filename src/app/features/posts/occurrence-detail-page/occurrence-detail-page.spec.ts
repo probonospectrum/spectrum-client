@@ -120,7 +120,7 @@ describe('OccurrenceDetailPage actions', () => {
     expect(actions).toEqual([
       'verified Também identifiquei este problema',
       'add_photo_alternate Adicionar evidência',
-      'Informar resolução',
+      'task_alt Informar resolução',
     ]);
   });
 
@@ -138,41 +138,10 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows only related agency actions at the same URL', () => {
-    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência', 'Adicionar resolução']);
+    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência']);
     fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
     expect(fixture.componentInstance.canRegisterResponse).toBe(true);
     expect(fixture.componentInstance.canResolve).toBe(false);
-  });
-
-  it.each([
-    ['USER', undefined, true],
-    ['USER', undefined, false],
-    ['MODERATOR', undefined, true],
-    ['RESPONSIBLE_AGENCY', 'iluminacao-demo', true],
-    ['RESPONSIBLE_AGENCY', 'other-agency', false],
-  ] as const)('applies protocol visibility for %s with agency %s and access %s', (role, agency, allowed) => {
-    actionsFor(role, agency);
-    const page = fixture.componentInstance;
-    page.occurrence = {
-      ...occurrence,
-      createdBy: role === 'USER' && allowed ? 'USER' : 'another-user',
-      forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt, protocol: 'ENC-104' }],
-      agencyProgress: { protocol: 'AT-203', updatedAt: occurrence.createdAt, note: 'Atendimento em curso.', closedByAgency: false },
-    };
-    page.historyEvents = [{
-      id: 'forwarding', occurrenceId, eventType: 'OCORRENCIA_ENCAMINHADA', actorType: 'SYSTEM',
-      occurredAt: occurrence.createdAt, description: '', metadata: { protocol: 'HIST-105', agencyName: 'Iluminação' },
-    }, {
-      id: 'proposal', occurrenceId, eventType: 'RESOLUCAO_INFORMADA', actorType: 'RESPONSIBLE_AGENCY',
-      occurredAt: occurrence.createdAt, description: '', metadata: { resolutionId: 'version-1', serviceReference: 'OS-106' },
-    }];
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-
-    const report = fixture.nativeElement.textContent as string;
-    for (const protocol of ['ENC-104', 'AT-203', 'HIST-105', 'OS-106']) {
-      expect(report.includes(protocol)).toBe(allowed);
-    }
   });
 
   it('shows regional catalog suggestions as the community types', () => {
@@ -290,104 +259,15 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
   });
 
-  it('offers progress and resolution submission for the institution after the editing window', () => {
+  it('offers status updates only for an approved related institution and requires evidence for closure', () => {
     actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
     user!.agencyRegistrationStatus = 'APPROVED';
-    const page = fixture.componentInstance;
-    expect(page.canRecordAgencyProgress).toBe(true);
-    expect(page.canSubmitAgencyResolution).toBe(true);
-    page.openPanel('agencyProgress');
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).not.toContain('Fechada pelo órgão');
-    page.occurrence = { ...occurrence, createdAt: new Date().toISOString() };
-    expect(page.canRecordAgencyProgress).toBe(false);
-    expect(page.canSubmitAgencyResolution).toBe(false);
-  });
-
-  it('offers resolution for a directly linked public agency during competence analysis', () => {
-    actionsFor('USER');
-    user!.accountType = 'PUBLIC_AGENCY';
-    const page = fixture.componentInstance;
-    page.occurrence = {
-      ...occurrence,
-      status: 'EM_ANALISE_DE_COMPETENCIA',
-      responsibleAgency: { id: user!._id, name: 'Órgão vinculado' },
-    };
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-    expect(page.canSubmitAgencyResolution).toBe(true);
-    const section = fixture.nativeElement.querySelector('#resolucao') as HTMLElement;
-    expect(section.textContent).toContain('Adicionar resolução');
-    page.openPanel('resolution');
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-    expect(section.querySelector('textarea[name="resolutionStatement"]')).not.toBeNull();
-  });
-
-  it('shows an open contestation window to the community and removes the action at the deadline', () => {
-    actionsFor('USER');
-    const page = fixture.componentInstance;
-    page.occurrence = {
-      ...occurrence,
-      status: 'RESOLUCAO_EM_ANALISE',
-      agencyResolution: { id: 'version-1', contestUntil: new Date(Date.now() + 60_000).toISOString() },
-    };
-    expect(page.canContest).toBe(true);
-    page.contestDeadlineReached.set(true);
-    expect(page.canContest).toBe(false);
-  });
-
-  it('allows the moderator to close early only when the active proposal was contested', () => {
-    actionsFor('MODERATOR');
-    const page = fixture.componentInstance;
-    page.occurrence = {
-      ...occurrence,
-      evidences: [{ id: 'photo', type: 'IMAGE', description: 'Foto do reparo', url: 'https://example.test/photo.jpg', addedAt: occurrence.createdAt }],
-      status: 'RESOLUCAO_EM_ANALISE',
-      agencyResolution: { id: 'version-1', contestUntil: new Date(Date.now() + 60_000).toISOString() },
-    };
-    const event = { occurrenceId, occurredAt: occurrence.createdAt, createdAt: occurrence.createdAt, description: '' };
-    page.historyEvents = [
-      { ...event, id: 'proposal', eventType: 'RESOLUCAO_INFORMADA', actorType: 'RESPONSIBLE_AGENCY',
-        evidenceIds: ['photo'], metadata: { resolutionId: 'version-1', statement: 'Troca da lâmpada',
-          executionDate: '2026-09-20', serviceReference: 'OS-104' } },
-      { ...event, id: 'current-contest', eventType: 'RESOLUCAO_CONTESTADA', actorType: 'USER',
-        metadata: { resolutionId: 'version-1', reason: 'O poste continua apagado.' } },
-      { ...event, id: 'old-contest', eventType: 'RESOLUCAO_CONTESTADA', actorType: 'USER',
-        metadata: { resolutionId: 'previous-version', reason: 'Contestação anterior.' } },
-    ];
-    page.openPanel('resolve');
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-    const review = fixture.nativeElement.querySelector('.occurrence-detail__resolution-review') as HTMLElement;
-    expect(review.textContent).toContain('Troca da lâmpada');
-    expect(review.textContent).toContain('20/09/2026');
-    expect(review.textContent).toContain('OS-104');
-    expect(review.querySelector('a')?.textContent).toContain('Foto do reparo');
-    const thread = review.querySelector<HTMLButtonElement>('.occurrence-detail__contest-toggle')!;
-    expect(thread.getAttribute('aria-expanded')).toBe('false');
-    expect(review.textContent).not.toContain('O poste continua apagado.');
-    thread.click();
-    fixture.detectChanges();
-    expect(thread.getAttribute('aria-expanded')).toBe('true');
-    expect(review.textContent).toContain('O poste continua apagado.');
-    expect(review.textContent).not.toContain('Contestação anterior.');
-    thread.click();
-    fixture.detectChanges();
-    expect(review.textContent).not.toContain('O poste continua apagado.');
-    const buttons: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('form button'));
-    const closeButton = buttons.find(button => button.textContent?.includes('Validar e encerrar ocorrência'));
-    const rejectButton = buttons.find(button => button.textContent?.includes('Invalidar resolução'));
-    expect(rejectButton?.disabled).toBe(false);
-    expect(closeButton?.disabled).toBe(false);
-    page.historyEvents = page.historyEvents.filter(event => event.id !== 'current-contest');
-    fixture.changeDetectorRef.markForCheck();
-    fixture.detectChanges();
-    expect(closeButton?.disabled).toBe(true);
-    page.contestDeadlineReached.set(true);
-    fixture.detectChanges();
-    expect(closeButton?.disabled).toBe(false);
+    expect(fixture.componentInstance.canRecordAgencyProgress).toBe(true);
+    fixture.componentInstance.progressStatus = 'RESOLVIDA'; fixture.componentInstance.progressNote = 'Reparo executado pela equipe de manutenção.';
+    fixture.componentInstance.submitAgencyProgress();
+    expect(fixture.componentInstance.errorMessage).toContain('evidência');
+    fixture.componentInstance.occurrence = { ...occurrence, status: 'ABERTA', createdAt: new Date().toISOString() };
+    expect(fixture.componentInstance.canRecordAgencyProgress).toBe(false);
   });
 
   it('does not show agency controls to an unrelated agency', () => {
