@@ -34,8 +34,16 @@
       </div>
 
       @if (selectedReason === 'Outros') {
-        <label>Descreva o motivo da denúncia
-          <textarea maxlength="1000" rows="4" [disabled]="submitting" [value]="otherReason" (input)="otherReason = $any($event.target).value"></textarea>
+        <label class="report-modal__description">
+          <span>{{ 'Descreva o motivo da denúncia' | translate }}</span>
+          <textarea
+            maxlength="1000"
+            rows="3"
+            [disabled]="submitting"
+            [value]="otherReason"
+            (input)="otherReason = $any($event.target).value"
+          ></textarea>
+          <small class="report-modal__description-count" aria-hidden="true">{{ otherReason.length }} / 1000</small>
         </label>
       }
       @if (submissionError) { <p role="alert">{{ (submissionError) | translate }}</p> }

@@ -140,6 +140,39 @@
   transform: scale(1);
 }
 
+.report-modal__description {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--spectrum-text);
+  font: 650 13px/1.4 var(--spectrum-font);
+}
+
+.report-modal__description textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  border: 1px solid var(--spectrum-border);
+  border-radius: var(--spectrum-radius-md);
+  padding: 12px 14px;
+  background: var(--spectrum-surface-soft);
+  color: var(--spectrum-text);
+  font: 450 14px/1.5 var(--spectrum-font);
+}
+
+.report-modal__description textarea:focus {
+  outline: 2px solid var(--spectrum-error);
+  outline-offset: 2px;
+}
+
+.report-modal__description-count {
+  justify-self: end;
+  color: var(--spectrum-text-muted);
+  font: 500 11px/1.2 var(--spectrum-font);
+  font-variant-numeric: tabular-nums;
+}
+
 .report-modal__submit {
   min-height: 48px;
   display: inline-flex;
