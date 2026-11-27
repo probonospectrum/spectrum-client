@@ -393,3 +393,86 @@
   .material-symbols-outlined { font-size: 16px; }
   span:last-child { min-width: 0; overflow-wrap: anywhere; }
 }
+
+.occurrence-detail__resolution-form {
+  margin-top: 14px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--spectrum-border);
+  border-radius: 14px;
+  background: var(--spectrum-surface-soft);
+}
+
+.occurrence-detail__resolution-form .occurrence-detail__form-heading {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--spectrum-border);
+
+  h3 { font-size: 1.125rem; }
+}
+
+.occurrence-detail__resolution-form label:has(textarea) {
+  grid-column: auto;
+
+  textarea { min-height: 108px; }
+}
+
+.occurrence-detail__resolution-proof {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: 12px;
+  background: var(--spectrum-surface);
+
+  h4, p { margin: 0; }
+  p { margin-top: 4px; color: var(--spectrum-text-secondary); }
+}
+
+.occurrence-detail__proof-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.occurrence-detail__proof-attachment {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button { gap: 6px; }
+  .material-symbols-outlined { font-size: 18px; }
+  small { overflow-wrap: anywhere; }
+}
+
+.occurrence-detail__resolution-feedback { grid-column: 1 / -1; margin: 0; }
+
+.occurrence-detail__resolution-content {
+  display: grid;
+  gap: 12px;
+
+  h4 { margin: 0 0 4px; color: var(--spectrum-text-secondary); font-size: .8rem; }
+}
+
+.occurrence-detail__resolution-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--spectrum-surface-soft);
+
+  dt { color: var(--spectrum-text-secondary); font-size: .8rem; }
+  dd { margin: 3px 0 0; color: var(--spectrum-text); font-weight: 650; }
+}
+
+@media (max-width: 700px) {
+  .occurrence-detail__proof-controls { grid-template-columns: minmax(0, 1fr); }
+}
+
+.occurrence-detail__review-feedback {
+  grid-column: 1 / -1;
+  margin: 0;
+}

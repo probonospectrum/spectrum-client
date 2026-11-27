@@ -779,7 +779,7 @@ export class PostService {
     user: LoggedUser | null,
     statement: string,
     evidenceIds: string[] = [],
-    details?: { executionDate?: string; serviceReference?: string },
+    details?: { outcome: string; executionDate: string; serviceReference?: string },
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
     const communityStatuses: OccurrenceStatus[] = ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA'];

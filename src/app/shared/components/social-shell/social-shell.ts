@@ -157,7 +157,7 @@ export class SocialShell implements OnInit {
   }
 
   get canCreateOccurrence(): boolean {
-    return this.user?.occurrenceRole !== 'MODERATOR';
+    return this.user?.accountType !== 'PUBLIC_AGENCY' && this.user?.occurrenceRole !== 'MODERATOR';
   }
 
   openCreatePost(): void {

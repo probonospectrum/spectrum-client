@@ -78,6 +78,7 @@ describe('OccurrenceDetailPage actions', () => {
           provide: PostService,
           useValue: {
             getOccurrence: () => of(occurrence),
+            informOccurrenceResolution: vi.fn(() => of(occurrence)),
             canModifyPost: () => false,
             getOccurrenceHistory: () => of([]),
             getResponsibleAgencies: () => of([]),
@@ -96,6 +97,21 @@ describe('OccurrenceDetailPage actions', () => {
         add: { imports: [StubCommentSection, StubSocialShell] },
       })
       .compileComponents();
+  });
+
+  it.each([
+    [{}, '/publicacoes', 'Voltar para publicações'],
+    [{ origem: 'orgao' }, '/perfil', 'Voltar para órgão público'],
+    [{ origem: 'orgao', perfilOrgao: 'secretaria_obras' }, '/perfil/secretaria_obras', 'Voltar para órgão público'],
+  ])('shows the return link for the entry point %j', (query, url, label) => {
+    Object.assign(TestBed.inject(ActivatedRoute).snapshot, { queryParamMap: convertToParamMap(query) });
+    fixture = TestBed.createComponent(OccurrenceDetailPage);
+    fixture.detectChanges();
+
+    const view: HTMLElement = fixture.nativeElement;
+    const link = view.querySelector('.occurrence-detail__back');
+    expect(link?.getAttribute('href')).toBe(url);
+    expect(link?.textContent).toContain(label);
   });
 
   function actionsFor(role: LoggedUser['occurrenceRole'], agencyId?: string): string[] {
@@ -306,7 +322,7 @@ describe('OccurrenceDetailPage actions', () => {
     expect(page.canSubmitAgencyResolution).toBe(false);
   });
 
-  it('offers resolution for a directly linked public agency during competence analysis', () => {
+  it('requires the work, verified outcome, execution date and proof for a directly linked agency', () => {
     actionsFor('USER');
     user!.accountType = 'PUBLIC_AGENCY';
     const page = fixture.componentInstance;
@@ -324,6 +340,26 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(section.querySelector('textarea[name="resolutionStatement"]')).not.toBeNull();
+    expect(section.querySelector('textarea[name="resolutionOutcome"]')).not.toBeNull();
+    const send = TestBed.inject(PostService).informOccurrenceResolution;
+    page.submitResolution();
+    expect(page.errorMessage).toContain('resultado verificado');
+    page.resolutionStatement = 'A equipe substituiu a lâmpada no poste indicado.';
+    page.resolutionOutcome = 'O poste voltou a iluminar a rua após o teste.';
+    page.submitResolution();
+    expect(page.errorMessage).toContain('data de execução');
+    page.resolutionExecutionDate = page.latestResolutionExecutionDate;
+    page.submitResolution();
+    expect(page.errorMessage).toContain('Anexe uma evidência');
+    expect(send).not.toHaveBeenCalled();
+    page.resolutionServiceReference = ' OS-104 ';
+    page.submitResolution();
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ id: occurrenceId }), user,
+      'A equipe substituiu a lâmpada no poste indicado.', [], {
+        executionDate: page.latestResolutionExecutionDate,
+        outcome: 'O poste voltou a iluminar a rua após o teste.',
+        serviceReference: 'OS-104',
+      });
   });
 
   it('shows an open contestation window to the community and removes the action at the deadline', () => {
@@ -352,7 +388,7 @@ describe('OccurrenceDetailPage actions', () => {
     page.historyEvents = [
       { ...event, id: 'proposal', eventType: 'RESOLUCAO_INFORMADA', actorType: 'RESPONSIBLE_AGENCY',
         evidenceIds: ['photo'], metadata: { resolutionId: 'version-1', statement: 'Troca da lâmpada',
-          executionDate: '2026-09-20', serviceReference: 'OS-104' } },
+          outcome: 'O poste voltou a funcionar após teste noturno.', executionDate: '2026-09-20', serviceReference: 'OS-104' } },
       { ...event, id: 'current-contest', eventType: 'RESOLUCAO_CONTESTADA', actorType: 'USER',
         metadata: { resolutionId: 'version-1', reason: 'O poste continua apagado.' } },
       { ...event, id: 'old-contest', eventType: 'RESOLUCAO_CONTESTADA', actorType: 'USER',
@@ -363,6 +399,7 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.detectChanges();
     const review = fixture.nativeElement.querySelector('.occurrence-detail__resolution-review') as HTMLElement;
     expect(review.textContent).toContain('Troca da lâmpada');
+    expect(review.textContent).toContain('O poste voltou a funcionar após teste noturno.');
     expect(review.textContent).toContain('20/09/2026');
     expect(review.textContent).toContain('OS-104');
     expect(review.querySelector('a')?.textContent).toContain('Foto do reparo');
@@ -386,9 +423,14 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(closeButton?.disabled).toBe(true);
+    expect(closeButton?.getAttribute('aria-describedby')).toBe('resolution-approval-deadline');
+    const view: HTMLElement = fixture.nativeElement;
+    expect(view.querySelector('#resolution-approval-deadline')?.textContent)
+      .toMatch(/Validação aguarda o prazo de contestação.*\d{2}\/\d{2}\/\d{4}/s);
     page.contestDeadlineReached.set(true);
     fixture.detectChanges();
     expect(closeButton?.disabled).toBe(false);
+    expect(view.querySelector('#resolution-approval-deadline')).toBeNull();
   });
 
   it('does not show agency controls to an unrelated agency', () => {

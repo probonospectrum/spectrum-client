@@ -123,11 +123,28 @@ export class OccurrenceDetailPage implements OnInit {
   analysisReference = '';
   analysisNote = '';
   resolutionStatement = '';
+  resolutionOutcome = '';
+  private resolutionEvidenceId?: string;
+  get latestResolutionExecutionDate(): string {
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  }
   resolutionExecutionDate = '';
   resolutionServiceReference = '';
   resolutionReviewNote = '';
   contestReason = '';
   reopenReason = '';
+
+  get backLink(): { commands: string[]; label: string } {
+    const params = this.route.snapshot.queryParamMap;
+    if (params?.get('origem') === 'orgao') {
+      const nickname = params.get('perfilOrgao')?.trim();
+      return {
+        commands: nickname ? ['/perfil', nickname] : ['/perfil'],
+        label: 'Voltar para órgão público',
+      };
+    }
+    return { commands: ['/publicacoes'], label: 'Voltar para publicações' };
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -655,6 +672,8 @@ export class OccurrenceDetailPage implements OnInit {
     this.evidenceDescription = '';
     this.resolutionReviewNote = '';
     this.resolutionStatement = '';
+    this.resolutionOutcome = '';
+    this.resolutionEvidenceId = undefined;
     this.resolutionExecutionDate = '';
     this.resolutionServiceReference = '';
     this.contestReason = '';
@@ -743,6 +762,13 @@ export class OccurrenceDetailPage implements OnInit {
   onEvidenceSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.evidenceFile = input.files?.[0] ?? null;
+    this.resolutionEvidenceId = undefined;
+  }
+
+  removeResolutionEvidence(input: HTMLInputElement): void {
+    input.value = '';
+    this.evidenceFile = null;
+    this.resolutionEvidenceId = undefined;
   }
 
   confirmOccurrence(): void {
@@ -852,21 +878,38 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   submitResolution(): void {
-    if (!this.occurrence || (!this.canInformResolution && !this.canSubmitAgencyResolution) || !this.resolutionStatement.trim()) {
+    if (!this.occurrence || (!this.canInformResolution && !this.canSubmitAgencyResolution)) return;
+    const statement = this.resolutionStatement.trim();
+    const outcome = this.resolutionOutcome.trim();
+    const serviceReference = this.resolutionServiceReference.trim() || undefined;
+    if (this.canSubmitAgencyResolution) {
+      if (statement.length < 20 || outcome.length < 20) {
+        this.errorMessage = 'Descreva o serviço executado e o resultado verificado com pelo menos 20 caracteres em cada campo.';
+        return;
+      }
+      if (!this.resolutionExecutionDate || this.resolutionExecutionDate > this.latestResolutionExecutionDate) {
+        this.errorMessage = 'Informe uma data de execução válida que não esteja no futuro.';
+        return;
+      }
+      if (!this.evidenceFile && !this.resolutionEvidenceId && !serviceReference) {
+        this.errorMessage = 'Anexe uma evidência ou informe o protocolo ou a ordem de serviço.';
+        return;
+      }
+    } else if (!statement) {
       this.errorMessage = 'Descreva a resolução informada.';
       return;
     }
-
     const details = this.canSubmitAgencyResolution ? {
-      executionDate: this.resolutionExecutionDate || undefined,
-      serviceReference: this.resolutionServiceReference.trim() || undefined,
+      executionDate: this.resolutionExecutionDate,
+      outcome,
+      serviceReference,
     } : undefined;
     this.runWithOptionalEvidence(
       (evidenceIds) =>
         this.postService.informOccurrenceResolution(
           this.occurrence!,
           this.user,
-          this.resolutionStatement.trim(),
+          statement,
           evidenceIds,
           details,
         ),
@@ -1161,6 +1204,12 @@ export class OccurrenceDetailPage implements OnInit {
     action: (evidenceIds: string[]) => Observable<SpectrumPost>,
     successMessage: string,
   ): void {
+    const isAgencyResolution = this.actionPanel === 'resolution' && this.canSubmitAgencyResolution;
+    if (isAgencyResolution && this.resolutionEvidenceId) {
+      const evidenceId = this.resolutionEvidenceId;
+      this.runAction(() => action([evidenceId]), successMessage);
+      return;
+    }
     if (!this.occurrence || !this.evidenceFile) {
       this.runAction(() => action([]), successMessage);
       return;
@@ -1188,6 +1237,10 @@ export class OccurrenceDetailPage implements OnInit {
           const evidenceId = evidence &&
             (acceptsPending ? evidence.status !== 'REJECTED' : !evidence.status || evidence.status === 'APPROVED')
             ? evidence.id : undefined;
+          if (isAgencyResolution) {
+            this.resolutionEvidenceId = evidenceId;
+            if (!evidenceId) throw new Error('Não foi possível vincular a evidência à resolução.');
+          }
           return action(evidenceId ? [evidenceId] : []);
         }),
         finalize(() => this.isSubmitting.set(false)),
@@ -1223,6 +1276,8 @@ export class OccurrenceDetailPage implements OnInit {
     this.errorMessage = '';
     this.actionPanel = null;
     this.resolutionStatement = '';
+    this.resolutionOutcome = '';
+    this.resolutionEvidenceId = undefined;
     this.resolutionExecutionDate = '';
     this.resolutionServiceReference = '';
     this.resolutionReviewNote = '';

@@ -1,8 +1,9 @@
 <app-social-shell #shell [user]="user" [showContentHeader]="false" [wideContent]="true" (logout)="logout()" (postUpdated)="onOccurrenceUpdated($event)">
 <div class="occurrence-detail">
-  <a class="occurrence-detail__back" routerLink="/publicacoes">
+  @let back = backLink;
+  <a class="occurrence-detail__back" [routerLink]="back.commands">
     <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-    {{ 'Voltar para publicações' | translate }}
+    {{ back.label | translate }}
   </a>
 
   @if (isLoading()) {
@@ -60,7 +61,7 @@
     @if (successMessage) {
       <p role="status" class="occurrence-detail__notice occurrence-detail__notice--success">{{ (successMessage) | translate }}</p>
     }
-    @if (errorMessage) {
+    @if (errorMessage && !(actionPanel === 'resolution' && canSubmitAgencyResolution) && !(actionPanel === 'resolve' && canReviewAgencyResolution)) {
       <p role="alert" class="occurrence-detail__notice occurrence-detail__notice--error">{{ (errorMessage) | translate }}</p>
     }
 
@@ -262,9 +263,23 @@
             <h3>{{ 'Proposta do órgão' | translate }}</h3>
             <small>{{ eventActorLine(proposal) }} · {{ formatDate(proposal.createdAt || proposal.occurredAt) }}</small>
           </header>
-          <p>{{ proposal.metadata?.['statement'] }}</p>
+          <div class="occurrence-detail__resolution-content">
+            <div>
+              <h4>{{ 'Serviço executado' | translate }}</h4>
+              <p>{{ proposal.metadata?.['statement'] || ('Não informado' | translate) }}</p>
+            </div>
+            @if (proposal.metadata?.['outcome'] || isModerator) {
+              <div>
+                <h4>{{ 'Resultado verificado' | translate }}</h4>
+                <p>{{ proposal.metadata?.['outcome'] || ('Não informado' | translate) }}</p>
+              </div>
+            }
+          </div>
           <ng-container *ngTemplateOutlet="resolutionDetails; context: { $implicit: proposal }" />
-          <ng-container *ngTemplateOutlet="resolutionAttachments; context: { $implicit: proposal }" />
+          <div class="occurrence-detail__resolution-content">
+            <h4>{{ 'Comprovação' | translate }}</h4>
+            <ng-container *ngTemplateOutlet="resolutionAttachments; context: { $implicit: proposal }" />
+          </div>
           <ng-container *ngTemplateOutlet="contestThread; context: { $implicit: contestsForProposal(proposal), id: proposal.id }" />
           @if (decisionForProposal(proposal); as decision) {
             <div class="occurrence-detail__resolution-decision">
@@ -282,7 +297,7 @@
       }
       <div class="occurrence-detail__actions occurrence-detail__resolution-actions">
         <div class="occurrence-detail__action-group">
-          @if (canSubmitAgencyResolution || canInformResolution) {
+          @if ((canSubmitAgencyResolution || canInformResolution) && !(canSubmitAgencyResolution && actionPanel === 'resolution')) {
             <button type="button" (click)="openPanel('resolution')">{{ (canSubmitAgencyResolution ? 'Adicionar resolução' : 'Informar resolução') | translate }}</button>
           }
           @if (canReviewAgencyResolution || canCloseContestedOccurrence || canResolve) {
@@ -296,7 +311,70 @@
           }
         </div>
       </div>
-      @if (isResolutionPanel) {
+      @if (actionPanel === 'resolution' && canSubmitAgencyResolution) {
+        <form class="occurrence-detail__form occurrence-detail__resolution-form" (ngSubmit)="submitResolution()">
+          <fieldset class="occurrence-detail__action-fields" [disabled]="isSubmitting()">
+            <div class="occurrence-detail__form-heading">
+              <h3>{{ 'Enviar resolução para análise' | translate }}</h3>
+              <p>{{ 'Informe o serviço executado, quando foi concluído e como o resultado foi verificado no local da ocorrência.' | translate }}</p>
+            </div>
+            <label>
+              <span>{{ 'Serviço executado' | translate }}</span>
+              <textarea name="resolutionStatement" [(ngModel)]="resolutionStatement" required minlength="20" maxlength="1000" rows="3"
+                [placeholder]="'O que foi feito e em qual trecho ou ponto do local?' | translate"></textarea>
+            </label>
+            <label>
+              <span>{{ 'Resultado verificado' | translate }}</span>
+              <textarea name="resolutionOutcome" [(ngModel)]="resolutionOutcome" required minlength="20" maxlength="1000" rows="3"
+                [placeholder]="'Como a equipe confirmou que o problema foi resolvido? Informe o teste, a vistoria ou o resultado observado.' | translate"></textarea>
+            </label>
+            <label>
+              <span>{{ 'Data da execução' | translate }}</span>
+              <input type="date" name="resolutionExecutionDate" [(ngModel)]="resolutionExecutionDate"
+                required [max]="latestResolutionExecutionDate" />
+            </label>
+            <div class="occurrence-detail__resolution-proof">
+              <div>
+                <h4>{{ 'Comprovação' | translate }}</h4>
+                <p>{{ 'Adicione pelo menos uma comprovação: foto, vídeo, protocolo ou ordem de serviço.' | translate }}</p>
+              </div>
+              <div class="occurrence-detail__proof-controls">
+                <label>
+                  <span>{{ 'Protocolo ou ordem de serviço' | translate }}</span>
+                  <input type="text" name="resolutionServiceReference" [(ngModel)]="resolutionServiceReference"
+                    maxlength="120" [placeholder]="'Ex.: OS-104/2026' | translate" />
+                </label>
+                <div class="occurrence-detail__proof-attachment">
+                  <input #resolutionFile class="occurrence-detail__file-input" type="file"
+                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                    [attr.aria-label]="'Selecionar evidência' | translate"
+                    (change)="onEvidenceSelected($event)" />
+                  <button type="button" class="occurrence-detail__secondary" (click)="resolutionFile.click()">
+                    <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+                    {{ (evidenceFile ? 'Trocar foto ou vídeo' : 'Anexar foto ou vídeo') | translate }}
+                  </button>
+                  @if (evidenceFile; as file) {
+                    <small aria-live="polite">{{ file.name }}</small>
+                    <button type="button" class="occurrence-detail__text-button"
+                      (click)="removeResolutionEvidence(resolutionFile)">
+                      {{ 'Remover anexo' | translate }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+            @if (errorMessage) {
+              <p class="occurrence-detail__notice occurrence-detail__notice--error occurrence-detail__resolution-feedback" role="alert">
+                {{ errorMessage | translate }}
+              </p>
+            }
+            <div class="occurrence-detail__suggestion-actions occurrence-detail__suggestion-actions--agency">
+              <button type="button" class="occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+              <button type="submit">{{ (isSubmitting() ? 'Enviando…' : 'Enviar para análise') | translate }}</button>
+            </div>
+          </fieldset>
+        </form>
+      } @else if (isResolutionPanel) {
         <ng-container *ngTemplateOutlet="actionForm" />
       }
     </section>
@@ -458,18 +536,8 @@
               <span>{{ 'Descrição da resolução' | translate }}</span>
               <textarea [(ngModel)]="resolutionStatement" name="resolutionStatement" maxlength="1000"></textarea>
             </label>
-            @if (canSubmitAgencyResolution) {
-              <label>
-                <span>{{ 'Data da execução (opcional)' | translate }}</span>
-                <input type="date" [(ngModel)]="resolutionExecutionDate" name="resolutionExecutionDate" />
-              </label>
-              <label>
-                <span>{{ 'Protocolo ou ordem de serviço (opcional)' | translate }}</span>
-                <input type="text" [(ngModel)]="resolutionServiceReference" name="resolutionServiceReference" maxlength="120" />
-              </label>
-            }
             <div class="occurrence-detail__suggestion-actions">
-              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ (canSubmitAgencyResolution ? 'Enviar resolução' : 'Informar resolução') | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitResolution()">{{ 'Informar resolução' | translate }}</button>
               <button type="button" class="occurrence-detail__form-inline occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
             </div>
           }
@@ -486,13 +554,31 @@
           }
 
           @if (actionPanel === 'resolve' && (canReviewAgencyResolution || canCloseContestedOccurrence)) {
+            @if (canReviewAgencyResolution) {
+              <div class="occurrence-detail__form-heading">
+                <h3>{{ 'Avaliar resolução' | translate }}</h3>
+                <p>{{ 'Confira se o serviço corresponde ao local e ao problema relatado. Verifique a data, o resultado, a comprovação e eventuais contestações.' | translate }}</p>
+              </div>
+            }
             <label>
               <span>{{ 'Justificativa da análise (mínimo de 20 caracteres)' | translate }}</span>
               <textarea [(ngModel)]="resolutionReviewNote" name="resolutionReviewNote" maxlength="1000"></textarea>
             </label>
             @if (canReviewAgencyResolution) {
+              @if (!canApproveAgencyResolution && occurrence.agencyResolution; as resolution) {
+                <div id="resolution-approval-deadline" class="occurrence-detail__review-feedback occurrence-detail__resolution-window" role="status">
+                  <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+                  <div>
+                    <p><strong>{{ 'Validação aguarda o prazo de contestação' | translate }}</strong></p>
+                    <p>{{ 'O encerramento ficará disponível ao fim do prazo, em {date}, ou antes se houver uma contestação da proposta atual.' | translate: { date: (resolution.contestUntil | date:'dd/MM/yyyy HH:mm') } }}</p>
+                  </div>
+                </div>
+              }
+              @if (errorMessage) {
+                <p class="occurrence-detail__review-feedback occurrence-detail__notice occurrence-detail__notice--error" role="alert">{{ errorMessage | translate }}</p>
+              }
               <button type="button" class="occurrence-detail__form-inline occurrence-detail__danger" [disabled]="isSubmitting()" (click)="submitAgencyResolutionReview(false)">{{ 'Invalidar resolução' | translate }}</button>
-              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !canApproveAgencyResolution" (click)="submitAgencyResolutionReview(true)">{{ 'Validar e encerrar ocorrência' | translate }}</button>
+              <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting() || !canApproveAgencyResolution" [attr.aria-describedby]="canApproveAgencyResolution ? null : 'resolution-approval-deadline'" (click)="submitAgencyResolutionReview(true)">{{ 'Validar e encerrar ocorrência' | translate }}</button>
             } @else {
               <button type="button" class="occurrence-detail__form-inline" [disabled]="isSubmitting()" (click)="submitContestedClosure()">{{ 'Encerrar ocorrência' | translate }}</button>
             }
@@ -634,11 +720,26 @@
     </section>
 
     <ng-template #resolutionDetails let-event>
-      @if (executionDate(event); as date) {
-        <p>{{ 'Data da execução' | translate }} <time [attr.datetime]="date">{{ date | date:'dd/MM/yyyy':'UTC' }}</time></p>
-      }
-      @if (canViewProtocol && event.metadata?.['serviceReference']; as reference) {
-        <p>{{ 'Protocolo ou ordem de serviço' | translate }} {{ reference }}</p>
+      @let date = executionDate(event);
+      @let reference = event.metadata?.['serviceReference'];
+      @if (date || isModerator || (canViewProtocol && reference)) {
+        <dl class="occurrence-detail__resolution-facts">
+          @if (date || isModerator) {
+            <div>
+              <dt>{{ 'Data da execução' | translate }}</dt>
+              <dd>
+                @if (date) { <time [attr.datetime]="date">{{ date | date:'dd/MM/yyyy':'UTC' }}</time> }
+                @else { {{ 'Não informado' | translate }} }
+              </dd>
+            </div>
+          }
+          @if (canViewProtocol && (reference || isModerator)) {
+            <div>
+              <dt>{{ 'Protocolo ou ordem de serviço' | translate }}</dt>
+              <dd>{{ reference || ('Não informado' | translate) }}</dd>
+            </div>
+          }
+        </dl>
       }
     </ng-template>
     <section class="occurrence-detail__section">

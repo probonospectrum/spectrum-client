@@ -420,3 +420,43 @@
 }
 
 .profile-header__stats button { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+
+.profile-header__service-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  margin: 12px 0 0;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--spectrum-border);
+  border-radius: 10px;
+  background: var(--spectrum-surface-soft);
+  vertical-align: top;
+}
+
+.profile-header__service-icon {
+  display: grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--spectrum-accent-soft);
+  color: var(--spectrum-accent);
+  font-size: 18px;
+}
+
+.profile-header__service-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--spectrum-text-muted);
+  font-size: .75rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+
+  strong {
+    color: var(--spectrum-text);
+    font-size: .875rem;
+  }
+}

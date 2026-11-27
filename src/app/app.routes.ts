@@ -5,7 +5,7 @@ import { authGuard, moderatorGuard, publicAgencyGuard } from './core/guards/auth
 export const routes: Routes = [
   { path: 'moderacao', redirectTo: 'moderacao/sem-orgao', pathMatch: 'full' },
   { path: 'orgao-publico/caixa-de-entrada', loadComponent: () => import('./features/agency/agency-inbox-page').then(m => m.AgencyInboxPage), canActivate: [authGuard, publicAgencyGuard] },
-  { path: 'orgao-publico', loadComponent: () => import('./features/agency/public-agency-page').then(m => m.PublicAgencyPage), canActivate: [authGuard, publicAgencyGuard] },
+  { path: 'orgao-publico', pathMatch: 'full', redirectTo: 'perfil' },
   {
     path: 'moderacao/:queue',
     loadComponent: () => import('./features/moderation/moderation-page').then(m => m.ModerationPage),
