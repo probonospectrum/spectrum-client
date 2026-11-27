@@ -1,3 +1,4 @@
+import { CommunityTermsService } from '../../../core/services/user/community-terms.service';
 import { CONTENT_REVIEW_MESSAGE, requiresContentReview } from '../../../core/content-policy/content-policy';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { UserAvatar } from '../user-avatar/user-avatar';
@@ -17,7 +18,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { catchError, finalize, forkJoin, map, of, switchMap, Subject } from 'rxjs';
+import { catchError, defer, finalize, forkJoin, map, of, switchMap, Subject, timer } from 'rxjs';
 import {
   BrazilCity,
   BrazilState,
@@ -25,6 +26,8 @@ import {
 } from '../../../core/services/locality/locality.service';
 import {
   CreateOccurrenceEvidencePayload,
+  NearbyOccurrence,
+  NearbyOccurrenceCriteria,
   OccurrenceCategory,
   OccurrenceAgencyOption,
   OccurrenceImportance,
@@ -49,6 +52,7 @@ interface SelectedEvidence {
 })
 export class CreatePostModal implements OnChanges {
   private readonly postService = inject(PostService);
+  private readonly communityTerms = inject(CommunityTermsService);
   private readonly localityService = inject(LocalityService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -81,7 +85,36 @@ export class CreatePostModal implements OnChanges {
   readonly agenciesError = signal('');
   private readonly agencyLocation = new Subject<{ stateCode: string; cityName: string } | null>();
 
+  readonly nearbyOccurrences = signal<NearbyOccurrence[]>([]);
+  readonly expandedOccurrenceId = signal<string | null>(null);
+  readonly nearbySummary = signal<{ status: string; description: string } | { error: true } | null>(null);
+  private readonly nearbySelection = new Subject<string | null>();
+  private readonly nearbyCriteria = new Subject<NearbyOccurrenceCriteria | null>();
+
   constructor() {
+    this.nearbySelection.pipe(
+      switchMap(id => id
+        ? defer(() => this.postService.getOccurrence(id, this.user)).pipe(
+          map(post => ({
+            status: this.postService.getStatusLabel(post.status),
+            description: post.content?.trim() ?? '',
+          })),
+          catchError(() => of({ error: true } as const)),
+        )
+        : of(null)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(summary => this.nearbySummary.set(summary));
+
+    this.nearbyCriteria.pipe(
+      switchMap(criteria => criteria
+        ? timer(350).pipe(
+          switchMap(() => this.postService.findNearbyOccurrences(criteria)),
+          catchError(() => of([])),
+        )
+        : of([])),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(results => this.nearbyOccurrences.set(results));
+
     this.agencyLocation.pipe(
       switchMap(location => {
         this.agenciesError.set('');
@@ -95,6 +128,31 @@ export class CreatePostModal implements OnChanges {
         );
       }), takeUntilDestroyed(this.destroyRef),
     ).subscribe(agencies => this.availableAgencies.set(agencies));
+  }
+
+  toggleNearbySummary(id: string): void {
+    this.selectNearbyOccurrence(this.expandedOccurrenceId() === id ? null : id);
+  }
+
+  private selectNearbyOccurrence(id: string | null): void {
+    this.expandedOccurrenceId.set(id);
+    this.nearbySummary.set(null);
+    this.nearbySelection.next(id);
+  }
+
+  refreshNearbyOccurrences(): void {
+    this.selectNearbyOccurrence(null);
+    const state = this.selectedState;
+    const city = this.selectedCity;
+    const address = this.address.trim();
+    this.nearbyOccurrences.set([]);
+    this.nearbyCriteria.next(!this.isEditing && state && city && address && this.selectedCategory ? {
+      stateCode: state.sigla,
+      cityId: String(city.id),
+      category: this.selectedCategory,
+      address,
+      neighborhood: this.neighborhood.trim() || undefined,
+    } : null);
   }
 
   get selectedAgency(): OccurrenceAgencyOption | undefined {
@@ -196,6 +254,7 @@ export class CreatePostModal implements OnChanges {
     this.cities.set([]);
     this.locationErrorMessage = '';
     this.loadAvailableAgencies();
+    this.refreshNearbyOccurrences();
   }
 
   onStateChanged(): void {
@@ -204,6 +263,7 @@ export class CreatePostModal implements OnChanges {
     this.locationErrorMessage = '';
 
     this.loadAvailableAgencies();
+    this.refreshNearbyOccurrences();
     if (this.selectedStateId) {
       this.loadCities(this.selectedStateId);
     }
@@ -212,6 +272,7 @@ export class CreatePostModal implements OnChanges {
   onCityChanged(): void {
     this.locationErrorMessage = '';
     this.loadAvailableAgencies();
+    this.refreshNearbyOccurrences();
   }
 
   retryLocationLoad(): void {
@@ -224,9 +285,11 @@ export class CreatePostModal implements OnChanges {
     }
   }
 
-  selectAttachments(event: Event, type: SelectedEvidence['type']): void {
+  async selectAttachments(event: Event, type: SelectedEvidence['type']): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length || !(await this.communityTerms.requireAcceptance('attach')) || this.destroyRef.destroyed) return;
 
     for (const file of files) {
       if (this.selectedEvidences.length >= 4) {
@@ -396,6 +459,7 @@ export class CreatePostModal implements OnChanges {
     this.selectedCityId = '';
     this.selectedEvidences = [];
     this.errorMessage = '';
+    this.refreshNearbyOccurrences();
   }
 
   get selectedState(): BrazilState | undefined {

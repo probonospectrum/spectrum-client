@@ -48,7 +48,7 @@
     <div class="create-post-modal__classification">
       <label class="create-post-modal__select-field">
         <span class="create-post-modal__label">{{ 'Categoria' | translate }}</span>
-        <select [(ngModel)]="selectedCategory" [attr.aria-label]="'Categoria da ocorrência' | translate">
+        <select [(ngModel)]="selectedCategory" (ngModelChange)="refreshNearbyOccurrences()" [attr.aria-label]="'Categoria da ocorrência' | translate">
           <option value="" disabled>{{ 'Selecione uma categoria' | translate }}</option>
           @for (category of categories; track category.value) {
             <option [value]="category.value">{{ (category.label) | translate }}</option>
@@ -128,11 +128,11 @@
 
       <label class="create-post-modal__field">
         <span class="create-post-modal__label">{{ 'Endereço ou ponto de referência*' | translate }}</span>
-        <input class="create-post-modal__input" [(ngModel)]="address" maxlength="240" [placeholder]="'Rua das Flores, em frente ao número 120' | translate" />
+        <input class="create-post-modal__input" [(ngModel)]="address" (ngModelChange)="refreshNearbyOccurrences()" maxlength="240" [placeholder]="'Rua das Flores, em frente ao número 120' | translate" />
       </label>
       <label class="create-post-modal__field">
         <span class="create-post-modal__label">{{ 'Bairro (opcional)' | translate }}</span>
-        <input class="create-post-modal__input" [(ngModel)]="neighborhood" maxlength="100" />
+        <input class="create-post-modal__input" [(ngModel)]="neighborhood" (ngModelChange)="refreshNearbyOccurrences()" maxlength="100" />
       </label>
       @if (locationErrorMessage) {
         <div class="create-post-modal__location-warning" role="alert">
@@ -153,6 +153,46 @@
     </section>
 
     @if (!isEditing) {
+      <div class="nearby-occurrences" aria-live="polite">
+        @if (nearbyOccurrences().length) {
+          <section class="nearby-occurrences__notice" aria-labelledby="nearby-occurrences-title">
+            <h3 id="nearby-occurrences-title">{{ 'Há ocorrências nas proximidades' | translate }}</h3>
+            <p>{{ 'Confira se o mesmo problema já foi registrado e ajude a comunidade a acompanhar a resolução.' | translate }}</p>
+            <ul>
+              @for (occurrence of nearbyOccurrences(); track occurrence.id) {
+                <li>
+                  <button type="button" class="nearby-occurrences__toggle"
+                    [attr.aria-expanded]="expandedOccurrenceId() === occurrence.id"
+                    [attr.aria-controls]="'nearby-summary-' + occurrence.id"
+                    (click)="toggleNearbySummary(occurrence.id)">
+                    <span><strong>{{ occurrence.title }}</strong><span>{{ occurrence.address }}</span></span>
+                    <span class="material-symbols-outlined" aria-hidden="true">
+                      {{ expandedOccurrenceId() === occurrence.id ? 'expand_less' : 'expand_more' }}
+                    </span>
+                  </button>
+                  <div class="nearby-occurrences__summary" [id]="'nearby-summary-' + occurrence.id"
+                    [hidden]="expandedOccurrenceId() !== occurrence.id">
+                    @if (expandedOccurrenceId() === occurrence.id) {
+                      @if (nearbySummary(); as summary) {
+                        @if ('error' in summary) {
+                          <p role="status">{{ 'Não foi possível abrir o resumo. Feche e abra novamente para tentar.' | translate }}</p>
+                        } @else {
+                          <p><strong>{{ 'Situação' | translate }}</strong> · {{ summary.status | translate }}</p>
+                          @if (summary.description) {
+                            <p class="nearby-occurrences__description">{{ summary.description }}</p>
+                          }
+                        }
+                      } @else {
+                        <p role="status">{{ 'Carregando resumo…' | translate }}</p>
+                      }
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
       <section class="agency-picker" aria-labelledby="agency-picker-title" [attr.aria-busy]="agenciesLoading()">
         <div class="agency-picker__heading">
           <span class="material-symbols-outlined agency-picker__icon" aria-hidden="true">account_balance</span>

@@ -20,6 +20,7 @@ export function requiresGoogleRegistration(
 }
 
 export interface GoogleRegistrationRequest {
+  acceptedTermsVersion?: string;
   accountType?: 'CITIZEN' | 'PUBLIC_AGENCY'; agencyCnpj?: string; agencyName?: string;
   representativePosition?: string; authorizationReference?: string;
   registrationToken: string;

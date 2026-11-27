@@ -1,0 +1,88 @@
+dialog {
+  box-sizing: border-box;
+  width: min(42rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  border: 0;
+  border-radius: var(--spectrum-radius-sm);
+  padding: clamp(1rem, 4vw, 1.75rem);
+  background: var(--spectrum-surface, Canvas);
+  color: var(--spectrum-text, CanvasText);
+  font-family: var(--spectrum-font);
+}
+
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+dialog::backdrop {
+  background: rgb(9 24 43 / 65%);
+}
+
+h2, p {
+  margin: 0;
+}
+
+h2 {
+  font-size: clamp(1.1rem, 4vw, 1.4rem);
+}
+
+.notice {
+  font-weight: 700;
+}
+
+.articles {
+  min-height: 0;
+  overflow: auto;
+  padding-inline-end: 0.6rem;
+  line-height: 1.6;
+  font-size: 0.93rem;
+}
+
+.articles p {
+  margin-block: 0.65rem;
+  text-align: justify;
+  hyphens: auto;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+button {
+  min-height: 38px;
+  padding-inline: 0.9rem;
+  border-radius: var(--spectrum-radius-sm);
+  cursor: pointer;
+  font: 800 14px/1.2 var(--spectrum-font);
+}
+
+.accept {
+  border: 0;
+  background: var(--spectrum-action);
+  color: white;
+  box-shadow: 0 6px 14px rgb(31 69 104 / 18%);
+}
+
+.accept:hover:not(:disabled) {
+  background: var(--spectrum-action-hover);
+}
+
+.refuse {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+}
+
+button:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}

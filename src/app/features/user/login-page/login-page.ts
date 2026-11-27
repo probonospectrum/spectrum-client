@@ -22,6 +22,7 @@ import {
   AuthApiService,
   PendingGoogleRegistration,
 } from '../../../core/services/authApi/auth-api.service';
+import { COMMUNITY_TERMS_VERSION, CommunityTermsService } from '../../../core/services/user/community-terms.service';
 type AuthMode = 'login' | 'register';
 
 @Component({
@@ -40,6 +41,13 @@ type AuthMode = 'login' | 'register';
   styleUrl: './login-page.scss',
 })
 export class LoginPage implements OnInit {
+  private readonly communityTerms = inject(CommunityTermsService);
+  readonly acceptedCommunityTerms = signal(false);
+
+  openCommunityTerms(): void {
+    this.communityTerms.openRegistration(accepted => this.acceptedCommunityTerms.set(accepted));
+  }
+
   accountType = signal<'CITIZEN' | 'PUBLIC_AGENCY'>('CITIZEN');
   chooseAccountType(type: 'CITIZEN' | 'PUBLIC_AGENCY'): void {
     this.accountType.set(type);
@@ -276,7 +284,11 @@ export class LoginPage implements OnInit {
       birthDate,
       ...payload
     } = this.registerForm.getRawValue();
+    const termsAcceptance = this.acceptedCommunityTerms()
+      ? { acceptedTermsVersion: COMMUNITY_TERMS_VERSION }
+      : {};
     const accountPayload = {
+      ...termsAcceptance,
       ...payload,
       ...(this.accountType() === 'CITIZEN' ? { birthDate } : {}),
     };
@@ -289,6 +301,7 @@ export class LoginPage implements OnInit {
         .completeGoogleRegistration({
           registrationToken: this.pendingGoogleRegistration.registrationToken,
           ...agency,
+          ...termsAcceptance,
           name: payload.name,
           nickname: payload.nickname,
           password: payload.password,
