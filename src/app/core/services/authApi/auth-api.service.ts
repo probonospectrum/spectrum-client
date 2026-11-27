@@ -36,6 +36,18 @@ export class AuthApiService {
   private readonly userService = inject(UserService);
   private readonly pendingKey = 'spectrum-google-registration';
 
+  requestPasswordReset(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE_URL}/user/askChangeForPassword`, { email });
+  }
+
+  resetPassword(token: string, newChangedPassword: string, confirmedPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE_URL}/user/modifyPassword`, {
+      token,
+      newChangedPassword,
+      confirmedPassword,
+    });
+  }
+
   loginWithGoogle(code: string): Observable<GoogleLoginResponse> {
     this.clearPendingRegistration();
     return this.http
