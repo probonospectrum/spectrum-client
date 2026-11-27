@@ -60,7 +60,6 @@ export class SocialShell implements OnInit {
 
   readonly moderationLinks = [
     { path: 'resolvidas', label: 'Resolvidas', icon: 'task_alt' },
-    { path: 'sem-orgao', label: 'Sem órgão', icon: 'account_balance' },
     { path: 'contestadas', label: 'Contestadas', icon: 'gavel' },
     { path: 'denunciados', label: 'Itens denunciados', icon: 'flag' },
     { path: 'respostas', label: 'Respostas para Análise', icon: 'rate_review' },

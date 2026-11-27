@@ -18,7 +18,7 @@
       </header>
 
       <div class="report-options" role="radiogroup" [attr.aria-label]="'Motivo da denuncia' | translate">
-        @for (reason of reasons; track reason) {
+        @for (reason of choices; track reason) {
           <button
             type="button"
             role="radio"
@@ -33,8 +33,21 @@
         }
       </div>
 
+      @if (selectedReason === 'Outros') {
+        <label class="report-modal__description">
+          <span>{{ 'Descreva o motivo da denúncia' | translate }}</span>
+          <textarea
+            maxlength="1000"
+            rows="3"
+            [disabled]="submitting"
+            [value]="otherReason"
+            (input)="otherReason = $any($event.target).value"
+          ></textarea>
+          <small class="report-modal__description-count" aria-hidden="true">{{ otherReason.length }} / 1000</small>
+        </label>
+      }
       @if (submissionError) { <p role="alert">{{ (submissionError) | translate }}</p> }
-      <button class="report-modal__submit" type="button" [disabled]="submitting" (click)="onConfirm()">{{ (submitting ? 'Enviando...' : 'Denunciar') | translate }}</button>
+      <button class="report-modal__submit" type="button" [disabled]="submitting || (selectedReason === 'Outros' && !otherReason.trim())" (click)="onConfirm()">{{ (submitting ? 'Enviando...' : 'Denunciar') | translate }}</button>
     </section>
   </div>
 } @else {

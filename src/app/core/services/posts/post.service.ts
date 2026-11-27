@@ -148,6 +148,9 @@ export interface OccurrenceForwarding {
 }
 
 export interface ModerationReport {
+  categories?: string[];
+  decision?: 'accept' | 'reject';
+  voted?: boolean;
   id: string; kind: 'post' | 'comment'; count: number; reasons: string[];
   removedAt?: string; removalReason?: string;
   title: string; content?: string; postId?: string;
@@ -155,6 +158,7 @@ export interface ModerationReport {
 
 export interface SpectrumPost {
   agencyResolution?: { id: string; contestUntil: string } | null;
+  moderationRemovedAt?: string;
   agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
   reaction?: 'LIKE' | 'UNLIKE' | null;
   moderationReason?: string | null;
@@ -261,7 +265,7 @@ export interface CreateOccurrencePayload {
 
 export interface UploadedEvidenceResponse {
   url: string;
-  type: 'IMAGE' | 'VIDEO';
+  type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   fileName: string;
   mimeType: string;
   size: number;
@@ -269,6 +273,7 @@ export interface UploadedEvidenceResponse {
 
 interface OccurrenceApiResponse {
   agencyResolution?: SpectrumPost['agencyResolution'];
+  moderationRemovedAt?: string;
   agencyProgress?: SpectrumPost['agencyProgress'];
   saved?: boolean;
   repostCount?: number;
@@ -348,11 +353,16 @@ export class PostService {
       map(occurrence => this.toSpectrumPost(occurrence, user)), tap(updated => this.cacheOccurrence(updated)));
   }
   readonly i18n = inject(I18nService);
-  reportContent(reason: string, reportedPostId: string, reportedCommentId?: string): Observable<unknown> {
-    return this.http.post(`${API_BASE_URL}/report`, { reason, reportedPostId, reportedCommentId });
+  reportContent(reason: string, reportedPostId: string, reportedCommentId?: string, category?: string): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/report`, { reason, category, reportedPostId, reportedCommentId });
   }
-  removeReportedPost(id: string, reason: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/moderation/remove`, { reason });
+  voteOnReport(id: string, decision: 'accept' | 'reject'): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/moderation/vote`, { decision });
+  }
+  getArchived(user: LoggedUser | null): Observable<SpectrumPost[]> {
+    return this.http.get<OccurrenceApiResponse[]>(`${this.apiUrl}/archived`).pipe(
+      map(items => items.map(item => this.toSpectrumPost(item, user))),
+    );
   }
   getModerationReports(): Observable<ModerationReport[]> {
     return this.http.get<ModerationReport[]>(`${this.apiUrl}/moderation/reports`);
@@ -527,8 +537,8 @@ export class PostService {
       return of(localOccurrence);
     }
 
-    if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY') return this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(post => this.cacheOccurrence(post)));
-    return forkJoin({ occurrence: this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`), states: this.postStates([id]) })
+    if (user?.occurrenceRole === 'RESPONSIBLE_AGENCY' || user?.occurrenceRole === 'MODERATOR') return this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`).pipe(map(occurrence => this.toSpectrumPost(occurrence, user)), tap(post => this.cacheOccurrence(post)));
+    return forkJoin({ occurrence: this.http.get<OccurrenceApiResponse>(`${this.apiUrl}/${id}`), states: this.postStates([id]).pipe(catchError(() => of({} as Record<string, { likeCount: number; unlikeCount: number; reaction: 'LIKE' | 'UNLIKE' | null; saved: boolean }>))) })
       .pipe(
         map(({ occurrence, states }) => this.toSpectrumPost({ ...occurrence, ...states[id] }, user)),
         tap((post) => this.cacheOccurrence(post)),
@@ -1710,6 +1720,8 @@ export class PostService {
 
 return {
   id: occurrence._id,
+      agencyResolution: occurrence.agencyResolution,
+      moderationRemovedAt: occurrence.moderationRemovedAt,
   createdAt,
   createdBy: occurrence.createdBy,
   originalPostId: occurrence.originalPostId,
@@ -1734,7 +1746,6 @@ return {
   saved: occurrence.saved ?? false,
   tags: [],
   status: occurrence.status,
-  agencyResolution: occurrence.agencyResolution,
   agencyProgress: occurrence.agencyProgress,
   moderationReason: occurrence.moderationReason,
   forwardingDueAt: occurrence.forwardingDueAt,

@@ -50,7 +50,12 @@ describe('Comment threads and institutional replies', () => {
       page.newComment = 'Rascunho do comentário comum';
       const parentElement = fixture.nativeElement.querySelector('#comment-parent') as HTMLElement;
       const button = parentElement.querySelector('.comment-section__reply') as HTMLButtonElement;
-      expect(button.parentElement?.previousElementSibling?.getAttribute('aria-label')).toBe('Descurtir comentario');
+      const previousAction = button.parentElement?.previousElementSibling;
+      if (user.occurrenceRole === 'MODERATOR') {
+        expect(previousAction).toBeNull();
+      } else {
+        expect(previousAction?.getAttribute('aria-label')).toBe('Descurtir comentario');
+      }
       button.click();
       fixture.detectChanges();
       await fixture.whenStable();

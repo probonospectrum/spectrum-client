@@ -332,10 +332,10 @@ export class CommentSection implements OnInit {
 
   reportSubmitting = false;
   reportError = '';
-  submitReport(reason: string): void {
+  submitReport({ reason, category }: { reason: string; category: string }): void {
     if (!this.reportTarget || this.reportSubmitting) return;
     this.reportSubmitting = true; this.reportError = '';
-    this.postService.reportContent(reason, this.postId, this.reportTarget.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.postService.reportContent(reason, this.postId, this.reportTarget.id, category).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => { this.reportSubmitting = false; this.reportTarget = null; this.actionMessage = 'Denúncia enviada.'; this.changeDetector.markForCheck(); },
       error: () => { this.reportSubmitting = false; this.reportError = 'Não foi possível enviar a denúncia. Tente novamente.'; this.changeDetector.markForCheck(); },
     });

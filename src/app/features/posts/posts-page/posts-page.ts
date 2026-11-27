@@ -208,10 +208,10 @@ export class PostsPage implements OnInit {
 
   reportSubmitting = false;
   reportError = '';
-  submitReport(reason: string): void {
+  submitReport({ reason, category }: { reason: string; category: string }): void {
     if (!this.reportPost || this.reportSubmitting) return;
     this.reportSubmitting = true; this.reportError = '';
-    this.postService.reportContent(reason, this.reportPost.originalPostId || this.reportPost.id).pipe(
+    this.postService.reportContent(reason, this.reportPost.originalPostId || this.reportPost.id, undefined, category).pipe(
       finalize(() => this.reportSubmitting = false), takeUntilDestroyed(this.destroyRef),
     ).subscribe({ next: () => {
       this.reportPost = null;
@@ -221,8 +221,8 @@ export class PostsPage implements OnInit {
 
   deletePost(post: SpectrumPost): void {
     this.postService.removeServerPost(post).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => { this.refreshPosts(); this.feedAlert.set({ type: 'success', title: 'Repost excluído', message: 'O repost foi removido.' }); },
-      error: () => this.feedAlert.set({ type: 'error', title: 'Não foi possível excluir', message: 'Ocorrências preservam seu histórico. Apenas reposts próprios podem ser excluídos.' }),
+      next: () => { this.refreshPosts(); this.feedAlert.set({ type: 'success', title: post.originalPostId ? 'Repost excluído' : 'Ocorrência arquivada', message: post.originalPostId ? 'O repost foi removido.' : 'Veja a ocorrência na aba Arquivadas do seu perfil.' }); },
+      error: () => this.feedAlert.set({ type: 'error', title: 'Não foi possível concluir', message: 'Atualize a página e tente novamente.' }),
     });
   }
 

@@ -66,6 +66,8 @@ export class PostCard implements OnChanges, OnDestroy {
   @Output() edit = new EventEmitter<SpectrumPost>();
   @Output() remove = new EventEmitter<SpectrumPost>();
   @Input() repostPending = false;
+  @Input() allowDiscussion = true;
+  @Input() readOnly = false;
   @Output() repost = new EventEmitter<SpectrumPost>();
   @Output() hideAuthor = new EventEmitter<SpectrumPost>();
   @Output() notInterested = new EventEmitter<SpectrumPost>();
@@ -293,7 +295,7 @@ export class PostCard implements OnChanges, OnDestroy {
   }
 
   get canOpenOccurrence(): boolean {
-    return Boolean(this.occurrenceId);
+    return !this.readOnly && Boolean(this.occurrenceId);
   }
 
   get occurrenceId(): string {

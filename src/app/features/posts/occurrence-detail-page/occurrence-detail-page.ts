@@ -170,7 +170,7 @@ export class OccurrenceDetailPage implements OnInit {
   get canEdit(): boolean { return !!this.occurrence && this.postService.canModifyPost(this.occurrence, this.user); }
 
   get canRegisterResponse(): boolean {
-    return (this.isModerator || (this.user?.occurrenceRole === 'RESPONSIBLE_AGENCY' && this.isResponsibleAgencyForOccurrence)) && !!this.latestForwarding &&
+    return (this.isModerator || this.isResponsibleAgencyForOccurrence) && !!this.latestForwarding &&
       ['ENCAMINHADA', 'EM_RESOLUCAO', 'RESPOSTA_EM_APURACAO', 'FALHA_NO_ENCAMINHAMENTO'].includes(this.occurrence?.status ?? '');
   }
 
@@ -211,7 +211,7 @@ export class OccurrenceDetailPage implements OnInit {
   get occurrenceMediaList(): Array<{ url: string; type: string; alt?: string }> {
     if (!this.occurrence?.evidences) return [];
     return this.occurrence.evidences
-      .filter((e) => Boolean(this.evidenceUrl(e)))
+      .filter((e) => (e.type === 'IMAGE' || e.type === 'VIDEO') && Boolean(this.evidenceUrl(e)))
       .map((e) => ({
         url: this.evidenceUrl(e)!,
         type: e.type,
@@ -267,7 +267,6 @@ export class OccurrenceDetailPage implements OnInit {
         next: ({ occurrence, history }) => {
           this.occurrence = this.withHistoryAuthor(occurrence, history);
           this.historyEvents = history;
-          this.prefillAgency(occurrence.responsibleAgency ?? undefined);
           this.updateContestTimer();
           const action = this.route.snapshot.queryParamMap?.get('acao');
           if (action === 'adicionar-resolucao' || action === 'avaliar-resolucao') {
@@ -275,6 +274,7 @@ export class OccurrenceDetailPage implements OnInit {
             if (action === 'avaliar-resolucao' && (this.canReviewAgencyResolution || this.canCloseContestedOccurrence)) this.actionPanel = 'resolve';
             this.scrollToResolution();
           }
+          this.prefillAgency(occurrence.responsibleAgency ?? undefined);
         },
         error: (error: unknown) => {
           this.notFound = this.isNotFound(error);
@@ -385,7 +385,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canSubmitAgencyResolution(): boolean {
-    return !!this.occurrence && canProposeAgencyResolution(this.user, this.occurrence);
+    return !!this.occurrence && !this.occurrence.moderationRemovedAt && canProposeAgencyResolution(this.user, this.occurrence);
   }
 
   get canConfirmCommunity(): boolean {
@@ -393,7 +393,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canAddEvidence(): boolean {
-    return !!this.user && !['RESOLVIDA'].includes(this.occurrence?.status ?? '');
+    return !!this.user && !this.occurrence?.moderationRemovedAt && (this.isModerator || !['RESOLVIDA'].includes(this.occurrence?.status ?? ''));
   }
 
   canReviewEvidence(evidence: OccurrenceEvidence): boolean {
@@ -477,7 +477,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canForward(): boolean {
-    return this.isModerator && !!this.occurrence && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 && ['AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO', 'ABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence.status);
+    return this.isModerator && !!this.occurrence?.responsibleAgency?.id && Date.now() >= new Date(this.occurrence.createdAt).getTime() + 15 * 60_000 && ['AGUARDANDO_ENCAMINHAMENTO', 'EM_ANALISE_DE_COMPETENCIA', 'FALHA_NO_ENCAMINHAMENTO', 'ABERTA', 'SEM_ORGAO_IDENTIFICADO'].includes(this.occurrence.status);
   }
 
   get canRegisterForwardingFailure(): boolean {
@@ -486,23 +486,23 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canShowCommunityActions(): boolean {
     return (
-      (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency)
+      !this.isModerator && (this.canConfirmCommunity || this.canAddEvidence || this.canSuggestAgency || this.canInformResolution)
     );
   }
 
   get canShowAgencyActions(): boolean {
     return (
       this.isResponsibleAgencyForOccurrence &&
-      (this.canRegisterResponse || this.canRecordAgencyProgress)
+      (this.canRegisterResponse || this.canRecordAgencyProgress || this.canAddEvidence)
     );
   }
 
   get canShowModeratorActions(): boolean {
-    return this.canForward || this.canRegisterResponse;
+    return this.isModerator && (this.canForward || this.canRegisterResponse || this.canAddEvidence);
   }
 
   get hasAvailableActions(): boolean {
-    return this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions;
+    return !this.occurrence?.moderationRemovedAt && (this.canShowCommunityActions || this.canShowAgencyActions || this.canShowModeratorActions || this.canResolve || this.canContest || this.canReopen);
   }
 
   get agencyActionLabel(): string {
@@ -539,7 +539,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get canReviewAgencyResolution(): boolean {
-    return this.isModerator && this.occurrence?.status === 'RESOLUCAO_EM_ANALISE' && !!this.occurrence.agencyResolution;
+    return this.isModerator && this.occurrence?.status === 'RESOLUCAO_EM_ANALISE' && !!this.occurrence.agencyResolution && !this.occurrence.moderationRemovedAt;
   }
 
   get canCloseContestedOccurrence(): boolean {
@@ -980,11 +980,10 @@ export class OccurrenceDetailPage implements OnInit {
       return;
     }
 
-    const occurrence = this.occurrence;
     this.runWithOptionalEvidence(
       (evidenceIds) =>
         this.postService.contestOccurrenceResolution(
-          occurrence,
+          this.occurrence!,
           this.user,
           this.contestReason.trim(),
           evidenceIds,

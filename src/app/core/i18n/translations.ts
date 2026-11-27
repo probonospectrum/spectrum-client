@@ -1,10 +1,6 @@
 // Source text is the key so existing labels and API status values stay unchanged.
 export const normalizeText = (value: string): string => value.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const rows = `
-Ver contestações|View disputes|Ver impugnaciones
-Ocultar contestações|Hide disputes|Ocultar impugnaciones
-Contestações|Disputes|Impugnaciones
-Nenhuma contestação registrada.|No disputes recorded.|No hay impugnaciones registradas.
 Evidências e solicitações|Evidence and submissions|Evidencias y solicitudes
 Aguardando análise do criador|Awaiting creator review|Pendiente de revisión del creador
 Rejeitada pelo criador|Rejected by the creator|Rechazada por el creador
@@ -146,6 +142,15 @@ Aberta|Open|Abierta
 Abertas|Open|Abiertas
 Em andamento|In progress|En curso
 Ocorrências atribuídas|Assigned issues|Incidencias asignadas
+Ver contestações|View disputes|Ver impugnaciones
+Ocultar contestações|Hide disputes|Ocultar impugnaciones
+Contestações|Disputes|Impugnaciones
+Nenhuma contestação registrada.|No disputes recorded.|No hay impugnaciones registradas.
+O programa encaminhou um aviso de confirmação para o e-mail responsável pelo órgão:|The program sent a confirmation notice to the email registered for the agency representative:|El programa envió un aviso de confirmación al correo registrado del representante del organismo:
+E-mail já validado.|Email already verified.|Correo ya validado.
+E-mail do responsável validado com sucesso.|The representative's email has been successfully verified.|El correo del representante se ha verificado correctamente.
+Aguardando confirmação do e-mail|Awaiting email confirmation|Pendiente de confirmar el correo
+Aguardando análise da moderação|Awaiting moderation review|Pendiente de revisión de moderación
 Resumo das ocorrências|Issue summary|Resumen de incidencias
 Indicador|Metric|Indicador
 Histórico geral|All time|Historial completo
@@ -263,11 +268,6 @@ Verificando email|Verifying email|Verificando correo
 Estamos confirmando seu cadastro. Isso leva alguns segundos.|We're confirming your registration. This takes a few seconds.|Estamos confirmando tu registro. Esto tarda unos segundos.
 Email verificado|Email verified|Correo verificado
 Seu email foi confirmado com sucesso.|Your email was confirmed successfully.|Tu correo se confirmó correctamente.
-O programa encaminhou um aviso de confirmação para o e-mail responsável pelo órgão:|The program sent a confirmation notice to the email registered for the agency representative:|El programa envió un aviso de confirmación al correo registrado del representante del organismo:
-E-mail já validado.|Email already verified.|Correo ya validado.
-E-mail do responsável validado com sucesso.|The representative's email has been successfully verified.|El correo del representante se ha verificado correctamente.
-Aguardando confirmação do e-mail|Awaiting email confirmation|Pendiente de confirmar el correo
-Aguardando análise da moderação|Awaiting moderation review|Pendiente de revisión de moderación
 Link inválido|Invalid link|Enlace inválido
 Não encontramos o token de verificação neste link. Solicite um novo email de confirmação.|No verification token was found in this link. Request a new confirmation email.|No se encontró el token de verificación en este enlace. Solicita un nuevo correo de confirmación.
 O link pode estar inválido ou expirado. Tente solicitar uma nova verificação.|The link may be invalid or expired. Request another verification.|El enlace puede ser inválido o haber caducado. Solicita una nueva verificación.
@@ -419,6 +419,7 @@ O link da ocorrência foi copiado para a área de transferência.|The issue link
 Não foi possível copiar|Could not copy|No se pudo copiar
 Não foi possível copiar o link. Tente novamente.|Could not copy the link. Try again.|No se pudo copiar el enlace. Inténtalo de nuevo.
 Excluir publicação|Delete post|Eliminar publicación
+Itens arquivados|Archived items|Elementos archivados
 Denunciar publicação|Report post|Denunciar publicación
 Ocultar publicações desse usuário|Hide this user's posts|Ocultar publicaciones de este usuario
 Não tenho interesse|Not interested|No me interesa

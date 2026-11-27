@@ -25,6 +25,7 @@
       <span class="post-card__author-meta">@{{ post.authorNickname }}</span>
     </div>
 
+    @if (!readOnly) {
     <div class="post-card__menu-wrap" (click)="$event.stopPropagation()">
       <button
         class="post-card__more"
@@ -56,8 +57,8 @@
               role="menuitem"
               (click)="selectMenuAction(remove)"
             >
-              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-              {{ 'Excluir publicação' | translate }}
+              <span class="material-symbols-outlined" aria-hidden="true">{{ post.originalPostId ? 'delete' : 'archive' }}</span>
+              {{ (post.originalPostId ? 'Excluir republicação' : 'Arquivar ocorrência') | translate }}
             </button>
             <button type="button" role="menuitem" (click)="toggleSaved(); menuOpen = false">
               <span
@@ -108,6 +109,7 @@
         </div>
       }
     </div>
+    }
   </header>
 
   <section
@@ -226,6 +228,7 @@
       </span>
       <span class="post-card__meta-date">{{ post.publishedAt | localizedDate:post.publishedAtLabel }}</span>
     </div>
+    @if (!readOnly) {
     <div class="post-card__actions" [attr.aria-label]="'Interaçoes' | translate">
       @if (currentUser?.occurrenceRole !== 'MODERATOR') {
       <button
@@ -254,10 +257,12 @@
         }
       </button>
       }
+      @if (allowDiscussion) {
       <button type="button" [attr.aria-label]="'Comentar publicacao' | translate" (click)="toggleComments()">
         <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
         {{ commentsCount }}
       </button>
+      }
       @if (currentUser?.occurrenceRole !== 'MODERATOR') {
       <button
         type="button"
@@ -282,9 +287,10 @@
       </button>
       }
     </div>
+    }
   </footer>
 
-  @if (commentsOpen) {
+  @if (allowDiscussion && commentsOpen) {
     <app-comment-section
       [postId]="post.originalPostId || post.id"
       [currentUser]="currentUser"
@@ -296,7 +302,7 @@
 
 </article>
 
-@if (commentsOpen) {
+@if (allowDiscussion && commentsOpen) {
   <ng-container [ngTemplateOutlet]="commentSection()?.dialogs ?? null" />
 }
 

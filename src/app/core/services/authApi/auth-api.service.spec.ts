@@ -27,6 +27,27 @@ describe('AuthApiService', () => {
     http.verify();
     sessionStorage.clear();
   });
+  it('envia o e-mail para solicitar o link de redefinição', () => {
+    service.requestPasswordReset('test@example.com').subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/askChangeForPassword');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ email: 'test@example.com' });
+    request.flush({ message: 'Solicitação recebida' });
+  });
+
+  it('envia o token, a nova senha e a confirmação para redefinir a senha', () => {
+    service.resetPassword('test-token', 'new-password', 'new-password').subscribe();
+    const request = http.expectOne(API_BASE_URL + '/user/modifyPassword');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      token: 'test-token',
+      newChangedPassword: 'new-password',
+      confirmedPassword: 'new-password',
+    });
+    request.flush({ message: 'Senha alterada' });
+    expect(saveSession).not.toHaveBeenCalled();
+  });
+
   it('envia o código e o mesmo redirectUri usado na autorização e salva a sessão', () => {
     service.loginWithGoogle('test-code').subscribe();
     const request = http.expectOne(`${API_BASE_URL}/auth/google`);

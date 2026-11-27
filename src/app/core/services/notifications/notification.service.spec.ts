@@ -4,13 +4,12 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { API_BASE_URL } from '../../constants/api-routes';
 import { UserService } from '../user/user.service';
-import { NotificationService } from './notification.service';
-const socketMock = vi.hoisted(() => ({
+import { NOTIFICATION_SOCKET_FACTORY, NotificationService } from './notification.service';
+const socketMock = {
   handlers: {} as Record<string, () => void>,
   disconnect: vi.fn(),
   io: vi.fn(),
-}));
-vi.mock('socket.io-client', () => ({ io: socketMock.io }));
+};
 describe('Live notifications', () => {
   let http: HttpTestingController;
   let service: NotificationService;
@@ -34,7 +33,7 @@ describe('Live notifications', () => {
       disconnect: socketMock.disconnect,
     });
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: NOTIFICATION_SOCKET_FACTORY, useValue: socketMock.io }],
     });
     users = TestBed.inject(UserService);
     users.saveSession({

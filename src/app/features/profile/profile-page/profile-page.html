@@ -133,6 +133,7 @@
     }
   } @else {
     <nav class="profile-tabs" [attr.aria-label]="'Abas do perfil' | translate">
+      @if (!isModeratorProfile) {
       <button
         class="profile-tabs__tab"
         [class.profile-tabs__tab--active]="activeTab === 'posts'"
@@ -180,14 +181,34 @@
           <span class="profile-tabs__count">{{ savedPosts.length }}</span>
         </button>
       }
+      }
+      @if (isOwnProfile()) {
+        <button
+          type="button"
+          class="profile-tabs__tab"
+          [class.profile-tabs__tab--active]="activeTab === 'archived'"
+          [attr.aria-pressed]="activeTab === 'archived'"
+          (click)="openArchive()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">archive</span>
+          <span class="profile-tabs__label">{{ 'Itens arquivados' | translate }}</span>
+        </button>
+      }
     </nav>
 
     <div class="profile-feed">
-      @if (activeTab === 'posts') {
+      @if (activeTab === 'archived' && isOwnProfile()) {
+        @if (archiveError()) { <p role="alert">{{ archiveError() }}</p> }
+        @else {
+          @for (post of archived(); track post.id) {
+            <app-post-card [post]="post" [currentUser]="user" [readOnly]="true" />
+          } @empty { <div class="profile-feed__empty"><p>{{ 'Nenhuma ocorrência arquivada.' | translate }}</p></div> }
+        }
+      } @else if (!isModeratorProfile && activeTab === 'posts') {
         @for (post of userPosts; track post.id) {
           <app-post-card
             [post]="post"
-            [currentUser]="user"
+            [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
             [repostPending]="repostPendingIds().has(post.id)"
             (repost)="toggleRepost($event)"
             (edit)="socialShell.openEditPost($event)"
@@ -209,7 +230,7 @@
         @for (post of visibleReposts; track post.id) {
           <app-post-card
             [post]="post"
-            [currentUser]="user"
+            [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
             [repostPending]="repostPendingIds().has(post.id)"
             (repost)="toggleRepost($event)"
             (edit)="socialShell.openEditPost($event)"
@@ -231,7 +252,7 @@
         @for (post of visibleSavedPosts; track post.id) {
           <app-post-card
             [post]="post"
-            [currentUser]="user"
+            [currentUser]="user" [allowDiscussion]="user?.occurrenceRole !== 'MODERATOR'"
             [repostPending]="repostPendingIds().has(post.id)"
             (repost)="toggleRepost($event)"
             (edit)="socialShell.openEditPost($event)"
@@ -268,6 +289,10 @@
     />
   }
 
+  @if (reportTarget) {
+    <app-report-modal [externalSubmission]="true" [submitting]="reportPending" [submissionError]="reportError"
+      (close)="reportTarget = null" (submit)="submitPostReport($event)" />
+  }
   @if (reportingProfile) {
     <app-report-modal
       [title]="'O que está sendo reportado?' | translate"

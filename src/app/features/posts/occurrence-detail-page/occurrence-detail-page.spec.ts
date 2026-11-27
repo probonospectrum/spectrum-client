@@ -136,15 +136,14 @@ describe('OccurrenceDetailPage actions', () => {
     expect(actions).toEqual([
       'verified Também identifiquei este problema',
       'add_photo_alternate Adicionar evidência',
-      'account_balance Sugerir órgão responsável',
-      'Informar resolução',
+      'task_alt Informar resolução',
     ]);
   });
 
-  it('disables agency suggestions when an agency is linked and enables them when unassigned', () => {
+  it('hides agency suggestions when an agency is linked and enables them when unassigned', () => {
     actionsFor('USER');
     const button = Array.from(fixture.nativeElement.querySelectorAll('button')).find(item => (item as HTMLButtonElement).textContent?.includes('Sugerir órgão responsável')) as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
+    expect(button).toBeUndefined();
     expect(fixture.componentInstance.canSuggestAgency).toBe(false);
     fixture.componentInstance.occurrence = { ...occurrence, responsibleAgency: null };
     fixture.changeDetectorRef.markForCheck(); fixture.detectChanges();
@@ -159,6 +158,121 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
     expect(fixture.componentInstance.canRegisterResponse).toBe(true);
     expect(fixture.componentInstance.canResolve).toBe(false);
+  });
+
+  it('shows regional catalog suggestions as the community types', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = {
+      ...occurrence,
+      responsibleAgency: null,
+      location: { label: 'Guarulhos - SP', cityName: 'Guarulhos', stateCode: 'SP' },
+    };
+    const service = TestBed.inject(PostService);
+    service.getAgenciesForLocation = vi.fn(() => of([
+      { id: 'city', name: 'Secretaria de Obras', stateCode: 'SP', cities: ['Guarulhos'] },
+      { id: 'state', name: 'Defesa Civil Estadual', stateCode: 'SP' },
+      { id: 'other-city', name: 'Secretaria de Campinas', stateCode: 'SP', cities: ['Campinas'] },
+      { id: 'other-state', name: 'Secretaria de Curitiba', stateCode: 'PR', cities: ['Curitiba'] },
+    ]));
+
+    fixture.componentInstance.openPanel('agency');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    expect(service.getAgenciesForLocation).toHaveBeenCalledWith('SP', 'Guarulhos');
+    expect(fixture.componentInstance.occurrenceRegionLabel).toBe('Guarulhos - SP');
+    expect(fixture.componentInstance.filteredAgencyDirectory.map(agency => agency.id)).toEqual(['city']);
+    expect(fixture.nativeElement.textContent).not.toContain('Nenhum órgão encontrado pelo nome nesta região.');
+
+    fixture.componentInstance.onAgencyDirectorySearchChange('obras');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('[role="option"]')).toHaveLength(1);
+    (fixture.nativeElement.querySelector('[role="option"]') as HTMLButtonElement).click();
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.agencyName).toBe('Secretaria de Obras');
+    expect(fixture.componentInstance.agencyId).toBe('city');
+
+    fixture.componentInstance.onAgencyDirectorySearchChange('inexistente');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges(false);
+    expect(fixture.nativeElement.textContent).toContain('Nenhum órgão encontrado pelo nome nesta região.');
+  });
+
+  it('requires selecting a registered regional agency rather than submitting a typed name', () => {
+    actionsFor('USER');
+    fixture.componentInstance.occurrence = { ...occurrence, responsibleAgency: null };
+    fixture.componentInstance.onAgencyDirectorySearchChange('Órgão inventado');
+    fixture.componentInstance.submitAgency();
+    expect(fixture.componentInstance.errorMessage).toBe('Selecione um órgão cadastrado na cidade da ocorrência.');
+  });
+
+  it('lets the author choose a registered agency suggested by another person after loading history', () => {
+    actionsFor('USER');
+    const page = fixture.componentInstance;
+    page.occurrence = { ...occurrence, responsibleAgency: null };
+    const agency = { id: '66f1c0de0000000000000002', name: 'Secretaria de Obras' };
+    page.historyEvents = [{
+      id: 'suggestion', occurrenceId, eventType: 'ORGAO_RESPONSAVEL_SUGERIDO',
+      actorType: 'USER', actorId: 'another-user', actorName: 'Outra pessoa',
+      occurredAt: occurrence.createdAt, metadata: { agencyName: agency.name, agency },
+    }];
+    expect(page.agencySuggestions[0].agency.id).toBe(agency.id);
+    expect(page.canAcceptAgencySuggestion(page.agencySuggestions[0])).toBe(true);
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Escolher este órgão');
+    expect(fixture.nativeElement.textContent).not.toContain('Órgão sem cadastro para encaminhamento');
+  });
+
+  it('shows grouped suggestions privately, previews supporters and opens the complete list', () => {
+    actionsFor('USER');
+    const suggestions = [
+      ['Secretaria de Obras', 'ana', 'Ana'],
+      ['Secretaria de Obras', 'bia', 'Bia'],
+      ['Secretaria de Obras', 'caio', 'Caio'],
+      ['Secretaria de Obras', 'ana', 'Ana'],
+      ['Defesa Civil', 'bia', 'Bia'],
+      ['Defesa Civil', 'dora', 'Dora'],
+    ];
+    fixture.componentInstance.historyEvents = suggestions.map(([name, actorId, actorName], index) => ({
+      id: String(index), occurrenceId, eventType: 'ORGAO_RESPONSAVEL_SUGERIDO', actorId, actorName,
+      actorType: 'USER', occurredAt: '2026-09-02T12:00:00.000Z',
+      metadata: { agency: { id: name === 'Secretaria de Obras' ? '66f1c0de0000000000000002' : '66f1c0de0000000000000003', name } },
+    }));
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.agencySuggestions.map(item => item.supportCount)).toEqual([3, 2]);
+    const supportersPreview = fixture.nativeElement.querySelector('.occurrence-detail__participants') as HTMLButtonElement;
+    expect(supportersPreview.textContent?.replace(/\s+/g, ' ').trim()).toBe('Ana, Bia e mais 1 pessoa');
+    const sortButton = fixture.nativeElement.querySelector('.occurrence-detail__sort-button') as HTMLButtonElement;
+    expect(sortButton.querySelector('.material-symbols-outlined')?.textContent).toBe('north');
+    sortButton.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.filteredAgencySuggestions.map(item => item.supportCount)).toEqual([2, 3]);
+    expect(sortButton.querySelector('.material-symbols-outlined')?.textContent).toBe('south');
+
+    fixture.componentInstance.agencySuggestionSearch = 'dora';
+    expect(fixture.componentInstance.filteredAgencySuggestions.map(item => item.agency.name)).toEqual(['Defesa Civil']);
+    fixture.componentInstance.agencySuggestionSearch = '';
+    const suggestionCards = (fixture.nativeElement as HTMLElement).querySelectorAll('.occurrence-detail__suggestion');
+    const worksSuggestion = Array.from(suggestionCards)
+      .find(item => item.textContent?.includes('Secretaria de Obras')) as HTMLElement;
+    (worksSuggestion.querySelector('.occurrence-detail__participants') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('Ana');
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('Caio');
+    (fixture.nativeElement.querySelector('.occurrence-detail__supporters-close') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeNull();
+
+    fixture.componentInstance.occurrence = { ...occurrence, createdBy: 'another-user' };
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-labelledby="agency-suggestions-title"]')).toBeNull();
+    expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
   });
 
   it.each([
@@ -307,7 +421,7 @@ describe('OccurrenceDetailPage actions', () => {
     expect(fixture.componentInstance.timeline.some(event => event.eventType === 'ORGAO_RESPONSAVEL_SUGERIDO')).toBe(false);
   });
 
-  it('offers progress and resolution submission for the institution after the editing window', () => {
+  it('offers status updates only for an approved related institution and requires evidence for closure', () => {
     actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
     user!.agencyRegistrationStatus = 'APPROVED';
     const page = fixture.componentInstance;
@@ -438,8 +552,13 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows moderator operations at the same URL', () => {
-    expect(actionsFor('MODERATOR')).toEqual([
-      'add_photo_alternate Adicionar evidência',
+    const actions = actionsFor('MODERATOR');
+    const pageText = fixture.nativeElement.textContent;
+    expect(pageText).not.toContain('Acompanhe a evolução');
+    expect(pageText).not.toContain('Evidências e solicitações');
+    expect(pageText).toContain('Discussão');
+    expect(actions).toEqual([
+      'attach_file Anexar evidência enviada pelo órgão',
       'send Encaminhar por e-mail',
     ]);
   });
