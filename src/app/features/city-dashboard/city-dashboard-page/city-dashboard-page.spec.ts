@@ -7,14 +7,14 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 import { vi } from 'vitest';
 import { CityDashboardPage } from './city-dashboard-page';
-import { CityDashboardService } from '../../../core/services/city-dashboard/city-dashboard.service';
+import { CityDashboardResponse, CityDashboardService } from '../../../core/services/city-dashboard/city-dashboard.service';
 import { PostService } from '../../../core/services/posts/post.service';
 import { UserService } from '../../../core/services/user/user.service';
 
 describe('City dashboard geographic views', () => {
   const params = new BehaviorSubject(convertToParamMap({}));
   const getOccurrences = vi.fn();
-  const data = {
+  const data: CityDashboardResponse = {
     period: { from: '2026-10-01', to: '2026-10-07', days: 7 },
     summary: {
       total: 10,
@@ -23,6 +23,8 @@ describe('City dashboard geographic views', () => {
       resolved: 5,
       contested: 0,
       reopened: 0,
+      resolutionRecorded: 5,
+      unresolved: 5,
       resolutionRecordedPercentage: 50,
       unresolvedPercentage: 50,
       averageOccurrencesPerDay: 1.4,
@@ -36,6 +38,8 @@ describe('City dashboard geographic views', () => {
     },
     statusDistribution: [],
     categoryDistribution: [],
+    importanceDistribution: [],
+    timeline: [],
     cities: [
       {
         cityId: '3550308',
@@ -106,6 +110,24 @@ describe('City dashboard geographic views', () => {
     }).overrideComponent(CityDashboardPage, {
       set: { imports: [TranslatePipe, CommonModule, FormsModule], schemas: [NO_ERRORS_SCHEMA] },
     });
+  });
+
+  it.each([[3, 30], [0, 0], [10, 100]])('shows %i resolved out of ten as %i percent of the state total', (resolved, rate) => {
+    const service = TestBed.inject(CityDashboardService);
+    vi.mocked(service.getDashboard).mockReturnValue(of({
+      ...data,
+      states: [{ ...data.states[0], resolved, resolvedPercentage: resolved ? 100 : 0, resolutionRate: rate }],
+    }));
+    const fixture = TestBed.createComponent(CityDashboardPage);
+    fixture.detectChanges();
+    const view: HTMLElement = fixture.nativeElement;
+    const bar = view.querySelector('.state-ranking-row__resolved') as HTMLProgressElement;
+    expect(bar.value).toBe(rate);
+    expect(bar.closest('label')?.textContent).toContain('Resolvidas: ' + resolved + ' · ' + rate + '% das criadas no estado');
+    expect(bar.getAttribute('aria-label')).toBe('Taxa de resolução no estado');
+    expect(view.querySelector('.state-ranking-row__rate strong')?.textContent?.trim()).toBe(rate + '%');
+    expect((view.querySelector('.state-ranking-row__bars progress') as HTMLProgressElement).value).toBe(100);
+    expect(view.textContent).not.toContain('% das resolvidas');
   });
 
   it('shows states only in the national comparison and skips recent-occurrence requests', async () => {

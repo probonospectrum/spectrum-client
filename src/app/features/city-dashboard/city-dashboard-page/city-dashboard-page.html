@@ -276,7 +276,7 @@
           </div>
         </div>
         <p class="city-comparison__context">
-          {{ 'Ranking pela taxa de resolução: resolvidas ÷ criadas em cada estado. As barras mostram a participação de cada estado no total de ocorrências criadas e no total de resolvidas, dentro dos filtros e do período selecionados.' | translate }}
+          {{ 'Ranking pela taxa de resolução: resolvidas ÷ criadas em cada estado. A barra azul mostra a participação nas ocorrências criadas do total filtrado; a verde mostra a porcentagem resolvida entre as ocorrências criadas no próprio estado, dentro dos filtros e do período selecionados.' | translate }}
         </p>
         <p class="city-comparison__context">
           {{ 'Apenas registros públicos da plataforma. O ranking não representa qualidade urbana.' | translate }}
@@ -302,13 +302,13 @@
               </label>
               <label>
                 <span
-                  >{{ 'Resolvidas:' | translate }} {{ state.resolved }} · {{ number(state.resolvedPercentage) }}{{ '% das resolvidas' | translate }}</span
+                  >{{ 'Resolvidas:' | translate }} {{ state.resolved }} · {{ number(state.resolutionRate) }}{{ '% das criadas no estado' | translate }}</span
                 >
                 <progress
                   class="state-ranking-row__resolved"
                   max="100"
-                  [value]="state.resolvedPercentage"
-                  [attr.aria-label]="'Participação nas ocorrências resolvidas' | translate"
+                  [value]="state.resolutionRate"
+                  [attr.aria-label]="'Taxa de resolução no estado' | translate"
                 ></progress>
               </label>
             </div>
