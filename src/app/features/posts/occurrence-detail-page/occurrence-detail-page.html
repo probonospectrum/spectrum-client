@@ -63,7 +63,7 @@
     @if (successMessage) {
       <p role="status" class="occurrence-detail__notice occurrence-detail__notice--success">{{ (successMessage) | translate }}</p>
     }
-    @if (errorMessage && !(actionPanel === 'resolution' && canSubmitAgencyResolution) && !(actionPanel === 'resolve' && canReviewAgencyResolution)) {
+    @if (errorMessage && !(actionPanel === 'proposal' && canProposeResolution) && !(actionPanel === 'resolution' && canSubmitAgencyResolution) && !(actionPanel === 'resolve' && canReviewAgencyResolution)) {
       <p role="alert" class="occurrence-detail__notice occurrence-detail__notice--error">{{ (errorMessage) | translate }}</p>
     }
 
@@ -253,7 +253,92 @@
       <div class="occurrence-detail__section-head">
         <h2 id="resolution-title">{{ 'Resolução' | translate }}</h2>
       </div>
-      @if (occurrence.status === 'RESOLUCAO_EM_ANALISE' && occurrence.agencyResolution; as resolution) {
+      @if (currentProposal; as proposal) {
+        @if (!proposal.executed) {
+          <article class="occurrence-detail__resolution-review">
+            <header>
+              <h3>{{ 'Proposta do órgão' | translate }}</h3>
+              <small>{{ responsibleAgencyLabel }}</small>
+            </header>
+            <div class="occurrence-detail__resolution-content">
+              <div>
+                <h4>{{ 'Serviço proposto' | translate }}</h4>
+                <p>{{ proposal.statement }}</p>
+              </div>
+            </div>
+            @if (proposal.plannedExecutionDate; as date) {
+              <dl class="occurrence-detail__resolution-facts">
+                <div>
+                  <dt>{{ 'Data da resolução informada' | translate }}</dt>
+                  <dd><time [attr.datetime]="date">{{ date | date:'dd/MM/yyyy':'UTC' }}</time></dd>
+                </div>
+              </dl>
+            }
+            @if (proposal.evidenceIds?.length) {
+              <div class="occurrence-detail__resolution-content">
+                <h4>{{ 'Evidência de apoio' | translate }}</h4>
+                <ng-container *ngTemplateOutlet="resolutionAttachments; context: { $implicit: proposal }" />
+              </div>
+            }
+            <section class="occurrence-detail__community-vote" aria-labelledby="community-vote-title">
+              <header class="occurrence-detail__community-vote-header">
+                <div class="occurrence-detail__community-vote-title">
+                  <span class="material-symbols-outlined" aria-hidden="true">how_to_vote</span>
+                  <div>
+                    <h4 id="community-vote-title">{{ 'Votação da comunidade' | translate }}</h4>
+                    <p>{{ (proposalVotingOpen ? 'Votação aberta' : 'Votação encerrada') | translate }}</p>
+                  </div>
+                </div>
+                <div class="occurrence-detail__community-vote-deadline">
+                  <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+                  <div>
+                    <small>{{ (proposalVotingOpen ? 'Votação até' : 'Encerrada em') | translate }}</small>
+                    <time [attr.datetime]="proposal.votingEndsAt">{{ proposal.votingEndsAt | date:'dd/MM/yyyy HH:mm' }}</time>
+                  </div>
+                </div>
+              </header>
+
+              @let totalVotes = proposal.votes.length;
+              @let approvals = proposalApprovals;
+              @let approvalShare = totalVotes ? approvals / totalVotes * 100 : 0;
+              <dl class="occurrence-detail__vote-results" aria-live="polite">
+                <div class="occurrence-detail__vote-result occurrence-detail__vote-result--approve">
+                  <dt><span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>{{ 'Votos a favor' | translate }}</dt>
+                  <dd>{{ approvals }}</dd>
+                  <dd class="occurrence-detail__vote-track" aria-hidden="true"><span [style.width.%]="approvalShare"></span></dd>
+                </div>
+                <div class="occurrence-detail__vote-result">
+                  <dt><span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>{{ 'Votos contra' | translate }}</dt>
+                  <dd>{{ totalVotes - approvals }}</dd>
+                  <dd class="occurrence-detail__vote-track" aria-hidden="true"><span [style.width.%]="totalVotes ? 100 - approvalShare : 0"></span></dd>
+                </div>
+              </dl>
+
+              @if (proposalVotingOpen && isCommunityUser && !alreadyVotedOnProposal) {
+                <div class="occurrence-detail__vote-actions">
+                  <button type="button" [disabled]="isSubmitting()" (click)="voteOnProposal(true)">
+                    <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>{{ 'Votar a favor' | translate }}
+                  </button>
+                  <button type="button" class="occurrence-detail__secondary" [disabled]="isSubmitting()" (click)="voteOnProposal(false)">
+                    <span class="material-symbols-outlined" aria-hidden="true">thumb_down</span>{{ 'Votar contra' | translate }}
+                  </button>
+                </div>
+              } @else if (!proposalVotingOpen || alreadyVotedOnProposal) {
+                <div class="occurrence-detail__vote-feedback" role="status">
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ proposalVotingOpen || proposalHasMajority ? 'check_circle' : 'info' }}</span>
+                  <p>{{ (proposalVotingOpen ? 'Seu voto foi registrado.' : proposalHasMajority ? 'Proposta aprovada pela comunidade' : 'Proposta sem maioria favorável') | translate }}</p>
+                  @if (proposalVotingOpen && isCommunityUser && alreadyVotedOnProposal) {
+                    <button type="button" class="occurrence-detail__secondary" [disabled]="isSubmitting()" (click)="withdrawProposalVote()">
+                      <span class="material-symbols-outlined" aria-hidden="true">undo</span>{{ 'Retirar meu voto' | translate }}
+                    </button>
+                  }
+                </div>
+              }
+            </section>
+          </article>
+        }
+      }
+      @if ((occurrence.status === 'RESOLUCAO_EM_ANALISE' && !occurrence.agencyResolution?.proposalId ? occurrence.agencyResolution : null); as resolution) {
         <div class="occurrence-detail__resolution-window">
           <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
           <div>
@@ -267,7 +352,7 @@
       @for (proposal of agencyProposals; track proposal.id) {
         <article class="occurrence-detail__resolution-review">
           <header>
-            <h3>{{ 'Proposta do órgão' | translate }}</h3>
+            <h3>{{ (proposal.metadata?.['proposalId'] ? 'Execução informada pelo órgão' : 'Proposta do órgão') | translate }}</h3>
             <small>{{ eventActorLine(proposal) }} · {{ formatDate(proposal.createdAt || proposal.occurredAt) }}</small>
           </header>
           <div class="occurrence-detail__resolution-content">
@@ -287,6 +372,16 @@
             <h4>{{ 'Comprovação' | translate }}</h4>
             <ng-container *ngTemplateOutlet="resolutionAttachments; context: { $implicit: proposal }" />
           </div>
+          @if (communityVoteForResolution(proposal); as vote) {
+            <div class="occurrence-detail__resolution-decision">
+              <h3>{{ 'Avaliação da comunidade' | translate }}</h3>
+              <p>{{ 'Proposta aprovada pela comunidade' | translate }}</p>
+              <dl class="occurrence-detail__resolution-facts">
+                <div><dt>{{ 'Votos a favor' | translate }}</dt><dd>{{ vote.approvals }}</dd></div>
+                <div><dt>{{ 'Votos contra' | translate }}</dt><dd>{{ vote.rejections }}</dd></div>
+              </dl>
+            </div>
+          }
           <ng-container *ngTemplateOutlet="contestThread; context: { $implicit: contestsForProposal(proposal), id: proposal.id }" />
           @if (decisionForProposal(proposal); as decision) {
             <div class="occurrence-detail__resolution-decision">
@@ -296,7 +391,12 @@
           }
         </article>
       } @empty {
-        <p>{{ 'Nenhuma resolução enviada pelo órgão responsável.' | translate }}</p>
+        @if (!currentProposal && !isResolutionPanel) {
+          <div class="occurrence-detail__empty-state">
+            <span class="material-symbols-outlined" aria-hidden="true">assignment</span>
+            <p>{{ (occurrence.responsibleAgency?.id && occurrence.status !== 'RESOLVIDA' ? 'Aguardando proposta de resolução do órgão responsável.' : 'Nenhuma resolução enviada pelo órgão responsável.') | translate }}</p>
+          </div>
+        }
       }
       @let previousContests = contestsForProposal();
       @if (previousContests.length) {
@@ -304,12 +404,15 @@
       }
       <div class="occurrence-detail__actions occurrence-detail__resolution-actions">
         <div class="occurrence-detail__action-group">
+          @if (canProposeResolution && actionPanel !== 'proposal') {
+            <button type="button" (click)="openPanel('proposal')">{{ 'Propor resolução' | translate }}</button>
+          }
           @if ((canSubmitAgencyResolution || canInformResolution) && !(canSubmitAgencyResolution && actionPanel === 'resolution')) {
             <button type="button" (click)="openPanel('resolution')">
               @if (!canSubmitAgencyResolution) {
                 <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
               }
-              {{ (canSubmitAgencyResolution ? 'Adicionar resolução' : 'Informar resolução') | translate }}
+              {{ (canSubmitAgencyResolution ? 'Informar execução' : 'Informar resolução') | translate }}
             </button>
           }
           @if (canReviewAgencyResolution || canCloseContestedOccurrence || canResolve) {
@@ -323,12 +426,54 @@
           }
         </div>
       </div>
-      @if (actionPanel === 'resolution' && canSubmitAgencyResolution) {
+      @if (actionPanel === 'proposal' && canProposeResolution) {
+        <form class="occurrence-detail__form occurrence-detail__resolution-form" (ngSubmit)="submitProposal()">
+          <fieldset class="occurrence-detail__action-fields" [disabled]="isSubmitting()">
+            <div class="occurrence-detail__form-heading">
+              <span class="material-symbols-outlined occurrence-detail__resolution-heading-icon" aria-hidden="true">assignment</span>
+              <div>
+                <h3>{{ 'Propor resolução' | translate }}</h3>
+                <p>{{ 'Descreva a ação proposta. A comunidade tem 5 dias para votar.' | translate }}</p>
+              </div>
+            </div>
+            <label class="occurrence-detail__proposal-statement">
+              <span>{{ 'Serviço proposto' | translate }}</span>
+              <textarea name="proposalStatement" [(ngModel)]="proposalStatement" required maxlength="1000" rows="4"
+                [placeholder]="'O que será feito e em qual trecho ou ponto do local?' | translate"></textarea>
+            </label>
+            <label class="occurrence-detail__resolution-date">
+              <span>{{ 'Data da resolução informada (opcional)' | translate }}</span>
+              <input type="date" name="plannedExecutionDate" [(ngModel)]="plannedExecutionDate"
+                [max]="latestResolutionExecutionDate" aria-describedby="proposal-date-hint" />
+              <small id="proposal-date-hint">{{ 'Selecione a data de hoje ou uma anterior.' | translate }}</small>
+            </label>
+            <div class="occurrence-detail__resolution-proof">
+              <div>
+                <h4>{{ 'Evidência de apoio (opcional)' | translate }}</h4>
+                <p>{{ 'Anexe uma foto ou um vídeo para ajudar a comunidade a avaliar a proposta.' | translate }}</p>
+              </div>
+              <ng-container *ngTemplateOutlet="resolutionAttachmentInput" />
+            </div>
+            @if (errorMessage) {
+              <p class="occurrence-detail__notice occurrence-detail__notice--error occurrence-detail__resolution-feedback" role="alert">
+                {{ errorMessage | translate }}
+              </p>
+            }
+            <div class="occurrence-detail__suggestion-actions occurrence-detail__suggestion-actions--agency">
+              <button type="button" class="occurrence-detail__secondary" (click)="openPanel(null)">{{ 'Cancelar' | translate }}</button>
+              <button type="submit" [disabled]="!proposalStatement.trim()">{{ (isSubmitting() ? 'Publicando…' : 'Publicar para votação') | translate }}</button>
+            </div>
+          </fieldset>
+        </form>
+      } @else if (actionPanel === 'resolution' && canSubmitAgencyResolution) {
         <form class="occurrence-detail__form occurrence-detail__resolution-form" (ngSubmit)="submitResolution()">
           <fieldset class="occurrence-detail__action-fields" [disabled]="isSubmitting()">
             <div class="occurrence-detail__form-heading">
-              <h3>{{ 'Enviar resolução para análise' | translate }}</h3>
-              <p>{{ 'Informe o serviço executado, quando foi concluído e como o resultado foi verificado no local da ocorrência.' | translate }}</p>
+              <span class="material-symbols-outlined occurrence-detail__resolution-heading-icon" aria-hidden="true">fact_check</span>
+              <div>
+                <h3>{{ 'Enviar resolução para análise' | translate }}</h3>
+                <p>{{ 'Registre o serviço executado e anexe a comprovação para a moderação.' | translate }}</p>
+              </div>
             </div>
             <label>
               <span>{{ 'Serviço executado' | translate }}</span>
@@ -340,40 +485,18 @@
               <textarea name="resolutionOutcome" [(ngModel)]="resolutionOutcome" required minlength="20" maxlength="1000" rows="3"
                 [placeholder]="'Como a equipe confirmou que o problema foi resolvido? Informe o teste, a vistoria ou o resultado observado.' | translate"></textarea>
             </label>
-            <label>
+            <label class="occurrence-detail__resolution-date">
               <span>{{ 'Data da execução' | translate }}</span>
               <input type="date" name="resolutionExecutionDate" [(ngModel)]="resolutionExecutionDate"
-                required [max]="latestResolutionExecutionDate" />
+                required [max]="latestResolutionExecutionDate" aria-describedby="execution-date-hint" />
+              <small id="execution-date-hint">{{ 'Selecione a data de hoje ou uma anterior.' | translate }}</small>
             </label>
             <div class="occurrence-detail__resolution-proof">
               <div>
                 <h4>{{ 'Comprovação' | translate }}</h4>
-                <p>{{ 'Adicione pelo menos uma comprovação: foto, vídeo, protocolo ou ordem de serviço.' | translate }}</p>
+                <p>{{ 'Anexe uma foto ou um vídeo que comprove a execução.' | translate }}</p>
               </div>
-              <div class="occurrence-detail__proof-controls">
-                <label>
-                  <span>{{ 'Protocolo ou ordem de serviço' | translate }}</span>
-                  <input type="text" name="resolutionServiceReference" [(ngModel)]="resolutionServiceReference"
-                    maxlength="120" [placeholder]="'Ex.: OS-104/2026' | translate" />
-                </label>
-                <div class="occurrence-detail__proof-attachment">
-                  <input #resolutionFile class="occurrence-detail__file-input" type="file"
-                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
-                    [attr.aria-label]="'Selecionar evidência' | translate"
-                    (change)="onEvidenceSelected($event)" />
-                  <button type="button" class="occurrence-detail__secondary" (click)="resolutionFile.click()">
-                    <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
-                    {{ (evidenceFile ? 'Trocar foto ou vídeo' : 'Anexar foto ou vídeo') | translate }}
-                  </button>
-                  @if (evidenceFile; as file) {
-                    <small aria-live="polite">{{ file.name }}</small>
-                    <button type="button" class="occurrence-detail__text-button"
-                      (click)="removeResolutionEvidence(resolutionFile)">
-                      {{ 'Remover anexo' | translate }}
-                    </button>
-                  }
-                </div>
-              </div>
+              <ng-container *ngTemplateOutlet="resolutionAttachmentInput" />
             </div>
             @if (errorMessage) {
               <p class="occurrence-detail__notice occurrence-detail__notice--error occurrence-detail__resolution-feedback" role="alert">
@@ -390,6 +513,26 @@
         <ng-container *ngTemplateOutlet="actionForm" />
       }
     </section>
+
+    <ng-template #resolutionAttachmentInput>
+      <div class="occurrence-detail__proof-attachment">
+        <input #resolutionFile class="occurrence-detail__file-input" type="file"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+          [attr.aria-label]="'Selecionar evidência' | translate"
+          (change)="onEvidenceSelected($event)" />
+        <button type="button" class="occurrence-detail__secondary" (click)="resolutionFile.click()">
+          <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+          {{ (evidenceFile ? 'Trocar foto ou vídeo' : 'Anexar foto ou vídeo') | translate }}
+        </button>
+        @if (evidenceFile; as file) {
+          <small aria-live="polite">{{ file.name }}</small>
+          <button type="button" class="occurrence-detail__text-button"
+            (click)="removeResolutionEvidence(resolutionFile)">
+            {{ 'Remover anexo' | translate }}
+          </button>
+        }
+      </div>
+    </ng-template>
 
     <ng-template #actionForm>
         <form class="occurrence-detail__form" (submit)="$event.preventDefault()">
@@ -600,7 +743,8 @@
             }
           } @else if (actionPanel === 'resolve' && canResolve) {
             <label><span>{{ 'Classificação após análise' | translate }}</span><select [(ngModel)]="responseCode" name="responseCode">
-              <option value="02">{{ 'Ocorrência resolvida' | translate }}</option><option value="03">{{ 'Ocorrência em resolução' | translate }}</option><option value="01">{{ 'Ocorrência rejeitada' | translate }}</option>
+              @if (!occurrence.responsibleAgency?.id) { <option value="02">{{ 'Ocorrência resolvida' | translate }}</option> }
+              <option value="03">{{ 'Ocorrência em resolução' | translate }}</option><option value="01">{{ 'Ocorrência rejeitada' | translate }}</option>
             </select></label>
             <label>
               <span>{{ 'Justificativa da análise (mínimo de 20 caracteres)' | translate }}</span>
@@ -742,24 +886,15 @@
 
     <ng-template #resolutionDetails let-event>
       @let date = executionDate(event);
-      @let reference = event.metadata?.['serviceReference'];
-      @if (date || isModerator || (canViewProtocol && reference)) {
+      @if (date || isModerator) {
         <dl class="occurrence-detail__resolution-facts">
-          @if (date || isModerator) {
-            <div>
-              <dt>{{ 'Data da execução' | translate }}</dt>
-              <dd>
-                @if (date) { <time [attr.datetime]="date">{{ date | date:'dd/MM/yyyy':'UTC' }}</time> }
-                @else { {{ 'Não informado' | translate }} }
-              </dd>
-            </div>
-          }
-          @if (canViewProtocol && (reference || isModerator)) {
-            <div>
-              <dt>{{ 'Protocolo ou ordem de serviço' | translate }}</dt>
-              <dd>{{ reference || ('Não informado' | translate) }}</dd>
-            </div>
-          }
+          <div>
+            <dt>{{ 'Data da execução' | translate }}</dt>
+            <dd>
+              @if (date) { <time [attr.datetime]="date">{{ date | date:'dd/MM/yyyy':'UTC' }}</time> }
+              @else { {{ 'Não informado' | translate }} }
+            </dd>
+          </div>
         </dl>
       }
     </ng-template>

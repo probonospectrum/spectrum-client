@@ -2,12 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map, tap } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
+import type { ResolutionProposal } from '../posts/post.service';
 import { UserService } from './user.service';
 export interface AgencyInboxItem {
   _id: string;
   title: string;
   status: string;
   responsibleAgency?: { id?: string };
+  resolutionProposal?: ResolutionProposal | null;
   location?: { cityName?: string; stateCode?: string; label?: string };
   createdAt: string;
   updatedAt: string;

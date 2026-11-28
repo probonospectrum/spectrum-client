@@ -7,7 +7,7 @@ import { AgencyInboxService } from '../../core/services/user/agency-inbox.servic
 import { AgencyInboxItem, PublicAgencyService } from '../../core/services/user/public-agency.service';
 import { SocialShell } from '../../shared/components/social-shell/social-shell';
 import { LocalizedDatePipe } from '../../core/i18n/translate.pipe';
-import { canProposeAgencyResolution, OCCURRENCE_STATUS_DETAILS } from '../../core/services/posts/occurrence-flow';
+import { agencyResolutionAction, OCCURRENCE_STATUS_DETAILS } from '../../core/services/posts/occurrence-flow';
 import { OccurrenceStatus } from '../../core/services/posts/post.service';
 
 @Component({
@@ -94,11 +94,16 @@ export class AgencyInboxPage {
         },
       });
   }
-  canAddResolution(post: AgencyInboxItem): boolean {
-    return canProposeAgencyResolution(this.users.currentUser(), post);
+  resolutionAction(post: AgencyInboxItem) {
+    return agencyResolutionAction(this.users.currentUser(), post);
   }
-  label(status: string) {
-    return OCCURRENCE_STATUS_DETAILS[status as OccurrenceStatus] || status;
+  label(post: AgencyInboxItem): string {
+    const proposal = post.resolutionProposal;
+    if (post.status === 'EM_RESOLUCAO' && proposal && !proposal.executed &&
+      proposal.agencyId === post.responsibleAgency?.id) {
+      return OCCURRENCE_STATUS_DETAILS.RESOLUCAO_EM_ANALISE;
+    }
+    return OCCURRENCE_STATUS_DETAILS[post.status as OccurrenceStatus] ?? post.status;
   }
   logout() {
     this.users.logout();

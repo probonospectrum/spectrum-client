@@ -5,7 +5,7 @@ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommunityTermsService } from '../../../core/services/user/community-terms.service';
-import { afterNextRender, Component, DestroyRef, Injector, OnInit, inject, signal } from '@angular/core';
+import { afterNextRender, ChangeDetectorRef, Component, DestroyRef, Injector, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -26,7 +26,7 @@ import { LoadingIndicator } from '../../../shared/components/loading-indicator/l
 import { SocialShell } from '../../../shared/components/social-shell/social-shell';
 import { MediaLightbox } from '../../../shared/components/media-lightbox/media-lightbox';
 
-import { canProposeAgencyResolution, occurrenceStage, OCCURRENCE_STATUS_DETAILS, representsOccurrenceAgency } from '../../../core/services/posts/occurrence-flow';
+import { agencyResolutionAction, proposalApproved, occurrenceStage, OCCURRENCE_STATUS_DETAILS, representsOccurrenceAgency } from '../../../core/services/posts/occurrence-flow';
 
 type ActionPanel =
   | 'agencyProgress'
@@ -36,6 +36,7 @@ type ActionPanel =
   | 'forward'
   | 'forwardFailure'
   | 'analysis'
+  | 'proposal'
   | 'resolution'
   | 'resolve'
   | 'contest'
@@ -82,6 +83,7 @@ export class OccurrenceDetailPage implements OnInit {
   private readonly communityTerms = inject(CommunityTermsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly document = inject(DOCUMENT);
 
   readonly user = this.userService.getCurrentUser();
@@ -125,14 +127,15 @@ export class OccurrenceDetailPage implements OnInit {
   forwardingFailureReason = '';
   analysisReference = '';
   analysisNote = '';
+  proposalStatement = '';
+  plannedExecutionDate = '';
   resolutionStatement = '';
   resolutionOutcome = '';
   private resolutionEvidenceId?: string;
   get latestResolutionExecutionDate(): string {
-    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bahia' }).format(new Date());
   }
   resolutionExecutionDate = '';
-  resolutionServiceReference = '';
   resolutionReviewNote = '';
   contestReason = '';
   reopenReason = '';
@@ -187,6 +190,13 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   get nextStep(): string {
+    if (this.occurrence?.status === 'RESOLUCAO_EM_ANALISE' && this.occurrence.agencyResolution?.proposalId) {
+      return 'A moderação verificará a execução antes de encerrar a ocorrência.';
+    }
+    if (this.currentProposal && !this.currentProposal.executed && this.occurrence?.status !== 'RESOLVIDA') {
+      if (this.proposalVotingOpen) return 'A comunidade está votando na proposta do órgão.';
+      return this.proposalHasMajority ? 'O órgão pode executar a proposta aprovada.' : 'O órgão pode apresentar uma nova proposta.';
+    }
     if (this.occurrence?.status === 'RESOLUCAO_EM_ANALISE') return 'O Spectrum avaliará a resolução e as contestações recebidas.';
     if (this.occurrence?.status === 'RESOLVIDA' && this.occurrence.agencyResolution) return 'O Spectrum validou a resolução e encerrou a ocorrência.';
     if (this.occurrence?.status === 'RESOLVIDA' && this.occurrence.agencyProgress?.closedByAgency) return 'O órgão fechou o atendimento com evidências. A comunidade pode contestar se o problema persistir.';
@@ -274,6 +284,7 @@ export class OccurrenceDetailPage implements OnInit {
           this.updateContestTimer();
           const action = this.route.snapshot.queryParamMap?.get('acao');
           if (action === 'adicionar-resolucao' || action === 'avaliar-resolucao') {
+            if (action === 'adicionar-resolucao' && this.canProposeResolution) this.actionPanel = 'proposal';
             if (action === 'adicionar-resolucao' && this.canSubmitAgencyResolution) this.actionPanel = 'resolution';
             if (action === 'avaliar-resolucao' && (this.canReviewAgencyResolution || this.canCloseContestedOccurrence)) this.actionPanel = 'resolve';
             this.scrollToResolution();
@@ -400,8 +411,72 @@ export class OccurrenceDetailPage implements OnInit {
     return this.isOccurrenceAuthor || this.isResponsibleAgencyForOccurrence || this.isModerator;
   }
 
+  private get resolutionAction() {
+    return this.occurrence && !this.occurrence.moderationRemovedAt
+      ? agencyResolutionAction(this.user, this.occurrence)
+      : null;
+  }
+
+  get canProposeResolution(): boolean {
+    return this.resolutionAction === 'proposal';
+  }
+
   get canSubmitAgencyResolution(): boolean {
-    return !!this.occurrence && !this.occurrence.moderationRemovedAt && canProposeAgencyResolution(this.user, this.occurrence);
+    return this.resolutionAction === 'execution';
+  }
+
+  get currentProposal() {
+    const proposal = this.occurrence?.resolutionProposal;
+    return proposal?.agencyId === this.occurrence?.responsibleAgency?.id ? proposal : undefined;
+  }
+
+  get proposalVotingOpen(): boolean {
+    const proposal = this.currentProposal;
+    return !!proposal && !proposal.executed && this.occurrence?.status !== 'RESOLVIDA' &&
+      Date.now() < new Date(proposal.votingEndsAt).getTime();
+  }
+
+  get proposalHasMajority(): boolean {
+    return !!this.currentProposal && proposalApproved(this.currentProposal);
+  }
+
+  get proposalApprovals(): number {
+    return this.currentProposal?.votes.filter(vote => vote.approve).length ?? 0;
+  }
+
+  get alreadyVotedOnProposal(): boolean {
+    return this.currentProposal?.votes.some(vote => vote.voterId === this.user?._id) ?? false;
+  }
+
+  submitProposal(): void {
+    const post = this.occurrence;
+    const statement = this.proposalStatement.trim();
+    if (!post || !this.canProposeResolution || !statement) return;
+    const plannedExecutionDate = this.plannedExecutionDate || undefined;
+    if (plannedExecutionDate && plannedExecutionDate > this.latestResolutionExecutionDate) {
+      this.errorMessage = 'A data da resolução deve ser de hoje ou anterior.';
+      return;
+    }
+    this.runWithOptionalEvidence(
+      evidenceIds => this.postService.proposeAgencyResolution(this.occurrence!, this.user, statement, plannedExecutionDate, evidenceIds),
+      'Proposta publicada para votação da comunidade.',
+    );
+  }
+
+  voteOnProposal(approve: boolean): void {
+    const post = this.occurrence;
+    const proposal = this.currentProposal;
+    if (!post || !proposal || !this.isCommunityUser || !this.proposalVotingOpen || this.alreadyVotedOnProposal) return;
+    this.runAction(() => this.postService.voteOnResolutionProposal(post, this.user, proposal.id, approve),
+      'Seu voto foi registrado.');
+  }
+
+  withdrawProposalVote(): void {
+    const post = this.occurrence;
+    const proposal = this.currentProposal;
+    if (!post || !proposal || !this.isCommunityUser || !this.proposalVotingOpen || !this.alreadyVotedOnProposal) return;
+    this.runAction(() => this.postService.withdrawResolutionVote(post, this.user, proposal.id),
+      'Seu voto foi retirado.');
   }
 
   get canConfirmCommunity(): boolean {
@@ -509,7 +584,7 @@ export class OccurrenceDetailPage implements OnInit {
   get canShowAgencyActions(): boolean {
     return (
       this.isResponsibleAgencyForOccurrence &&
-      (this.canRegisterResponse || this.canRecordAgencyProgress || this.canAddEvidence)
+      (this.canRegisterResponse || this.canRecordAgencyProgress)
     );
   }
 
@@ -549,6 +624,7 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canContest(): boolean {
     if (!this.isCommunityUser) return false;
+    if (this.occurrence?.agencyResolution?.proposalId) return false;
     return this.occurrence?.agencyResolution
       ? this.occurrence.status === 'RESOLUCAO_EM_ANALISE' && !this.contestDeadlineReached()
       : this.occurrence?.status === 'RESOLVIDA';
@@ -564,13 +640,13 @@ export class OccurrenceDetailPage implements OnInit {
 
   get canApproveAgencyResolution(): boolean {
     const resolutionId = this.occurrence?.agencyResolution?.id;
-    return this.canReviewAgencyResolution && (this.contestDeadlineReached() ||
+    return this.canReviewAgencyResolution && (!!this.occurrence?.agencyResolution?.proposalId || this.contestDeadlineReached() ||
       this.historyEvents.some(event => event.eventType === 'RESOLUCAO_CONTESTADA' &&
         event.metadata?.['resolutionId'] === resolutionId));
   }
 
   get isResolutionPanel(): boolean {
-    return ['resolution', 'resolve', 'contest', 'reopen'].some(panel => panel === this.actionPanel);
+    return ['proposal', 'resolution', 'resolve', 'contest', 'reopen'].some(panel => panel === this.actionPanel);
   }
 
   get generalEvidences(): OccurrenceEvidence[] {
@@ -578,6 +654,16 @@ export class OccurrenceDetailPage implements OnInit {
       .filter(event => event.metadata?.['resolutionId'])
       .flatMap(event => event.evidenceIds ?? []));
     return this.occurrence?.evidences.filter(evidence => !resolutionEvidenceIds.has(evidence.id)) ?? [];
+  }
+
+  communityVoteForResolution(event: OccurrenceHistoryEvent): { approvals: number; rejections: number } | null {
+    const vote = event.metadata?.['communityVote'] as { approvals?: number; rejections?: number } | undefined;
+    if (typeof vote?.approvals === 'number' && typeof vote.rejections === 'number') {
+      return { approvals: vote.approvals, rejections: vote.rejections };
+    }
+    const proposal = this.currentProposal;
+    if (!proposal || !proposal.executed || proposal.id !== event.metadata?.['proposalId']) return null;
+    return { approvals: this.proposalApprovals, rejections: proposal.votes.length - this.proposalApprovals };
   }
 
   get agencyProposals(): OccurrenceHistoryEvent[] {
@@ -620,14 +706,20 @@ export class OccurrenceDetailPage implements OnInit {
   private updateContestTimer(): void {
     this.contestTimer?.unsubscribe();
     const resolution = this.occurrence?.agencyResolution;
-    if (!resolution || this.occurrence?.status !== 'RESOLUCAO_EM_ANALISE') return;
-    const remaining = new Date(resolution.contestUntil).getTime() - Date.now();
-    this.contestDeadlineReached.set(remaining <= 0);
+    const contestRemaining = resolution && this.occurrence?.status === 'RESOLUCAO_EM_ANALISE'
+      ? new Date(resolution.contestUntil).getTime() - Date.now() : null;
+    this.contestDeadlineReached.set(contestRemaining !== null && contestRemaining <= 0);
+    const votingRemaining = this.proposalVotingOpen
+      ? new Date(this.currentProposal!.votingEndsAt).getTime() - Date.now() : 0;
+    const remaining = Math.max(contestRemaining ?? 0, votingRemaining);
     if (remaining > 0) {
       // Browser timers with delays above the signed 32-bit limit fire immediately.
       this.contestTimer = timer(Math.min(remaining, 24 * 60 * 60_000))
         .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => this.updateContestTimer());
+        .subscribe(() => {
+          this.updateContestTimer();
+          this.changeDetector.markForCheck();
+        });
     }
   }
 
@@ -692,16 +784,18 @@ export class OccurrenceDetailPage implements OnInit {
     this.evidenceFile = null;
     this.evidenceDescription = '';
     this.resolutionReviewNote = '';
+    this.proposalStatement = '';
+    this.plannedExecutionDate = '';
     this.resolutionStatement = '';
     this.resolutionOutcome = '';
     this.resolutionEvidenceId = undefined;
     this.resolutionExecutionDate = '';
-    this.resolutionServiceReference = '';
     this.contestReason = '';
     this.reopenReason = '';
     this.analysisNote = '';
     this.errorMessage = '';
     this.successMessage = '';
+    if (panel === 'resolve' && this.canResolve && this.occurrence?.responsibleAgency?.id && this.responseCode === '02') this.responseCode = '03';
     if (panel === 'agency' && !this.isModerator) this.loadAgencyDirectory();
   }
 
@@ -909,7 +1003,6 @@ export class OccurrenceDetailPage implements OnInit {
     if (!this.occurrence || (!this.canInformResolution && !this.canSubmitAgencyResolution)) return;
     const statement = this.resolutionStatement.trim();
     const outcome = this.resolutionOutcome.trim();
-    const serviceReference = this.resolutionServiceReference.trim() || undefined;
     if (this.canSubmitAgencyResolution) {
       if (statement.length < 20 || outcome.length < 20) {
         this.errorMessage = 'Descreva o serviço executado e o resultado verificado com pelo menos 20 caracteres em cada campo.';
@@ -919,8 +1012,8 @@ export class OccurrenceDetailPage implements OnInit {
         this.errorMessage = 'Informe uma data de execução válida que não esteja no futuro.';
         return;
       }
-      if (!this.evidenceFile && !this.resolutionEvidenceId && !serviceReference) {
-        this.errorMessage = 'Anexe uma evidência ou informe o protocolo ou a ordem de serviço.';
+      if (!this.evidenceFile && !this.resolutionEvidenceId) {
+        this.errorMessage = 'Anexe uma evidência da execução em foto ou vídeo.';
         return;
       }
     } else if (!statement) {
@@ -930,7 +1023,6 @@ export class OccurrenceDetailPage implements OnInit {
     const details = this.canSubmitAgencyResolution ? {
       executionDate: this.resolutionExecutionDate,
       outcome,
-      serviceReference,
     } : undefined;
     this.runWithOptionalEvidence(
       (evidenceIds) =>
@@ -1071,6 +1163,9 @@ export class OccurrenceDetailPage implements OnInit {
       FORWARDING_RESPONSE_REGISTERED: 'Resposta do órgão registrada',
       PROTOCOL_REGISTERED: 'Protocolo recebido',
       ANALISE_INICIADA: 'Análise iniciada',
+      RESOLUCAO_PROPOSTA: 'Proposta de resolução publicada',
+      RESOLUCAO_VOTADA: 'Voto registrado',
+      VOTO_RESOLUCAO_RETIRADO: 'Voto retirado',
       RESOLUCAO_INFORMADA: 'Resolução informada',
       OCORRENCIA_RESOLVIDA: 'Ocorrência resolvida',
       RESOLUCAO_CONTESTADA: 'Resolução contestada',
@@ -1192,7 +1287,7 @@ export class OccurrenceDetailPage implements OnInit {
     return actorName ? `${actorName} · ${this.i18n.translate(this.eventOrigin(event))}` : this.eventOrigin(event);
   }
 
-  eventEvidences(event: OccurrenceHistoryEvent): OccurrenceEvidence[] {
+  eventEvidences(event: Pick<OccurrenceHistoryEvent, 'evidenceIds'>): OccurrenceEvidence[] {
     const evidenceIds = event.evidenceIds ?? [];
 
     if (!evidenceIds.length || !this.occurrence?.evidences.length) {
@@ -1231,7 +1326,7 @@ export class OccurrenceDetailPage implements OnInit {
     action: (evidenceIds: string[]) => Observable<SpectrumPost>,
     successMessage: string,
   ): void {
-    const isAgencyResolution = this.actionPanel === 'resolution' && this.canSubmitAgencyResolution;
+    const isAgencyResolution = this.actionPanel === 'proposal' || this.actionPanel === 'resolution' && this.canSubmitAgencyResolution;
     if (isAgencyResolution && this.resolutionEvidenceId) {
       const evidenceId = this.resolutionEvidenceId;
       this.runAction(() => action([evidenceId]), successMessage);
@@ -1257,8 +1352,7 @@ export class OccurrenceDetailPage implements OnInit {
         ),
         switchMap(({ updated, url }) => {
           this.occurrence = updated;
-          const acceptsPending = this.actionPanel === 'contest' ||
-            (this.actionPanel === 'resolution' && this.isResponsibleAgencyForOccurrence);
+          const acceptsPending = this.actionPanel === 'contest' || isAgencyResolution;
           const evidence = updated.evidences.find(item =>
             item.url === url && !previousEvidenceIds.has(item.id) && item.addedBy === this.user?._id);
           const evidenceId = evidence &&
@@ -1302,11 +1396,12 @@ export class OccurrenceDetailPage implements OnInit {
     this.successMessage = message;
     this.errorMessage = '';
     this.actionPanel = null;
+    this.proposalStatement = '';
+    this.plannedExecutionDate = '';
     this.resolutionStatement = '';
     this.resolutionOutcome = '';
     this.resolutionEvidenceId = undefined;
     this.resolutionExecutionDate = '';
-    this.resolutionServiceReference = '';
     this.resolutionReviewNote = '';
     this.contestReason = '';
     this.responseMessage = '';
