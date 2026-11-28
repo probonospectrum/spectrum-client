@@ -164,6 +164,7 @@ Mais recentes|Newest first|Más recientes
 Menos recentes|Oldest first|Menos recientes
 Nenhuma ocorrência encontrada.|No issues found.|No se encontraron incidencias.
 Ver mais|See more|Ver más
+Ver atualizações mais antigas|View older updates|Ver actualizaciones anteriores
 Resumo das ocorrências atribuídas|Assigned issues summary|Resumen de incidencias asignadas
 Este perfil é privado.|This profile is private.|Este perfil es privado.
 Situação das ocorrências|Issue status|Estado de las incidencias

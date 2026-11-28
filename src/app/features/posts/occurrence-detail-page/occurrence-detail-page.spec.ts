@@ -134,7 +134,7 @@ describe('OccurrenceDetailPage actions', () => {
     expect(rows()).toHaveLength(3);
     expect(page.visibleTimeline.map(event => event.id)).toEqual(['event-11', 'event-10', 'event-9']);
     expect(page.timeline).toHaveLength(12);
-    expect(more()?.textContent).toContain('Ver mais');
+    expect(more()?.textContent).toContain('Ver atualizações mais antigas');
     more()!.click();
     await fixture.whenStable();
     expect(rows()).toHaveLength(8);
