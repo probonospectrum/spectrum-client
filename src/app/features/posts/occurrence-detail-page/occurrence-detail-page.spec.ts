@@ -114,6 +114,55 @@ describe('OccurrenceDetailPage actions', () => {
     expect(link?.textContent).toContain(label);
   });
 
+  it('shows the three latest visible updates and reveals older updates five at a time', async () => {
+    const history = Array.from({ length: 12 }, (_, index): OccurrenceHistoryEvent => ({
+      id: 'event-' + index,
+      occurrenceId,
+      eventType: 'ANALISE_INICIADA',
+      actorType: 'SYSTEM',
+      occurredAt: new Date(Date.UTC(2026, 8, index + 1)).toISOString(),
+    })).reverse();
+    history.unshift({ id: 'hidden-community-event', occurrenceId, eventType: 'EVIDENCIA_ADICIONADA',
+      actorId: 'other', actorType: 'USER', occurredAt: '2026-09-30T12:00:00Z' });
+    vi.spyOn(TestBed.inject(PostService), 'getOccurrenceHistory').mockReturnValue(of(history));
+    fixture = TestBed.createComponent(OccurrenceDetailPage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const view: HTMLElement = fixture.nativeElement;
+    const rows = () => view.querySelectorAll('#occurrence-history > li');
+    const more = () => view.querySelector<HTMLButtonElement>('button[aria-controls="occurrence-history"]');
+    expect(rows()).toHaveLength(3);
+    expect(page.visibleTimeline.map(event => event.id)).toEqual(['event-11', 'event-10', 'event-9']);
+    expect(page.timeline).toHaveLength(12);
+    expect(more()?.textContent).toContain('Ver mais');
+    more()!.click();
+    await fixture.whenStable();
+    expect(rows()).toHaveLength(8);
+    expect(page.visibleTimeline.at(-1)?.id).toBe('event-4');
+    more()!.click();
+    await fixture.whenStable();
+    expect(rows()).toHaveLength(12);
+    expect(page.visibleTimeline.at(-1)?.id).toBe('event-0');
+    expect(more()).toBeNull();
+    expect(page.timeline[0].id).toBe('event-0');
+    page.loadOccurrence();
+    await fixture.whenStable();
+    expect(rows()).toHaveLength(3);
+    expect(more()).not.toBeNull();
+  });
+
+  it.each([0, 1, 3])('does not show a history expansion button for %i updates', (count) => {
+    const history = Array.from({ length: count }, (_, index): OccurrenceHistoryEvent => ({
+      id: 'event-' + index, occurrenceId, eventType: 'ANALISE_INICIADA', actorType: 'SYSTEM',
+      occurredAt: '2026-09-02T12:00:00Z',
+    }));
+    vi.spyOn(TestBed.inject(PostService), 'getOccurrenceHistory').mockReturnValue(of(history));
+    fixture = TestBed.createComponent(OccurrenceDetailPage);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('#occurrence-history > li')).toHaveLength(count);
+    expect(fixture.nativeElement.querySelector('button[aria-controls="occurrence-history"]')).toBeNull();
+  });
+
   function actionsFor(role: LoggedUser['occurrenceRole'], agencyId?: string): string[] {
     user = {
       _id: role ?? 'anonymous',

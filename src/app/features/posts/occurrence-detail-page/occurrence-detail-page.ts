@@ -90,6 +90,7 @@ export class OccurrenceDetailPage implements OnInit {
 
   occurrence: SpectrumPost | null = null;
   historyEvents: OccurrenceHistoryEvent[] = [];
+  private readonly historyVisibleCount = signal(3);
   actionPanel: ActionPanel = null;
   errorMessage = '';
   successMessage = '';
@@ -244,6 +245,7 @@ export class OccurrenceDetailPage implements OnInit {
   }
 
   loadOccurrence(): void {
+    this.historyVisibleCount.set(3);
     const id = this.currentOccurrenceId;
 
     if (!id) {
@@ -297,6 +299,18 @@ export class OccurrenceDetailPage implements OnInit {
       (first, second) =>
         new Date(first.createdAt ?? first.occurredAt).getTime() - new Date(second.createdAt ?? second.occurredAt).getTime(),
     );
+  }
+
+  get visibleTimeline(): OccurrenceHistoryEvent[] {
+    return this.timeline.slice(-this.historyVisibleCount()).reverse();
+  }
+
+  get hasMoreHistory(): boolean {
+    return this.timeline.length > this.historyVisibleCount();
+  }
+
+  showMoreHistory(): void {
+    this.historyVisibleCount.update(count => count + 5);
   }
 
   get isMockOccurrence(): boolean {

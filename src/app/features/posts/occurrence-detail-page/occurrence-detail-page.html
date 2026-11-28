@@ -765,8 +765,8 @@
     </ng-template>
     <section class="occurrence-detail__section">
       <div class="occurrence-detail__section-head"><h2>{{ 'Histórico da ocorrência' | translate }}</h2><span>{{ timeline.length }} {{ (timeline.length === 1 ? 'atualização' : 'atualizações') | translate }}</span></div>
-      <ol class="occurrence-detail__timeline">
-        @for (event of timeline; track event.id) {
+      <ol id="occurrence-history" class="occurrence-detail__timeline">
+        @for (event of visibleTimeline; track event.id) {
           <li [attr.data-origin]="eventOriginClass(event)">
             <time>{{ formatDate(event.createdAt || event.occurredAt) }}</time>
             <strong>{{ (formatEvent(event.eventType)) | translate }}</strong>
@@ -803,6 +803,11 @@
           </li>
         }
       </ol>
+      @if (hasMoreHistory) {
+        <button type="button" class="occurrence-detail__secondary" aria-controls="occurrence-history" (click)="showMoreHistory()">
+          {{ 'Ver mais' | translate }}
+        </button>
+      }
       @if (!timeline.length) {
         <p class="occurrence-detail__empty">{{ 'Nenhum evento registrado para esta ocorrência.' | translate }}</p>
       }
