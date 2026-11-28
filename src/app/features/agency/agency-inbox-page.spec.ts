@@ -45,6 +45,20 @@ describe('Institutional occurrences page', () => {
     expect(api.inbox).toHaveBeenLastCalledWith(undefined, { search: 'Buraco', status: 'resolved', order: 'oldest' });
     expect(fixture.nativeElement.querySelector('[aria-pressed="true"]').textContent).toContain('Resolvidas');
   });
+  it('shows proposal review separately from ordinary work in progress', () => {
+    const inProgress = { ...entry, status: 'EM_RESOLUCAO', responsibleAgency: { id: 'institution' } };
+    api.inbox.mockReturnValue(of({ data: [
+      { ...inProgress, resolutionProposal: {
+        id: 'proposal', agencyId: 'institution', statement: 'Reparar a rua',
+        votingEndsAt: new Date(Date.now() + 60_000).toISOString(), votes: [],
+      } },
+      { ...inProgress, _id: '66f1c0de0000000000000002' },
+    ], total: 2, nextCursor: null }));
+    const fixture = setup();
+    const labels = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.status'), item => item.textContent?.trim());
+    expect(labels).toEqual(['● Resolução em análise', '● Ocorrência em resolução']);
+  });
+
   it('discards stale results when filters change', () => {
     const fixture = setup();
     const previous = new Subject<InboxResponse>();

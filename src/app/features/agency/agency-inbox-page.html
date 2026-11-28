@@ -86,21 +86,21 @@
                 <h2>{{ post.title }}</h2>
                 <span class="protocol">Protocolo {{ post._id }}</span
                 ><span class="status" [class.status--resolved]="post.status === 'RESOLVIDA'"
-                  ><span aria-hidden="true">●</span> {{ label(post.status) }}</span
+                  ><span aria-hidden="true">●</span> {{ label(post) }}</span
                 >
               </div>
               <span class="material-symbols-outlined row-arrow" aria-hidden="true"
                 >arrow_forward</span
               >
             </a>
-            @if (canAddResolution(post)) {
+            @if (resolutionAction(post); as action) {
               <a
                 class="resolution-link"
                 [routerLink]="['/ocorrencias', post._id]"
                 [queryParams]="{ acao: 'adicionar-resolucao' }"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">note_add</span>
-                Adicionar resolução
+                {{ action === 'proposal' ? 'Propor resolução' : 'Informar execução' }}
               </a>
             }
           </div>

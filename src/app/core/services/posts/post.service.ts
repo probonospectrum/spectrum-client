@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, tap, throwError, switchMap, shareReplay } from 'rxjs';
 import { API_BASE_URL } from '../../constants/api-routes';
-import { canProposeAgencyResolution, representsOccurrenceAgency, occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
+import { agencyResolutionAction, representsOccurrenceAgency, occurrenceStage, OCCURRENCE_STATUS_DETAILS } from './occurrence-flow';
 import { LoggedUser, UserService } from '../user/user.service';
 
 export type OccurrenceStatus =
@@ -73,6 +73,9 @@ export type OccurrenceEventType =
   | 'FORWARDING_RESPONSE_REGISTERED'
   | 'PROTOCOL_REGISTERED'
   | 'ANALISE_INICIADA'
+  | 'RESOLUCAO_PROPOSTA'
+  | 'RESOLUCAO_VOTADA'
+  | 'VOTO_RESOLUCAO_RETIRADO'
   | 'RESOLUCAO_INFORMADA'
   | 'OCORRENCIA_RESOLVIDA'
   | 'RESOLUCAO_CONTESTADA'
@@ -171,7 +174,8 @@ export interface ModerationReport {
 }
 
 export interface SpectrumPost {
-  agencyResolution?: { id: string; contestUntil: string } | null;
+  agencyResolution?: { id: string; contestUntil: string; proposalId?: string } | null;
+  resolutionProposal?: ResolutionProposal | null;
   moderationRemovedAt?: string;
   agencyProgress?: { note: string; protocol?: string; closedByAgency: boolean; updatedAt: string };
   reaction?: 'LIKE' | 'UNLIKE' | null;
@@ -287,6 +291,7 @@ export interface UploadedEvidenceResponse {
 
 interface OccurrenceApiResponse {
   agencyResolution?: SpectrumPost['agencyResolution'];
+  resolutionProposal?: ResolutionProposal | null;
   moderationRemovedAt?: string;
   agencyProgress?: SpectrumPost['agencyProgress'];
   saved?: boolean;
@@ -802,17 +807,40 @@ export class PostService {
       );
   }
 
+  proposeAgencyResolution(post: SpectrumPost, user: LoggedUser | null, statement: string, plannedExecutionDate?: string, evidenceIds: string[] = []): Observable<SpectrumPost> {
+    return this.submitResolutionProposalAction(post, user, 'proposal', { statement, plannedExecutionDate, evidenceIds });
+  }
+
+  voteOnResolutionProposal(post: SpectrumPost, user: LoggedUser | null, proposalId: string, approve: boolean): Observable<SpectrumPost> {
+    return this.submitResolutionProposalAction(post, user, 'proposal/vote', { proposalId, approve });
+  }
+
+  withdrawResolutionVote(post: SpectrumPost, user: LoggedUser | null, proposalId: string): Observable<SpectrumPost> {
+    return this.submitResolutionProposalAction(post, user, `proposal/${encodeURIComponent(proposalId)}/vote`, undefined, 'DELETE');
+  }
+
+  private submitResolutionProposalAction(
+    post: SpectrumPost, user: LoggedUser | null, action: 'proposal' | 'proposal/vote' | `proposal/${string}/vote`,
+    body?: object, method: 'POST' | 'DELETE' = 'POST',
+  ): Observable<SpectrumPost> {
+    if (!this.isApiId(post.id)) return throwError(() => new Error('A ocorrência precisa estar salva no servidor.'));
+    return this.http.request<OccurrenceApiResponse>(method, `${this.apiUrl}/${post.id}/resolution/${action}`, { body }).pipe(
+      map(occurrence => this.toSpectrumPost(occurrence, user)),
+      tap(updated => this.cacheOccurrence(updated)),
+    );
+  }
+
   informOccurrenceResolution(
     post: SpectrumPost,
     user: LoggedUser | null,
     statement: string,
     evidenceIds: string[] = [],
-    details?: { outcome: string; executionDate: string; serviceReference?: string },
+    details?: { outcome: string; executionDate: string },
   ): Observable<SpectrumPost> {
     this.requireUserKey(user, 'Entre na sua conta para informar resolução.');
     const communityStatuses: OccurrenceStatus[] = ['AGUARDANDO_ENCAMINHAMENTO', 'ABERTA', 'ENCAMINHADA', 'EM_ANALISE', 'EM_RESOLUCAO', 'REABERTA'];
     if (representsOccurrenceAgency(user, post.responsibleAgency?.id)) {
-      this.assertTransition(post, canProposeAgencyResolution(user, post), [post.status]);
+      this.assertTransition(post, agencyResolutionAction(user, post) === 'execution', [post.status]);
     } else {
       this.assertTransition(post, user?.accountType !== 'PUBLIC_AGENCY' && (user?.occurrenceRole ?? 'USER') === 'USER', communityStatuses);
     }
@@ -821,6 +849,7 @@ export class PostService {
       statement,
       evidenceIds,
       ...details,
+      ...(details && post.resolutionProposal ? { proposalId: post.resolutionProposal.id } : {}),
     };
 
     if (!this.isApiId(post.id)) {
@@ -1739,6 +1768,7 @@ export class PostService {
 return {
   id: occurrence._id,
       agencyResolution: occurrence.agencyResolution,
+      resolutionProposal: occurrence.resolutionProposal,
       moderationRemovedAt: occurrence.moderationRemovedAt,
   createdAt,
   createdBy: occurrence.createdBy,
@@ -1851,4 +1881,15 @@ return {
 
     return this.i18n.translate('Publicado em {date}, as {time}', { date: day, time });
   }
+}
+
+export interface ResolutionProposal {
+  id: string;
+  agencyId: string;
+  statement: string;
+  plannedExecutionDate?: string;
+  evidenceIds?: string[];
+  votingEndsAt: string;
+  votes: { voterId: string; approve: boolean }[];
+  executed?: boolean;
 }

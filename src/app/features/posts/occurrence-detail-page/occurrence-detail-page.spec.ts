@@ -78,6 +78,11 @@ describe('OccurrenceDetailPage actions', () => {
           provide: PostService,
           useValue: {
             getOccurrence: () => of(occurrence),
+            proposeAgencyResolution: vi.fn(() => of(occurrence)),
+            voteOnResolutionProposal: vi.fn(() => of(occurrence)),
+            withdrawResolutionVote: vi.fn(() => of(occurrence)),
+            uploadEvidence: vi.fn(),
+            addOccurrenceEvidence: vi.fn(),
             informOccurrenceResolution: vi.fn(() => of(occurrence)),
             canModifyPost: () => false,
             getOccurrenceHistory: () => of([]),
@@ -203,10 +208,33 @@ describe('OccurrenceDetailPage actions', () => {
   });
 
   it('shows only related agency actions at the same URL', () => {
-    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência', 'Adicionar resolução']);
+    expect(actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo')).toEqual(['add_photo_alternate Adicionar evidência', 'Propor resolução']);
     fixture.componentInstance.occurrence = { ...occurrence, status: 'ENCAMINHADA', forwardingHistory: [{ id: 'sent', success: true, channel: 'EMAIL', sentAt: occurrence.createdAt }] };
     expect(fixture.componentInstance.canRegisterResponse).toBe(true);
     expect(fixture.componentInstance.canResolve).toBe(false);
+  });
+
+  it('shows the planned date and the attachment field on the first proposal form', () => {
+    actionsFor('RESPONSIBLE_AGENCY', 'iluminacao-demo');
+    const page = fixture.componentInstance;
+    page.openPanel('proposal');
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const form = fixture.nativeElement.querySelector('#resolucao form') as HTMLFormElement;
+    expect(form.querySelector('input[name="plannedExecutionDate"]')?.getAttribute('max')).toBe(page.latestResolutionExecutionDate);
+    expect(form.querySelector('input[type="file"]')).not.toBeNull();
+    expect(form.textContent).not.toContain('Protocolo');
+    page.proposalStatement = 'Trocar a lâmpada do poste.';
+    page.plannedExecutionDate = '2999-01-01';
+    page.submitProposal();
+    expect(page.errorMessage).toContain('de hoje ou anterior');
+    expect(TestBed.inject(PostService).proposeAgencyResolution).not.toHaveBeenCalled();
+    const today = page.latestResolutionExecutionDate;
+    page.plannedExecutionDate = today;
+    page.submitProposal();
+    expect(TestBed.inject(PostService).proposeAgencyResolution).toHaveBeenCalledWith(
+      expect.objectContaining({ id: occurrenceId }), user, 'Trocar a lâmpada do poste.', today, [],
+    );
   });
 
   it('shows regional catalog suggestions as the community types', () => {
@@ -350,9 +378,10 @@ describe('OccurrenceDetailPage actions', () => {
     fixture.detectChanges();
 
     const report = fixture.nativeElement.textContent as string;
-    for (const protocol of ['ENC-104', 'AT-203', 'HIST-105', 'OS-106']) {
+    for (const protocol of ['ENC-104', 'AT-203', 'HIST-105']) {
       expect(report.includes(protocol)).toBe(allowed);
     }
+    expect(report).not.toContain('OS-106');
   });
 
   it('shows regional catalog suggestions as the community types', () => {
@@ -475,7 +504,8 @@ describe('OccurrenceDetailPage actions', () => {
     user!.agencyRegistrationStatus = 'APPROVED';
     const page = fixture.componentInstance;
     expect(page.canRecordAgencyProgress).toBe(true);
-    expect(page.canSubmitAgencyResolution).toBe(true);
+    expect(page.canProposeResolution).toBe(true);
+    expect(page.canSubmitAgencyResolution).toBe(false);
     page.openPanel('agencyProgress');
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
@@ -493,12 +523,17 @@ describe('OccurrenceDetailPage actions', () => {
       ...occurrence,
       status: 'EM_ANALISE_DE_COMPETENCIA',
       responsibleAgency: { id: user!._id, name: 'Órgão vinculado' },
+      resolutionProposal: {
+        id: 'proposal-1', agencyId: user!._id, statement: 'Trocar a lâmpada.',
+        votingEndsAt: new Date(Date.now() - 1000).toISOString(),
+        votes: [{ voterId: 'citizen', approve: true }],
+      },
     };
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(page.canSubmitAgencyResolution).toBe(true);
     const section = fixture.nativeElement.querySelector('#resolucao') as HTMLElement;
-    expect(section.textContent).toContain('Adicionar resolução');
+    expect(section.textContent).toContain('Informar execução');
     page.openPanel('resolution');
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
@@ -515,14 +550,51 @@ describe('OccurrenceDetailPage actions', () => {
     page.submitResolution();
     expect(page.errorMessage).toContain('Anexe uma evidência');
     expect(send).not.toHaveBeenCalled();
-    page.resolutionServiceReference = ' OS-104 ';
+    const service = TestBed.inject(PostService);
+    const url = 'https://example.com/repair.jpg';
+    vi.mocked(service.uploadEvidence).mockReturnValue(of({ type: 'IMAGE', url, fileName: 'repair.jpg', mimeType: 'image/jpeg', size: 6 }));
+    vi.mocked(service.addOccurrenceEvidence).mockReturnValue(of({
+      ...page.occurrence!,
+      evidences: [...occurrence.evidences, {
+        id: 'repair-photo', type: 'IMAGE', url, addedAt: occurrence.createdAt, addedBy: user!._id,
+      }],
+    }));
+    page.evidenceFile = new File(['repair'], 'repair.jpg', { type: 'image/jpeg' });
     page.submitResolution();
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ id: occurrenceId }), user,
-      'A equipe substituiu a lâmpada no poste indicado.', [], {
+      'A equipe substituiu a lâmpada no poste indicado.', ['repair-photo'], {
         executionDate: page.latestResolutionExecutionDate,
         outcome: 'O poste voltou a iluminar a rua após o teste.',
-        serviceReference: 'OS-104',
       });
+  });
+
+  it('offers one vote to a community account during the proposal window', () => {
+    actionsFor('USER');
+    const page = fixture.componentInstance;
+    const proposal = {
+      id: 'proposal-1', agencyId: 'iluminacao-demo', statement: 'Trocar a lâmpada.',
+      votingEndsAt: new Date(Date.now() + 60_000).toISOString(),
+      votes: [],
+    };
+    page.occurrence = { ...occurrence, resolutionProposal: proposal };
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#resolucao').textContent).toContain('Votar a favor');
+    const vote = TestBed.inject(PostService).voteOnResolutionProposal;
+    page.voteOnProposal(true);
+    expect(vote).toHaveBeenCalledWith(expect.objectContaining({ id: occurrenceId }), user, proposal.id, true);
+    page.occurrence = { ...occurrence, resolutionProposal: { ...proposal, votes: [{ voterId: user!._id, approve: true }] } };
+    page.voteOnProposal(false);
+    expect(vote).toHaveBeenCalledTimes(1);
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const withdraw = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Retirar meu voto'));
+    expect(withdraw).toBeDefined();
+    withdraw?.click();
+    expect(TestBed.inject(PostService).withdrawResolutionVote).toHaveBeenCalledWith(
+      expect.objectContaining({ id: occurrenceId }), user, proposal.id,
+    );
   });
 
   it('shows an open contestation window to the community and removes the action at the deadline', () => {
@@ -564,7 +636,7 @@ describe('OccurrenceDetailPage actions', () => {
     expect(review.textContent).toContain('Troca da lâmpada');
     expect(review.textContent).toContain('O poste voltou a funcionar após teste noturno.');
     expect(review.textContent).toContain('20/09/2026');
-    expect(review.textContent).toContain('OS-104');
+    expect(review.textContent).not.toContain('OS-104');
     expect(review.querySelector('a')?.textContent).toContain('Foto do reparo');
     const thread = review.querySelector<HTMLButtonElement>('.occurrence-detail__contest-toggle')!;
     expect(thread.getAttribute('aria-expanded')).toBe('false');

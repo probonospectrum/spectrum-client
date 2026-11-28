@@ -1,5 +1,5 @@
 import type { LoggedUser } from '../user/user.service';
-import type { OccurrenceStatus } from './post.service';
+import type { OccurrenceStatus, ResolutionProposal } from './post.service';
 
 export type OccurrenceStage = 'Aberta' | 'Em andamento' | 'Fechada';
 
@@ -44,11 +44,28 @@ export function representsOccurrenceAgency(user: LoggedUser | null | undefined, 
   );
 }
 
-export function canProposeAgencyResolution(
+export function agencyResolutionAction(
   user: LoggedUser | null | undefined,
-  post: { responsibleAgency?: { id?: string } | null; status: string; createdAt: string },
-): boolean {
-  return representsOccurrenceAgency(user, post.responsibleAgency?.id) &&
-    Date.now() >= new Date(post.createdAt).getTime() + 15 * 60_000 &&
-    !['RESOLVIDA', 'CONTESTADA', 'RESOLUCAO_EM_ANALISE'].includes(post.status);
+  post: {
+    responsibleAgency?: { id?: string } | null;
+    resolutionProposal?: ResolutionProposal | null;
+    status: string;
+    createdAt: string;
+  },
+  now = Date.now(),
+): 'proposal' | 'execution' | null {
+  if (!representsOccurrenceAgency(user, post.responsibleAgency?.id) ||
+    now < new Date(post.createdAt).getTime() + 15 * 60_000 ||
+    ['RESOLVIDA', 'CONTESTADA', 'RESOLUCAO_EM_ANALISE'].includes(post.status)) {
+    return null;
+  }
+
+  const proposal = post.resolutionProposal;
+  if (!proposal || proposal.agencyId !== post.responsibleAgency?.id || proposal.executed) return 'proposal';
+  if (now < new Date(proposal.votingEndsAt).getTime()) return null;
+  return proposalApproved(proposal) ? 'execution' : 'proposal';
+}
+
+export function proposalApproved(proposal: ResolutionProposal): boolean {
+  return proposal.votes.filter(vote => vote.approve).length * 2 > proposal.votes.length;
 }

@@ -10,7 +10,14 @@ Um órgão com e-mail válido recebe automaticamente o documento. Empate, ausên
 
 O cliente mostra os status detalhados e mantém os agrupamentos Aberta, Em andamento e Fechada. Rejeição permanece em andamento por exigir reavaliação. O histórico mostra análise, encaminhamento, reenvio, pendências e classificação da resposta.
 
-Os formulários permitem à moderação selecionar órgãos e e-mails do catálogo e classificar respostas como resolvidas, em resolução ou rejeitadas. A aprovação de contas institucionais com CNPJ pode cadastrar o órgão e contatos conferidos no catálogo. Representantes aprovados podem registrar andamento e fechar ocorrências do próprio órgão com justificativa e evidência, sujeitos à contestação. A classificação administrativa de respostas continua exclusiva da moderação. Consulte [contas públicas com CNPJ](contas-publicas-cnpj.md).
+Os formulários permitem à moderação selecionar órgãos e e-mails do catálogo e classificar respostas como resolvidas, em resolução ou rejeitadas. A aprovação de contas institucionais com CNPJ pode cadastrar o órgão e contatos conferidos no catálogo. Representantes aprovados podem registrar andamento, publicar propostas e informar a execução nas ocorrências atribuídas ao próprio órgão. O fechamento depende da validação da moderação. A classificação administrativa de respostas continua exclusiva da moderação. Consulte [contas públicas com CNPJ](contas-publicas-cnpj.md).
+
+## Fechamento de ocorrências atribuídas
+
+1. O órgão responsável publica uma proposta na Caixa Institucional ou nos detalhes da ocorrência.
+2. A comunidade vota a favor ou contra nos detalhes. Cada conta pode votar uma vez durante os 5 dias da votação. A proposta é aprovada se receber mais votos a favor que contra. Empate ou ausência de votos permite ao órgão apresentar outra proposta após o prazo.
+3. Após a aprovação, o órgão informa o serviço executado, o resultado verificado e a data, com uma foto ou um vídeo como evidência.
+4. A moderação avalia a execução. A validação muda a ocorrência para **Resolvida**. Se a execução for invalidada, a ocorrência volta para **Aberta** e o órgão pode publicar outra proposta.
 
 ## Painel de moderação
 
@@ -53,7 +60,7 @@ npm start -- --build-target spectrum-client:build:visual-preview --host 127.0.0.
 - A aceitação de uma sugestão associa o órgão cadastrado e inicia o envio do dossiê por e-mail. O status só muda após a confirmação do provedor; isso não comprova leitura pelo órgão. Contatos de destino não são expostos no catálogo do cliente.
 - O protocolo é opcional; a ausência de protocolo não deve ser interpretada como recebimento confirmado.
 - Uma solução informada continua em andamento até a verificação. Não existe fechamento automático por prazo.
-- Moradores podem sugerir órgãos; somente o autor da ocorrência pode aceitar uma sugestão daquela ocorrência. O servidor valida o vínculo e o cadastro do órgão antes de encaminhar. A moderação mantém as ações administrativas e de verificação; o órgão associado pode registrar análise e verificar soluções.
+- Moradores podem sugerir órgãos; somente o autor da ocorrência pode aceitar uma sugestão daquela ocorrência. O servidor valida o vínculo e o cadastro do órgão antes de encaminhar. A moderação mantém as ações administrativas e de verificação; o órgão associado pode registrar análise e informar a execução da proposta aprovada.
 - Os três estados visuais agrupam os estados detalhados já usados pela API. Registros antigos com importância crítica são exibidos como alta; novos registros oferecem baixa, média e alta.
 - Esta versão fecha apenas como resolvida. Encerramento por duplicidade ou outros motivos exige um contrato específico com o backend e não foi acrescentado.
 
